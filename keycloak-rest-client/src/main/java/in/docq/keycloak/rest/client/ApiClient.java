@@ -1,6 +1,6 @@
 /*
- * HFR APIs
- * The following are APIs hosted by HFR for public use.
+ * Keycloak Admin REST API
+ * This is a REST API reference for the Keycloak Admin REST API.
  *
  * The version of the OpenAPI document: 1.0
  * 
@@ -11,7 +11,7 @@
  */
 
 
-package in.docq.abha.rest.client;
+package in.docq.keycloak.rest.client;
 
 import okhttp3.*;
 import okhttp3.internal.http.HttpMethod;
@@ -21,9 +21,6 @@ import okhttp3.logging.HttpLoggingInterceptor.Level;
 import okio.Buffer;
 import okio.BufferedSink;
 import okio.Okio;
-import in.docq.abha.rest.client.auth.ApiKeyAuth;
-import in.docq.abha.rest.client.auth.Authentication;
-import in.docq.abha.rest.client.auth.HttpBasicAuth;
 
 import javax.net.ssl.*;
 import java.io.File;
@@ -49,21 +46,24 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import in.docq.keycloak.rest.client.auth.Authentication;
+import in.docq.keycloak.rest.client.auth.HttpBasicAuth;
+import in.docq.keycloak.rest.client.auth.HttpBearerAuth;
+import in.docq.keycloak.rest.client.auth.ApiKeyAuth;
 
 /**
  * <p>ApiClient class.</p>
  */
 public class ApiClient {
 
-    private String basePath = "http://facility.abdm.gov.in";
+    private String basePath = "http://localhost";
     protected List<ServerConfiguration> servers = new ArrayList<ServerConfiguration>(Arrays.asList(
     new ServerConfiguration(
-      "//facility.abdm.gov.in",
+      "",
       "No description provided",
       new HashMap<String, ServerVariable>()
     )
@@ -155,7 +155,7 @@ public class ApiClient {
     /**
      * Set base path
      *
-     * @param basePath Base path of the URL (e.g http://facility.abdm.gov.in
+     * @param basePath Base path of the URL (e.g http://localhost
      * @return An instance of OkHttpClient
      */
     public ApiClient setBasePath(String basePath) {
@@ -1091,12 +1091,11 @@ public class ApiClient {
      * @see #execute(Call, Type)
      */
     @SuppressWarnings("unchecked")
-    public <T> CompletionStage<T> executeAsync(Call call, final Type returnType, final ApiCallback<T> callback) {
-        CompletableFuture<T> future = new CompletableFuture<>();
+    public <T> void executeAsync(Call call, final Type returnType, final ApiCallback<T> callback) {
         call.enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                future.completeExceptionally(new ApiException(e));
+                callback.onFailure(new ApiException(e), 0, null);
             }
 
             @Override
@@ -1105,16 +1104,15 @@ public class ApiClient {
                 try {
                     result = (T) handleResponse(response, returnType);
                 } catch (ApiException e) {
-                    future.completeExceptionally(new ApiException(e));
+                    callback.onFailure(e, response.code(), response.headers().toMultimap());
                     return;
                 } catch (Exception e) {
-                    future.completeExceptionally(new ApiException(e));
+                    callback.onFailure(new ApiException(e), response.code(), response.headers().toMultimap());
                     return;
                 }
-                future.complete(result);
+                callback.onSuccess(result, response.code(), response.headers().toMultimap());
             }
         });
-        return future;
     }
 
     /**
