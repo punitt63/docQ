@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 public class HealthProfessionalSearchApi {
@@ -600,7 +601,6 @@ public class HealthProfessionalSearchApi {
      * Search a user exists by Healthcare Professional ID Number. (asynchronously)
      * ## Search a user exists by Healthcare Professional ID Number.  - Healthcare Professional ID need to pass in the request  ## Request below is the Request Parameters description   | Attributes | Description |  | ------ | ------ |  | hprId &lt;sup style&#x3D;&#39;color:red&#39;&gt;* required&lt;/sup&gt; | Healthcare Professional ID Number/Healthcare Professional ID |
      * @param searchByHprIdRequest  (required)
-     * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
      * @http.response.details
@@ -613,9 +613,9 @@ public class HealthProfessionalSearchApi {
         <tr><td> 500 </td><td> Server encountered an unexpected condition that prevented it from fulfilling the request </td><td>  -  </td></tr>
      </table>
      */
-    public CompletionStage<Boolean> searchUserByUseridAsync(SearchByHprIdRequest searchByHprIdRequest, final ApiCallback<String> _callback) throws ApiException {
+    public CompletionStage<Boolean> searchUserByUseridAsync(SearchByHprIdRequest searchByHprIdRequest) throws ApiException {
 
-        okhttp3.Call localVarCall = searchUserByUseridValidateBeforeCall(searchByHprIdRequest, _callback);
+        okhttp3.Call localVarCall = searchUserByUseridValidateBeforeCall(searchByHprIdRequest, null);
         Type localVarReturnType = new TypeToken<String>(){}.getType();
         return localVarApiClient.executeAsync(localVarCall, localVarReturnType)
                 .thenApply(verdict -> verdict.equals("true"));
@@ -740,7 +740,6 @@ public class HealthProfessionalSearchApi {
      * Search a user by Healthcare Professional ID Number. (asynchronously)
      * ## Search a user by Healthcare Professional ID Number.  - Healthcare Professional ID and Year Of Birth need to pass in the request  ## Request below is the Request Parameters description   | Attributes | Description |  | ------ | ------ |  | hprId &lt;sup style&#x3D;&#39;color:red&#39;&gt;* required&lt;/sup&gt; | Healthcare Professional ID Number/Healthcare Professional ID |  | yearOfBirth &lt;sup style&#x3D;&#39;color:red&#39;&gt;* required&lt;/sup&gt; | year of birth example: 1990|
      * @param searchByHpIdWebRequest  (required)
-     * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
      * @http.response.details
@@ -753,11 +752,13 @@ public class HealthProfessionalSearchApi {
         <tr><td> 500 </td><td> Server encountered an unexpected condition that prevented it from fulfilling the request </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call searchUserForLoginAsync(SearchByHpIdWebRequest searchByHpIdWebRequest, final ApiCallback<SearchAccountWebResponse> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = searchUserForLoginValidateBeforeCall(searchByHpIdWebRequest, _callback);
+    public CompletionStage<SearchAccountWebResponse> searchUserForLoginAsync(SearchByHpIdWebRequest searchByHpIdWebRequest) {
+    try {
+        okhttp3.Call localVarCall = searchUserForLoginValidateBeforeCall(searchByHpIdWebRequest, null);
         Type localVarReturnType = new TypeToken<SearchAccountWebResponse>(){}.getType();
-        localVarApiClient.executeAsync(localVarCall, localVarReturnType);
-        return localVarCall;
+        return localVarApiClient.executeAsync(localVarCall, localVarReturnType);
+    } catch (Exception e) {
+        throw new CompletionException(e);
+    }
     }
 }

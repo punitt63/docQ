@@ -46,6 +46,11 @@ public class ApiHiecmGatewayV3SessionsPostRequest {
   @javax.annotation.Nullable
   private String grantType;
 
+  public static final String SERIALIZED_NAME_REFRESH_TOKEN = "refreshToken";
+  @SerializedName(SERIALIZED_NAME_REFRESH_TOKEN)
+  @javax.annotation.Nullable
+  private String refreshToken;
+
   public ApiHiecmGatewayV3SessionsPostRequest() {
   }
 
@@ -103,6 +108,11 @@ public class ApiHiecmGatewayV3SessionsPostRequest {
 
   public void setGrantType(@javax.annotation.Nullable String grantType) {
     this.grantType = grantType;
+  }
+
+  public ApiHiecmGatewayV3SessionsPostRequest refreshToken(@javax.annotation.Nullable String refreshToken) {
+    this.refreshToken = refreshToken;
+    return this;
   }
 
 

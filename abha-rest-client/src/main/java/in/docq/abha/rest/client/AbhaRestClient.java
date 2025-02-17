@@ -1,59 +1,131 @@
 package in.docq.abha.rest.client;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.exceptions.JWTDecodeException;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import in.docq.abha.rest.client.api.GatewaySessionApi;
 import in.docq.abha.rest.client.api.HealthFacilitySearchApi;
 import in.docq.abha.rest.client.api.HealthProfessionalSearchApi;
-import in.docq.abha.rest.client.model.ApiHiecmGatewayV3SessionsPost200Response;
 import in.docq.abha.rest.client.model.ApiHiecmGatewayV3SessionsPostRequest;
+import in.docq.abha.rest.client.model.SearchByHprIdRequest;
+import in.docq.abha.rest.client.model.SearchFacilitiesData;
+import in.docq.abha.rest.client.model.SearchForFacilitiesRequest;
 
 import java.time.Instant;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+
+import static com.google.common.base.Preconditions.checkState;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 
 public class AbhaRestClient {
 
     private final String clientSecret;
     private final ApiClient apiClient;
     private final String clientId;
-    private final String clientCredentials;
+    private static final String accessTokenGrantType = "client_credentials";
+    private static final String refreshTokenGrantType = "refresh_token";
+    private static final String accessTokenCacheKey = "clientAccessToken";
+    private static final String refreshTokenCacheKey = "clientRefreshToken";
     private final HealthFacilitySearchApi healthFacilitySearchApi;
     private final HealthProfessionalSearchApi healthProfessionalSearchApi;
     private final Cache<String, String> tokenCache;
     private final GatewaySessionApi gatewaySessionApi;
-    private final String envName;
 
-    public AbhaRestClient(ApiClient apiClient, String clientId, String clientSecret, String clientCredentials, String envName) {
+    public AbhaRestClient(ApiClient apiClient, String clientId, String clientSecret) {
         this.apiClient = apiClient;
         this.healthFacilitySearchApi = new HealthFacilitySearchApi(apiClient);
         this.healthProfessionalSearchApi = new HealthProfessionalSearchApi(apiClient);
         this.gatewaySessionApi = new GatewaySessionApi(apiClient);
         this.clientId = clientId;
         this.clientSecret = clientSecret;
-        this.clientCredentials = clientCredentials;
-        this.envName = envName;
         this.tokenCache = CacheBuilder.newBuilder()
                 .concurrencyLevel(4)
                 .initialCapacity(1000)
                 .maximumSize(10000)
-                .build();;
+                .build();
+        eagerInitiateToken();
     }
 
-    private CompletionStage<String> getToken() throws ApiException {
-        String requestId = UUID.randomUUID().toString();
-        ApiHiecmGatewayV3SessionsPostRequest apiHiecmGatewayV3SessionsPostRequest = new ApiHiecmGatewayV3SessionsPostRequest();
-        apiHiecmGatewayV3SessionsPostRequest.setClientId(clientId);
-        apiHiecmGatewayV3SessionsPostRequest.setClientSecret(clientSecret);
-        apiHiecmGatewayV3SessionsPostRequest.setGrantType(clientCredentials);
-        if (tokenCache.getIfPresent("clientAccessToken") != null) {
-            return CompletableFuture.completedFuture(tokenCache.getIfPresent("clientAccessToken"));
+    private void eagerInitiateToken() {
+        generateAndCacheAccessToken();
+    }
+
+    private CompletionStage<String> getAccessToken() {
+        String currentCachedAccessToken = getCachedAccessToken();
+        if(currentCachedAccessToken == null) {
+            return generateAndCacheAccessToken()
+                    .thenApply(ignore -> this.getCachedAccessToken());
         }
-        return gatewaySessionApi.apiHiecmGatewayV3SessionsPostAsync(Instant.now().toString(), requestId, envName, apiHiecmGatewayV3SessionsPostRequest)
-                .thenApply(response -> {
-                    tokenCache.put("clientAccessToken", response.getAccessToken());
-                    return response.getAccessToken();
+        if(shouldRefreshAccessToken(currentCachedAccessToken)) {
+            return refreshToken()
+                    .thenApply(ignore -> this.getCachedAccessToken());
+        }
+        return completedFuture(currentCachedAccessToken);
+    }
+
+    private boolean shouldRefreshAccessToken(String accessToken) {
+        try {
+            DecodedJWT decodedJWT = JWT.decode(accessToken);
+            return Instant.now().isAfter(decodedJWT.getExpiresAtAsInstant());
+        } catch (JWTDecodeException e) {
+            return false;
+        }
+    }
+
+    private CompletionStage<Void> generateAndCacheAccessToken() {
+        ApiHiecmGatewayV3SessionsPostRequest apiHiecmGatewayV3SessionsPostRequest =
+                new ApiHiecmGatewayV3SessionsPostRequest()
+                        .clientId(clientId)
+                        .clientSecret(clientSecret)
+                        .grantType(refreshTokenGrantType);
+        return gatewaySessionApi.apiHiecmGatewayV3SessionsPostAsync(Instant.now().toString(), UUID.randomUUID().toString(), "sbx", apiHiecmGatewayV3SessionsPostRequest)
+                .thenAccept(response -> {
+                    tokenCache.put(accessTokenCacheKey, response.getAccessToken());
+                    tokenCache.put(refreshTokenCacheKey, response.getRefreshToken());
                 });
+    }
+
+    private String getCachedRefreshToken() {
+        String refreshToken = tokenCache.getIfPresent(refreshTokenCacheKey);
+        checkState(refreshToken != null, "refresh token in cache is null");
+        return refreshToken;
+    }
+
+    private String getCachedAccessToken() {
+        String accessToken = tokenCache.getIfPresent(accessTokenCacheKey);
+        checkState(accessToken != null, "access token in cache is null");
+        return accessToken;
+    }
+
+    private CompletionStage<Void> refreshToken() {
+        ApiHiecmGatewayV3SessionsPostRequest apiHiecmGatewayV3SessionsPostRequest =
+                new ApiHiecmGatewayV3SessionsPostRequest()
+                        .clientId(clientId)
+                        .clientSecret(clientSecret)
+                        .grantType(refreshTokenGrantType)
+                        .refreshToken(getCachedRefreshToken());
+        return gatewaySessionApi.apiHiecmGatewayV3SessionsPostAsync(Instant.now().toString(), UUID.randomUUID().toString(), "sbx", apiHiecmGatewayV3SessionsPostRequest)
+                .thenAccept(response -> {
+                    tokenCache.put(accessTokenCacheKey, response.getAccessToken());
+                    tokenCache.put(refreshTokenCacheKey, response.getRefreshToken());
+                });
+    }
+
+    public CompletionStage<SearchFacilitiesData> getHealthFacility(String facilityID) {
+        return getAccessToken()
+                .thenCompose(token -> healthFacilitySearchApi.v15SearchFacilitiesFuzzyPostUsingPOSTAsync(token, new SearchForFacilitiesRequest().facilityId(facilityID)))
+                .thenApply(searchForFacilitiesResponse -> {
+                    if(searchForFacilitiesResponse.getTotalFacilities() == null || searchForFacilitiesResponse.getTotalFacilities() == 0) {
+                        throw new ApiException(404, "Facility " + facilityID + " Not Found");
+                    }
+                    return searchForFacilitiesResponse.getFacilities().get(0);
+                });
+    }
+
+    public CompletionStage<Boolean> getHealthProfessionalExists(String healthProfessionalID) {
+        return healthProfessionalSearchApi.searchUserByUseridAsync(new SearchByHprIdRequest().hprId(healthProfessionalID));
     }
 }

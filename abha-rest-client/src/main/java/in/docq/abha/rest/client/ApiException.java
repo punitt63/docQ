@@ -22,7 +22,7 @@ import java.util.Map;
  */
 @SuppressWarnings("serial")
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-01-25T14:50:59.077868+05:30[Asia/Kolkata]", comments = "Generator version: 7.11.0")
-public class ApiException extends Exception {
+public class ApiException extends RuntimeException {
     private static final long serialVersionUID = 1L;
 
     private int code = 0;

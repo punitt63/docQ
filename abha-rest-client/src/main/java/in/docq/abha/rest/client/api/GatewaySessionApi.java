@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 public class GatewaySessionApi {
@@ -218,7 +219,6 @@ public class GatewaySessionApi {
      * @param REQUEST_ID  (required)
      * @param X_CM_ID  (required)
      * @param apiHiecmGatewayV3SessionsPostRequest  (optional)
-     * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
      * @http.response.details
@@ -230,10 +230,14 @@ public class GatewaySessionApi {
         <tr><td> 500 </td><td> &lt;b&gt;Internal Server Error&lt;/b&gt;&lt;br&gt;&lt;br&gt;  An Internal Server Error (500) indicates that the server encountered an unexpected condition that prevented it from fulfilling the request. </td><td>  -  </td></tr>
      </table>
      */
-    public CompletionStage<ApiHiecmGatewayV3SessionsPost200Response> apiHiecmGatewayV3SessionsPostAsync(String TIMESTAMP, String REQUEST_ID, String X_CM_ID, ApiHiecmGatewayV3SessionsPostRequest apiHiecmGatewayV3SessionsPostRequest) throws ApiException {
-
-        okhttp3.Call localVarCall = apiHiecmGatewayV3SessionsPostValidateBeforeCall(TIMESTAMP, REQUEST_ID, X_CM_ID, apiHiecmGatewayV3SessionsPostRequest, null);
-        Type localVarReturnType = new TypeToken<ApiHiecmGatewayV3SessionsPost200Response>(){}.getType();
-        return localVarApiClient.executeAsync(localVarCall, localVarReturnType);
+    public CompletionStage<ApiHiecmGatewayV3SessionsPost200Response> apiHiecmGatewayV3SessionsPostAsync(String TIMESTAMP, String REQUEST_ID, String X_CM_ID, ApiHiecmGatewayV3SessionsPostRequest apiHiecmGatewayV3SessionsPostRequest) {
+        try {
+            okhttp3.Call localVarCall = apiHiecmGatewayV3SessionsPostValidateBeforeCall(TIMESTAMP, REQUEST_ID, X_CM_ID, apiHiecmGatewayV3SessionsPostRequest, null);
+            Type localVarReturnType = new TypeToken<ApiHiecmGatewayV3SessionsPost200Response>() {
+            }.getType();
+            return localVarApiClient.executeAsync(localVarCall, localVarReturnType);
+        } catch (Exception e) {
+            throw new CompletionException(e);
+        }
     }
 }

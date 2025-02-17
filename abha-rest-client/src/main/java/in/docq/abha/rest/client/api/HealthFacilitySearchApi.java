@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 public class HealthFacilitySearchApi {
@@ -122,7 +123,7 @@ public class HealthFacilitySearchApi {
         }
 
         if (authorization != null) {
-            localVarHeaderParams.put("Authorization", localVarApiClient.parameterToString(authorization));
+            localVarHeaderParams.put("Authorization", "Bearer " + localVarApiClient.parameterToString(authorization));
         }
 
 
@@ -211,10 +212,14 @@ public class HealthFacilitySearchApi {
         <tr><td> 404 </td><td> Not Found </td><td>  -  </td></tr>
      </table>
      */
-    public CompletionStage<SearchForFacilitiesResponse> v15SearchFacilitiesFuzzyPostUsingPOSTAsync(String authorization, SearchForFacilitiesRequest body) throws ApiException {
-
-        okhttp3.Call localVarCall = v15SearchFacilitiesFuzzyPostUsingPOSTValidateBeforeCall(authorization, body, null);
-        Type localVarReturnType = new TypeToken<SearchForFacilitiesResponse>(){}.getType();
-        return localVarApiClient.executeAsync(localVarCall, localVarReturnType);
+    public CompletionStage<SearchForFacilitiesResponse> v15SearchFacilitiesFuzzyPostUsingPOSTAsync(String authorization, SearchForFacilitiesRequest body) {
+        try {
+            okhttp3.Call localVarCall = v15SearchFacilitiesFuzzyPostUsingPOSTValidateBeforeCall(authorization, body, null);
+            Type localVarReturnType = new TypeToken<SearchForFacilitiesResponse>() {
+            }.getType();
+            return localVarApiClient.executeAsync(localVarCall, localVarReturnType);
+        } catch (Exception e) {
+        throw new CompletionException(e);
+        }
     }
 }
