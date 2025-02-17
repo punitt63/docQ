@@ -1071,27 +1071,15 @@ public class ApiClient {
     }
 
     /**
-     * {@link #executeAsync(Call, Type, ApiCallback)}
-     *
-     * @param <T> Type
-     * @param call An instance of the Call object
-     * @param callback ApiCallback&lt;T&gt;
-     */
-    public <T> void executeAsync(Call call, ApiCallback<T> callback) {
-        executeAsync(call, null, callback);
-    }
-
-    /**
      * Execute HTTP call asynchronously.
      *
      * @param <T> Type
      * @param call The callback to be executed when the API call finishes
      * @param returnType Return type
-     * @param callback ApiCallback
      * @see #execute(Call, Type)
      */
     @SuppressWarnings("unchecked")
-    public <T> CompletionStage<T> executeAsync(Call call, final Type returnType, final ApiCallback<T> callback) {
+    public <T> CompletionStage<T> executeAsync(Call call, final Type returnType) {
         CompletableFuture<T> future = new CompletableFuture<>();
         call.enqueue(new Callback() {
             @Override

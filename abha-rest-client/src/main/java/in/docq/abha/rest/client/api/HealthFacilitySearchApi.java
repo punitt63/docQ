@@ -198,7 +198,6 @@ public class HealthFacilitySearchApi {
      * 
      * @param authorization Authorization (required)
      * @param body body (required)
-     * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
      * @http.response.details
@@ -212,10 +211,10 @@ public class HealthFacilitySearchApi {
         <tr><td> 404 </td><td> Not Found </td><td>  -  </td></tr>
      </table>
      */
-    public CompletionStage<SearchForFacilitiesResponse> v15SearchFacilitiesFuzzyPostUsingPOSTAsync(String authorization, SearchForFacilitiesRequest body, final ApiCallback<SearchForFacilitiesResponse> _callback) throws ApiException {
+    public CompletionStage<SearchForFacilitiesResponse> v15SearchFacilitiesFuzzyPostUsingPOSTAsync(String authorization, SearchForFacilitiesRequest body) throws ApiException {
 
-        okhttp3.Call localVarCall = v15SearchFacilitiesFuzzyPostUsingPOSTValidateBeforeCall(authorization, body, _callback);
+        okhttp3.Call localVarCall = v15SearchFacilitiesFuzzyPostUsingPOSTValidateBeforeCall(authorization, body, null);
         Type localVarReturnType = new TypeToken<SearchForFacilitiesResponse>(){}.getType();
-        return localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarApiClient.executeAsync(localVarCall, localVarReturnType);
     }
 }

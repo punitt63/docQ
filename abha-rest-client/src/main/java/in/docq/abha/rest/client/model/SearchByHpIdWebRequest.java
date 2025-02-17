@@ -43,7 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.openapitools.client.JSON;
+import in.docq.abha.rest.client.JSON;
 
 /**
  * SearchByHpIdWebRequest

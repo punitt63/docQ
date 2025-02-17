@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 public class AbhaRestClientConfiguration {
 
     public ApiClient abhaApiClient() {
-        return new ApiClient(new OkHttpClient())
+        return new ApiClient(new OkHttpClient());
     }
 
 }

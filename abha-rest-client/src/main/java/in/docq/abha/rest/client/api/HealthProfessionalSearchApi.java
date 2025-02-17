@@ -200,7 +200,7 @@ public class HealthProfessionalSearchApi {
 
         okhttp3.Call localVarCall = searchUserAccountHFRValidateBeforeCall(searchByHprIdRequest, _callback);
         Type localVarReturnType = new TypeToken<SearchAccountHFRResponse>(){}.getType();
-        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType);
         return localVarCall;
     }
     /**
@@ -339,7 +339,7 @@ public class HealthProfessionalSearchApi {
 
         okhttp3.Call localVarCall = searchUserByAccountValidateBeforeCall(searchByHprIdRequest, _callback);
         Type localVarReturnType = new TypeToken<SearchAccountWebResponse>(){}.getType();
-        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType);
         return localVarCall;
     }
     /**
@@ -478,7 +478,7 @@ public class HealthProfessionalSearchApi {
 
         okhttp3.Call localVarCall = searchUserByOtherDocAccountValidateBeforeCall(searchByHprIdRequest, _callback);
         Type localVarReturnType = new TypeToken<SearchAccountWebResponse>(){}.getType();
-        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType);
         return localVarCall;
     }
     /**
@@ -617,7 +617,7 @@ public class HealthProfessionalSearchApi {
 
         okhttp3.Call localVarCall = searchUserByUseridValidateBeforeCall(searchByHprIdRequest, _callback);
         Type localVarReturnType = new TypeToken<String>(){}.getType();
-        return localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback)
+        return localVarApiClient.executeAsync(localVarCall, localVarReturnType)
                 .thenApply(verdict -> verdict.equals("true"));
     }
 
@@ -757,7 +757,7 @@ public class HealthProfessionalSearchApi {
 
         okhttp3.Call localVarCall = searchUserForLoginValidateBeforeCall(searchByHpIdWebRequest, _callback);
         Type localVarReturnType = new TypeToken<SearchAccountWebResponse>(){}.getType();
-        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType);
         return localVarCall;
     }
 }
