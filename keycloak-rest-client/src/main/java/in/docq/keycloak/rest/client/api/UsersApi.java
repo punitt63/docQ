@@ -13,14 +13,7 @@
 
 package in.docq.keycloak.rest.client.api;
 
-import in.docq.keycloak.rest.client.ApiCallback;
-import in.docq.keycloak.rest.client.ApiClient;
-import in.docq.keycloak.rest.client.ApiException;
-import in.docq.keycloak.rest.client.ApiResponse;
-import in.docq.keycloak.rest.client.Configuration;
-import in.docq.keycloak.rest.client.Pair;
-import in.docq.keycloak.rest.client.ProgressRequestBody;
-import in.docq.keycloak.rest.client.ProgressResponseBody;
+import in.docq.keycloak.rest.client.*;
 
 import com.google.gson.reflect.TypeToken;
 
@@ -38,6 +31,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
 
 public class UsersApi {
     private ApiClient localVarApiClient;
@@ -294,7 +289,7 @@ public class UsersApi {
         <tr><td> 200 </td><td> OK </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call adminRealmsRealmUsersGetCall(String realm, Boolean briefRepresentation, String email, Boolean emailVerified, Boolean enabled, Boolean exact, Integer first, String firstName, String idpAlias, String idpUserId, String lastName, Integer max, String q, String search, String username, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call adminRealmsRealmUsersGetCall(String token, String realm, Boolean briefRepresentation, String email, Boolean emailVerified, Boolean enabled, Boolean exact, Integer first, String firstName, String idpAlias, String idpUserId, String lastName, Integer max, String q, String search, String username, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -389,6 +384,7 @@ public class UsersApi {
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
         if (localVarContentType != null) {
             localVarHeaderParams.put("Content-Type", localVarContentType);
+            localVarHeaderParams.put("Authorization", "Bearer " + token);
         }
 
         String[] localVarAuthNames = new String[] {  };
@@ -396,79 +392,14 @@ public class UsersApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call adminRealmsRealmUsersGetValidateBeforeCall(String realm, Boolean briefRepresentation, String email, Boolean emailVerified, Boolean enabled, Boolean exact, Integer first, String firstName, String idpAlias, String idpUserId, String lastName, Integer max, String q, String search, String username, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call adminRealmsRealmUsersGetValidateBeforeCall(String token, String realm, Boolean briefRepresentation, String email, Boolean emailVerified, Boolean enabled, Boolean exact, Integer first, String firstName, String idpAlias, String idpUserId, String lastName, Integer max, String q, String search, String username, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'realm' is set
         if (realm == null) {
             throw new ApiException("Missing the required parameter 'realm' when calling adminRealmsRealmUsersGet(Async)");
         }
 
-        return adminRealmsRealmUsersGetCall(realm, briefRepresentation, email, emailVerified, enabled, exact, first, firstName, idpAlias, idpUserId, lastName, max, q, search, username, _callback);
+        return adminRealmsRealmUsersGetCall(token, realm, briefRepresentation, email, emailVerified, enabled, exact, first, firstName, idpAlias, idpUserId, lastName, max, q, search, username, _callback);
 
-    }
-
-    /**
-     * Get users Returns a stream of users, filtered according to query parameters.
-     * 
-     * @param realm realm name (not id!) (required)
-     * @param briefRepresentation Boolean which defines whether brief representations are returned (default: false) (optional)
-     * @param email A String contained in email, or the complete email, if param \&quot;exact\&quot; is true (optional)
-     * @param emailVerified whether the email has been verified (optional)
-     * @param enabled Boolean representing if user is enabled or not (optional)
-     * @param exact Boolean which defines whether the params \&quot;last\&quot;, \&quot;first\&quot;, \&quot;email\&quot; and \&quot;username\&quot; must match exactly (optional)
-     * @param first Pagination offset (optional)
-     * @param firstName A String contained in firstName, or the complete firstName, if param \&quot;exact\&quot; is true (optional)
-     * @param idpAlias The alias of an Identity Provider linked to the user (optional)
-     * @param idpUserId The userId at an Identity Provider linked to the user (optional)
-     * @param lastName A String contained in lastName, or the complete lastName, if param \&quot;exact\&quot; is true (optional)
-     * @param max Maximum results size (defaults to 100) (optional)
-     * @param q A query to search for custom attributes, in the format &#39;key1:value2 key2:value2&#39; (optional)
-     * @param search A String contained in username, first or last name, or email. Default search behavior is prefix-based (e.g., foo or foo*). Use *foo* for infix search and \&quot;foo\&quot; for exact search. (optional)
-     * @param username A String contained in username, or the complete username, if param \&quot;exact\&quot; is true (optional)
-     * @return List&lt;UserRepresentation&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table border="1">
-       <caption>Response Details</caption>
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> OK </td><td>  -  </td></tr>
-     </table>
-     */
-    public List<UserRepresentation> adminRealmsRealmUsersGet(String realm, Boolean briefRepresentation, String email, Boolean emailVerified, Boolean enabled, Boolean exact, Integer first, String firstName, String idpAlias, String idpUserId, String lastName, Integer max, String q, String search, String username) throws ApiException {
-        ApiResponse<List<UserRepresentation>> localVarResp = adminRealmsRealmUsersGetWithHttpInfo(realm, briefRepresentation, email, emailVerified, enabled, exact, first, firstName, idpAlias, idpUserId, lastName, max, q, search, username);
-        return localVarResp.getData();
-    }
-
-    /**
-     * Get users Returns a stream of users, filtered according to query parameters.
-     * 
-     * @param realm realm name (not id!) (required)
-     * @param briefRepresentation Boolean which defines whether brief representations are returned (default: false) (optional)
-     * @param email A String contained in email, or the complete email, if param \&quot;exact\&quot; is true (optional)
-     * @param emailVerified whether the email has been verified (optional)
-     * @param enabled Boolean representing if user is enabled or not (optional)
-     * @param exact Boolean which defines whether the params \&quot;last\&quot;, \&quot;first\&quot;, \&quot;email\&quot; and \&quot;username\&quot; must match exactly (optional)
-     * @param first Pagination offset (optional)
-     * @param firstName A String contained in firstName, or the complete firstName, if param \&quot;exact\&quot; is true (optional)
-     * @param idpAlias The alias of an Identity Provider linked to the user (optional)
-     * @param idpUserId The userId at an Identity Provider linked to the user (optional)
-     * @param lastName A String contained in lastName, or the complete lastName, if param \&quot;exact\&quot; is true (optional)
-     * @param max Maximum results size (defaults to 100) (optional)
-     * @param q A query to search for custom attributes, in the format &#39;key1:value2 key2:value2&#39; (optional)
-     * @param search A String contained in username, first or last name, or email. Default search behavior is prefix-based (e.g., foo or foo*). Use *foo* for infix search and \&quot;foo\&quot; for exact search. (optional)
-     * @param username A String contained in username, or the complete username, if param \&quot;exact\&quot; is true (optional)
-     * @return ApiResponse&lt;List&lt;UserRepresentation&gt;&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table border="1">
-       <caption>Response Details</caption>
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> OK </td><td>  -  </td></tr>
-     </table>
-     */
-    public ApiResponse<List<UserRepresentation>> adminRealmsRealmUsersGetWithHttpInfo(String realm, Boolean briefRepresentation, String email, Boolean emailVerified, Boolean enabled, Boolean exact, Integer first, String firstName, String idpAlias, String idpUserId, String lastName, Integer max, String q, String search, String username) throws ApiException {
-        okhttp3.Call localVarCall = adminRealmsRealmUsersGetValidateBeforeCall(realm, briefRepresentation, email, emailVerified, enabled, exact, first, firstName, idpAlias, idpUserId, lastName, max, q, search, username, null);
-        Type localVarReturnType = new TypeToken<List<UserRepresentation>>(){}.getType();
-        return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
     /**
@@ -499,12 +430,17 @@ public class UsersApi {
         <tr><td> 200 </td><td> OK </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call adminRealmsRealmUsersGetAsync(String realm, Boolean briefRepresentation, String email, Boolean emailVerified, Boolean enabled, Boolean exact, Integer first, String firstName, String idpAlias, String idpUserId, String lastName, Integer max, String q, String search, String username, final ApiCallback<List<UserRepresentation>> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = adminRealmsRealmUsersGetValidateBeforeCall(realm, briefRepresentation, email, emailVerified, enabled, exact, first, firstName, idpAlias, idpUserId, lastName, max, q, search, username, _callback);
-        Type localVarReturnType = new TypeToken<List<UserRepresentation>>(){}.getType();
-        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
-        return localVarCall;
+    public CompletionStage<List<UserRepresentation>> adminRealmsRealmUsersGetAsync(String token, String realm, Boolean briefRepresentation, String email, Boolean emailVerified, Boolean enabled, Boolean exact, Integer first, String firstName, String idpAlias, String idpUserId, String lastName, Integer max, String q, String search, String username) {
+        try {
+            FutureApiCallBack<List<UserRepresentation>> futureAPICallback = FutureApiCallBack.newCallback();
+            okhttp3.Call localVarCall = adminRealmsRealmUsersGetValidateBeforeCall(token, realm, briefRepresentation, email, emailVerified, enabled, exact, first, firstName, idpAlias, idpUserId, lastName, max, q, search, username, futureAPICallback);
+            Type localVarReturnType = new TypeToken<List<UserRepresentation>>() {
+            }.getType();
+            localVarApiClient.executeAsync(localVarCall, localVarReturnType, futureAPICallback);
+            return futureAPICallback.getFuture();
+        } catch (Exception e) {
+            throw new CompletionException(e);
+        }
     }
     /**
      * Build call for adminRealmsRealmUsersPost
@@ -520,7 +456,7 @@ public class UsersApi {
         <tr><td> 200 </td><td> OK </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call adminRealmsRealmUsersPostCall(String realm, UserRepresentation userRepresentation, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call adminRealmsRealmUsersPostCall(String bearerToken, String realm, UserRepresentation userRepresentation, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -559,6 +495,7 @@ public class UsersApi {
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
         if (localVarContentType != null) {
             localVarHeaderParams.put("Content-Type", localVarContentType);
+            localVarHeaderParams.put("Authorization", "Bearer " + bearerToken);
         }
 
         String[] localVarAuthNames = new String[] {  };
@@ -566,50 +503,14 @@ public class UsersApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call adminRealmsRealmUsersPostValidateBeforeCall(String realm, UserRepresentation userRepresentation, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call adminRealmsRealmUsersPostValidateBeforeCall(String bearerToken, String realm, UserRepresentation userRepresentation, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'realm' is set
         if (realm == null) {
             throw new ApiException("Missing the required parameter 'realm' when calling adminRealmsRealmUsersPost(Async)");
         }
 
-        return adminRealmsRealmUsersPostCall(realm, userRepresentation, _callback);
+        return adminRealmsRealmUsersPostCall(bearerToken, realm, userRepresentation, _callback);
 
-    }
-
-    /**
-     * Create a new user Username must be unique.
-     * 
-     * @param realm realm name (not id!) (required)
-     * @param userRepresentation  (optional)
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table border="1">
-       <caption>Response Details</caption>
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> OK </td><td>  -  </td></tr>
-     </table>
-     */
-    public void adminRealmsRealmUsersPost(String realm, UserRepresentation userRepresentation) throws ApiException {
-        adminRealmsRealmUsersPostWithHttpInfo(realm, userRepresentation);
-    }
-
-    /**
-     * Create a new user Username must be unique.
-     * 
-     * @param realm realm name (not id!) (required)
-     * @param userRepresentation  (optional)
-     * @return ApiResponse&lt;Void&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table border="1">
-       <caption>Response Details</caption>
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> OK </td><td>  -  </td></tr>
-     </table>
-     */
-    public ApiResponse<Void> adminRealmsRealmUsersPostWithHttpInfo(String realm, UserRepresentation userRepresentation) throws ApiException {
-        okhttp3.Call localVarCall = adminRealmsRealmUsersPostValidateBeforeCall(realm, userRepresentation, null);
-        return localVarApiClient.execute(localVarCall);
     }
 
     /**
@@ -617,7 +518,6 @@ public class UsersApi {
      * 
      * @param realm realm name (not id!) (required)
      * @param userRepresentation  (optional)
-     * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
      * @http.response.details
@@ -627,12 +527,17 @@ public class UsersApi {
         <tr><td> 200 </td><td> OK </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call adminRealmsRealmUsersPostAsync(String realm, UserRepresentation userRepresentation, final ApiCallback<Void> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = adminRealmsRealmUsersPostValidateBeforeCall(realm, userRepresentation, _callback);
-        localVarApiClient.executeAsync(localVarCall, _callback);
-        return localVarCall;
+    public CompletionStage<Void> adminRealmsRealmUsersPostAsync(String bearerToken, String realm, UserRepresentation userRepresentation)  {
+        try {
+            FutureApiCallBack<Void> futureAPICallback = FutureApiCallBack.newCallback();
+            okhttp3.Call localVarCall = adminRealmsRealmUsersPostValidateBeforeCall(bearerToken, realm, userRepresentation, futureAPICallback);
+            localVarApiClient.executeAsync(localVarCall, futureAPICallback);
+            return futureAPICallback.getFuture();
+        } catch (Exception e) {
+            throw new CompletionException(e);
+        }
     }
+
     /**
      * Build call for adminRealmsRealmUsersProfileGet
      * @param realm realm name (not id!) (required)
@@ -3088,47 +2993,6 @@ public class UsersApi {
     }
 
     /**
-     * Get representation of the user
-     * 
-     * @param realm realm name (not id!) (required)
-     * @param userId  (required)
-     * @param userProfileMetadata Indicates if the user profile metadata should be added to the response (optional)
-     * @return UserRepresentation
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table border="1">
-       <caption>Response Details</caption>
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> OK </td><td>  -  </td></tr>
-     </table>
-     */
-    public UserRepresentation adminRealmsRealmUsersUserIdGet(String realm, String userId, Boolean userProfileMetadata) throws ApiException {
-        ApiResponse<UserRepresentation> localVarResp = adminRealmsRealmUsersUserIdGetWithHttpInfo(realm, userId, userProfileMetadata);
-        return localVarResp.getData();
-    }
-
-    /**
-     * Get representation of the user
-     * 
-     * @param realm realm name (not id!) (required)
-     * @param userId  (required)
-     * @param userProfileMetadata Indicates if the user profile metadata should be added to the response (optional)
-     * @return ApiResponse&lt;UserRepresentation&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table border="1">
-       <caption>Response Details</caption>
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> OK </td><td>  -  </td></tr>
-     </table>
-     */
-    public ApiResponse<UserRepresentation> adminRealmsRealmUsersUserIdGetWithHttpInfo(String realm, String userId, Boolean userProfileMetadata) throws ApiException {
-        okhttp3.Call localVarCall = adminRealmsRealmUsersUserIdGetValidateBeforeCall(realm, userId, userProfileMetadata, null);
-        Type localVarReturnType = new TypeToken<UserRepresentation>(){}.getType();
-        return localVarApiClient.execute(localVarCall, localVarReturnType);
-    }
-
-    /**
      * Get representation of the user (asynchronously)
      * 
      * @param realm realm name (not id!) (required)
@@ -3144,12 +3008,17 @@ public class UsersApi {
         <tr><td> 200 </td><td> OK </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call adminRealmsRealmUsersUserIdGetAsync(String realm, String userId, Boolean userProfileMetadata, final ApiCallback<UserRepresentation> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = adminRealmsRealmUsersUserIdGetValidateBeforeCall(realm, userId, userProfileMetadata, _callback);
-        Type localVarReturnType = new TypeToken<UserRepresentation>(){}.getType();
+    public CompletionStage<UserRepresentation> adminRealmsRealmUsersUserIdGetAsync(String realm, String userId, Boolean userProfileMetadata, final ApiCallback<UserRepresentation> _callback) throws ApiException {
+        try {
+        FutureApiCallBack<UserRepresentation> futureAPICallback = FutureApiCallBack.newCallback();
+        okhttp3.Call localVarCall = adminRealmsRealmUsersUserIdGetValidateBeforeCall(realm, userId, userProfileMetadata, futureAPICallback);
+        Type localVarReturnType = new TypeToken<UserRepresentation>() {
+        }.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
-        return localVarCall;
+        return futureAPICallback.getFuture();
+        } catch (Exception e) {
+            throw new CompletionException(e);
+        }
     }
     /**
      * Build call for adminRealmsRealmUsersUserIdGroupsCountGet

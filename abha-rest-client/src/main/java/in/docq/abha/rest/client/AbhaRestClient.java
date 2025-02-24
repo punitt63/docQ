@@ -125,7 +125,12 @@ public class AbhaRestClient {
                 });
     }
 
-    public CompletionStage<Boolean> getHealthProfessionalExists(String healthProfessionalID) {
-        return healthProfessionalSearchApi.searchUserByUseridAsync(new SearchByHprIdRequest().hprId(healthProfessionalID));
+    public CompletionStage<Void> getHealthProfessionalExists(String healthProfessionalID) {
+        return healthProfessionalSearchApi.searchUserByUseridAsync(new SearchByHprIdRequest().idType("hpr_id").domainName("@hpr.abdm").hprId(healthProfessionalID))
+                .thenAccept(verdict -> {
+                    if(verdict.equals(Boolean.FALSE)) {
+                        throw new ApiException(404, "Health Professional ID " + healthProfessionalID + " Doesn't Exist");
+                    }
+                });
     }
 }

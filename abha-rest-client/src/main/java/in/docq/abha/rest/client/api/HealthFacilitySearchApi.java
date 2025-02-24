@@ -214,10 +214,12 @@ public class HealthFacilitySearchApi {
      */
     public CompletionStage<SearchForFacilitiesResponse> v15SearchFacilitiesFuzzyPostUsingPOSTAsync(String authorization, SearchForFacilitiesRequest body) {
         try {
-            okhttp3.Call localVarCall = v15SearchFacilitiesFuzzyPostUsingPOSTValidateBeforeCall(authorization, body, null);
+            FutureApiCallBack<SearchForFacilitiesResponse> callback = FutureApiCallBack.newCallback();
+            okhttp3.Call localVarCall = v15SearchFacilitiesFuzzyPostUsingPOSTValidateBeforeCall(authorization, body, callback);
             Type localVarReturnType = new TypeToken<SearchForFacilitiesResponse>() {
             }.getType();
-            return localVarApiClient.executeAsync(localVarCall, localVarReturnType);
+            localVarApiClient.executeAsync(localVarCall, localVarReturnType, callback);
+            return callback.getFuture();
         } catch (Exception e) {
         throw new CompletionException(e);
         }

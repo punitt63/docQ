@@ -1,0 +1,6 @@
+/spring-boot-commons/target/
+/rest-client-generator/target/
+/keycloak-rest-client/target/
+/health-facility/target/
+/abha-rest-client/target/
+/.idea/

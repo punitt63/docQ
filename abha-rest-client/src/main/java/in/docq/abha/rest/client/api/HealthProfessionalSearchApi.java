@@ -181,30 +181,6 @@ public class HealthProfessionalSearchApi {
     }
 
     /**
-     * Search a user by Healthcare Professional ID Number/Healthcare Professional ID. (asynchronously)
-     * ## Search a user by Healthcare Professional ID Number.  - Healthcare Professional ID need to pass in the request  ## Request below is the Request Parameters description   | Attributes | Description |  | ------ | ------ |  | hprId &lt;sup style&#x3D;&#39;color:red&#39;&gt;* required&lt;/sup&gt; | Healthcare Professional ID Number/Healthcare Professional ID |  ## &lt;b style&#x3D;&#39;color:red&#39;&gt;Note:&lt;/b&gt; - API is only Accessible for the &lt;b style&#x3D;&#39;color:black&#39;&gt;HFR&lt;/b&gt;. &lt;sup style&#x3D;&#39;color:red&#39;&gt;&#39;ACCOUNT_TAG_ADD&#39; role is mandatory for the API ACCESS.&lt;/sup&gt;
-     * @param searchByHprIdRequest  (required)
-     * @param _callback The callback to be executed when the API call finishes
-     * @return The request call
-     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
-     * @http.response.details
-     <table border="1">
-       <caption>Response Details</caption>
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 400 </td><td> Bad Request. Please provide valid request syntax </td><td>  -  </td></tr>
-        <tr><td> 200 </td><td> API will return the details of the accounts </td><td>  -  </td></tr>
-        <tr><td> 422 </td><td> Unprocessable Entity </td><td>  -  </td></tr>
-        <tr><td> 500 </td><td> Server encountered an unexpected condition that prevented it from fulfilling the request </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call searchUserAccountHFRAsync(SearchByHprIdRequest searchByHprIdRequest, final ApiCallback<SearchAccountHFRResponse> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = searchUserAccountHFRValidateBeforeCall(searchByHprIdRequest, _callback);
-        Type localVarReturnType = new TypeToken<SearchAccountHFRResponse>(){}.getType();
-        localVarApiClient.executeAsync(localVarCall, localVarReturnType);
-        return localVarCall;
-    }
-    /**
      * Build call for searchUserByAccount
      * @param searchByHprIdRequest  (required)
      * @param _callback Callback for upload/download progress
@@ -320,30 +296,6 @@ public class HealthProfessionalSearchApi {
     }
 
     /**
-     * Search a user by Healthcare Professional ID Number. (asynchronously)
-     * ## Search a user by Healthcare Professional ID Number.  - Healthcare Professional ID need to pass in the request  ## Request below is the Request Parameters description   | Attributes | Description |  | ------ | ------ |  | hprId &lt;sup style&#x3D;&#39;color:red&#39;&gt;* required&lt;/sup&gt; | Healthcare Professional ID Number/Healthcare Professional ID |
-     * @param searchByHprIdRequest  (required)
-     * @param _callback The callback to be executed when the API call finishes
-     * @return The request call
-     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
-     * @http.response.details
-     <table border="1">
-       <caption>Response Details</caption>
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 400 </td><td> Bad Request. Please provide valid request syntax </td><td>  -  </td></tr>
-        <tr><td> 422 </td><td> Unprocessable Entity </td><td>  -  </td></tr>
-        <tr><td> 200 </td><td> API will return the details of the accounts </td><td>  -  </td></tr>
-        <tr><td> 500 </td><td> Server encountered an unexpected condition that prevented it from fulfilling the request </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call searchUserByAccountAsync(SearchByHprIdRequest searchByHprIdRequest, final ApiCallback<SearchAccountWebResponse> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = searchUserByAccountValidateBeforeCall(searchByHprIdRequest, _callback);
-        Type localVarReturnType = new TypeToken<SearchAccountWebResponse>(){}.getType();
-        localVarApiClient.executeAsync(localVarCall, localVarReturnType);
-        return localVarCall;
-    }
-    /**
      * Build call for searchUserByOtherDocAccount
      * @param searchByHprIdRequest  (required)
      * @param _callback Callback for upload/download progress
@@ -458,30 +410,6 @@ public class HealthProfessionalSearchApi {
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    /**
-     * Search a user by Healthcare Professional ID Number. (asynchronously)
-     * ## Search a user by Healthcare Professional ID Number.  - Healthcare Professional ID need to pass in the request  ## Request below is the Request Parameters description   | Attributes | Description |  | ------ | ------ |  | hprId &lt;sup style&#x3D;&#39;color:red&#39;&gt;* required&lt;/sup&gt; | Healthcare Professional ID Number/Healthcare Professional ID |
-     * @param searchByHprIdRequest  (required)
-     * @param _callback The callback to be executed when the API call finishes
-     * @return The request call
-     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
-     * @http.response.details
-     <table border="1">
-       <caption>Response Details</caption>
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 400 </td><td> Bad Request. Please provide valid request syntax </td><td>  -  </td></tr>
-        <tr><td> 422 </td><td> Unprocessable Entity </td><td>  -  </td></tr>
-        <tr><td> 200 </td><td> API will return the details of the accounts </td><td>  -  </td></tr>
-        <tr><td> 500 </td><td> Server encountered an unexpected condition that prevented it from fulfilling the request </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call searchUserByOtherDocAccountAsync(SearchByHprIdRequest searchByHprIdRequest, final ApiCallback<SearchAccountWebResponse> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = searchUserByOtherDocAccountValidateBeforeCall(searchByHprIdRequest, _callback);
-        Type localVarReturnType = new TypeToken<SearchAccountWebResponse>(){}.getType();
-        localVarApiClient.executeAsync(localVarCall, localVarReturnType);
-        return localVarCall;
-    }
     /**
      * Build call for searchUserByUserid
      * @param searchByHprIdRequest  (required)
@@ -613,12 +541,18 @@ public class HealthProfessionalSearchApi {
         <tr><td> 500 </td><td> Server encountered an unexpected condition that prevented it from fulfilling the request </td><td>  -  </td></tr>
      </table>
      */
-    public CompletionStage<Boolean> searchUserByUseridAsync(SearchByHprIdRequest searchByHprIdRequest) throws ApiException {
+    public CompletionStage<Boolean> searchUserByUseridAsync(SearchByHprIdRequest searchByHprIdRequest) {
+        try {
+            FutureApiCallBack<String> callBack = FutureApiCallBack.newCallback();
+            okhttp3.Call localVarCall = searchUserByUseridValidateBeforeCall(searchByHprIdRequest, null);
+            Type localVarReturnType = new TypeToken<String>(){}.getType();
+            localVarApiClient.executeAsync(localVarCall, localVarReturnType, callBack);
+            return callBack.getFuture()
+                    .thenApply(verdict -> verdict.equals("true"));
+        } catch (Exception e) {
+            throw new CompletionException(e);
+        }
 
-        okhttp3.Call localVarCall = searchUserByUseridValidateBeforeCall(searchByHprIdRequest, null);
-        Type localVarReturnType = new TypeToken<String>(){}.getType();
-        return localVarApiClient.executeAsync(localVarCall, localVarReturnType)
-                .thenApply(verdict -> verdict.equals("true"));
     }
 
     /**
@@ -754,9 +688,11 @@ public class HealthProfessionalSearchApi {
      */
     public CompletionStage<SearchAccountWebResponse> searchUserForLoginAsync(SearchByHpIdWebRequest searchByHpIdWebRequest) {
     try {
-        okhttp3.Call localVarCall = searchUserForLoginValidateBeforeCall(searchByHpIdWebRequest, null);
+        FutureApiCallBack<SearchAccountWebResponse> callBack = FutureApiCallBack.newCallback();
+        okhttp3.Call localVarCall = searchUserForLoginValidateBeforeCall(searchByHpIdWebRequest, callBack);
         Type localVarReturnType = new TypeToken<SearchAccountWebResponse>(){}.getType();
-        return localVarApiClient.executeAsync(localVarCall, localVarReturnType);
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, callBack);
+        return callBack.getFuture();
     } catch (Exception e) {
         throw new CompletionException(e);
     }

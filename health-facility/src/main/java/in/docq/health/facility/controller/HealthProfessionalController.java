@@ -30,7 +30,7 @@ public class HealthProfessionalController {
     @Builder
     @Getter
     public static class OnBoardHealthProfessionalRequestBody {
-        private final String healthProfessionalID;
+        private final String abhaHealthProfessionalID;
         private final HealthProfessionalType type;
         private final String password;
     }

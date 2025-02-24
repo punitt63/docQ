@@ -232,10 +232,12 @@ public class GatewaySessionApi {
      */
     public CompletionStage<ApiHiecmGatewayV3SessionsPost200Response> apiHiecmGatewayV3SessionsPostAsync(String TIMESTAMP, String REQUEST_ID, String X_CM_ID, ApiHiecmGatewayV3SessionsPostRequest apiHiecmGatewayV3SessionsPostRequest) {
         try {
+            FutureApiCallBack<ApiHiecmGatewayV3SessionsPost200Response> callBack = FutureApiCallBack.newCallback();
             okhttp3.Call localVarCall = apiHiecmGatewayV3SessionsPostValidateBeforeCall(TIMESTAMP, REQUEST_ID, X_CM_ID, apiHiecmGatewayV3SessionsPostRequest, null);
             Type localVarReturnType = new TypeToken<ApiHiecmGatewayV3SessionsPost200Response>() {
             }.getType();
-            return localVarApiClient.executeAsync(localVarCall, localVarReturnType);
+            localVarApiClient.executeAsync(localVarCall, localVarReturnType, callBack);
+            return callBack.getFuture();
         } catch (Exception e) {
             throw new CompletionException(e);
         }

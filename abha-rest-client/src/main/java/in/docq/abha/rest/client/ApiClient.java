@@ -1079,12 +1079,11 @@ public class ApiClient {
      * @see #execute(Call, Type)
      */
     @SuppressWarnings("unchecked")
-    public <T> CompletionStage<T> executeAsync(Call call, final Type returnType) {
-        CompletableFuture<T> future = new CompletableFuture<>();
+    public <T> void executeAsync(Call call, final Type returnType, final ApiCallback<T> callback) {
         call.enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                future.completeExceptionally(new ApiException(e));
+                callback.onFailure(new ApiException(e), 0, null);
             }
 
             @Override
@@ -1093,16 +1092,15 @@ public class ApiClient {
                 try {
                     result = (T) handleResponse(response, returnType);
                 } catch (ApiException e) {
-                    future.completeExceptionally(new ApiException(e));
+                    callback.onFailure(e, response.code(), response.headers().toMultimap());
                     return;
                 } catch (Exception e) {
-                    future.completeExceptionally(new ApiException(e));
+                    callback.onFailure(new ApiException(e), response.code(), response.headers().toMultimap());
                     return;
                 }
-                future.complete(result);
+                callback.onSuccess(result, response.code(), response.headers().toMultimap());
             }
         });
-        return future;
     }
 
     /**
