@@ -46,7 +46,7 @@ public class AbhaRestClient {
                 .initialCapacity(1000)
                 .maximumSize(10000)
                 .build();
-        eagerInitiateToken();
+        //eagerInitiateToken();
     }
 
     private void eagerInitiateToken() {

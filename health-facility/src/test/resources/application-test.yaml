@@ -1,0 +1,73 @@
+management:
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true
+      percentiles:
+        http:
+          server:
+            requests: 0.5,0.95,0.99,0.999
+  endpoints:
+    prometheus:
+      enabled: true
+    web:
+      base-path: /
+      exposure:
+        include: health,prometheus
+      path-mapping:
+        health: 'actuator/health'
+
+spring:
+  application:
+    name: health-facility
+  jmx:
+    enabled: false
+  data:
+    jpa:
+      repositories:
+        bootstrap-mode: deferred
+  main:
+    allow-bean-definition-overriding: true
+  mvc:
+    converters:
+      preferred-json-mapper: gson
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    url: jdbc:postgresql://localhost:5432/health_facility
+    username: docq
+    password: docq
+    driver: 'org.postgresql.Driver'
+    poolSize: 20
+    timeout: 2000
+    hikari:
+      pool-name: Hikari
+      connection-timeout: 2000
+      maximum-pool-size: 20
+      auto-commit: false
+      connection-test-query: select 1
+      idle-timeout: 90000
+
+server:
+  port: 9097
+  servlet:
+    session:
+      cookie:
+        http-only: true
+    context-path: /
+
+abha:
+  client:
+    id: test-abha-client-id
+    secret: test-secret
+  base:
+    url: http://localhost:8080/api/
+
+keycloak:
+  realm: health-facility
+  base:
+    url: http://localhost:8080
+  client:
+    id: health-facility-backend-app
+    secret: HawrOyLL9uSdIKAbyrwEhz1agvcudSog

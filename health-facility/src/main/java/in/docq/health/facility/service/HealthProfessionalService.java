@@ -26,13 +26,17 @@ public class HealthProfessionalService {
 
     public CompletionStage<Void> onBoard(String healthFacilityID, HealthProfessionalController.OnBoardHealthProfessionalRequestBody onBoardHealthProfessionalRequestBody) {
         HealthProfessional healthProfessional = HealthProfessional.builder()
-                .abhaID(onBoardHealthProfessionalRequestBody.getAbhaHealthProfessionalID())
-                .abhaHealthFacilityID(healthFacilityID)
+                .id(onBoardHealthProfessionalRequestBody.getHealthProfessionalID())
+                .healthFacilityID(healthFacilityID)
                 .type(onBoardHealthProfessionalRequestBody.getType())
                 .build();
         return abhaRestClient.getHealthFacility(healthFacilityID)
-                .thenCompose(ignore -> abhaRestClient.getHealthProfessionalExists(onBoardHealthProfessionalRequestBody.getAbhaHealthProfessionalID()))
+                .thenCompose(ignore -> abhaRestClient.getHealthProfessionalExists(onBoardHealthProfessionalRequestBody.getHealthProfessionalID()))
                 .thenCompose(ignore -> keyCloakRestClient.createUserIfNotExists(healthProfessional.getKeyCloakUserName(), onBoardHealthProfessionalRequestBody.getPassword(), List.of(healthProfessional.getKeycloakRole())))
-                .thenCompose(ignore -> healthProfessionalDao.insert(healthFacilityID, onBoardHealthProfessionalRequestBody.getAbhaHealthProfessionalID(), onBoardHealthProfessionalRequestBody.getType()));
+                .thenCompose(ignore -> healthProfessionalDao.insert(healthFacilityID, onBoardHealthProfessionalRequestBody.getHealthProfessionalID(), healthProfessional.getType()));
+    }
+
+    public CompletionStage<HealthProfessional> get(String healthFacilityID, String healthProfessionalID) {
+        return healthProfessionalDao.get(healthFacilityID, healthProfessionalID);
     }
 }

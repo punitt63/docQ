@@ -66,9 +66,7 @@ public class KeyCloakRestClient {
     }
 
     private String getCachedAccessToken() {
-        String accessToken = tokenCache.getIfPresent(accessTokenCacheKey);
-        checkState(accessToken != null, "access token in cache is null");
-        return accessToken;
+        return tokenCache.getIfPresent(accessTokenCacheKey);
     }
 
     public CompletionStage<Void> createUser(String userName, String password) {

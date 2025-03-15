@@ -28,6 +28,7 @@ public class ApiException extends Exception {
     private int code = 0;
     private Map<String, List<String>> responseHeaders = null;
     private String responseBody = null;
+    private String request;
 
     /**
      * <p>Constructor for ApiException.</p>
@@ -61,11 +62,12 @@ public class ApiException extends Exception {
      * @param responseHeaders a {@link Map} of HTTP response headers
      * @param responseBody the response body
      */
-    public ApiException(String message, Throwable throwable, int code, Map<String, List<String>> responseHeaders, String responseBody) {
+    public ApiException(String message, Throwable throwable, int code, Map<String, List<String>> responseHeaders, String responseBody, String request) {
         super(message, throwable);
         this.code = code;
         this.responseHeaders = responseHeaders;
         this.responseBody = responseBody;
+        this.request = request;
     }
 
     /**
@@ -76,8 +78,8 @@ public class ApiException extends Exception {
      * @param responseHeaders a {@link Map} of HTTP response headers
      * @param responseBody the response body
      */
-    public ApiException(String message, int code, Map<String, List<String>> responseHeaders, String responseBody) {
-        this(message, (Throwable) null, code, responseHeaders, responseBody);
+    public ApiException(String message, int code, Map<String, List<String>> responseHeaders, String responseBody, String request) {
+        this(message, (Throwable) null, code, responseHeaders, responseBody, request);
     }
 
     /**
@@ -88,8 +90,8 @@ public class ApiException extends Exception {
      * @param code HTTP status code
      * @param responseHeaders a {@link Map} of HTTP response headers
      */
-    public ApiException(String message, Throwable throwable, int code, Map<String, List<String>> responseHeaders) {
-        this(message, throwable, code, responseHeaders, null);
+    public ApiException(String message, Throwable throwable, int code, Map<String, List<String>> responseHeaders, String request) {
+        this(message, throwable, code, responseHeaders, null, request);
     }
 
     /**
@@ -128,6 +130,10 @@ public class ApiException extends Exception {
         this.responseBody = responseBody;
     }
 
+    public String getRequest() {
+        return request;
+    }
+
     /**
      * Get the HTTP status code.
      *
@@ -161,7 +167,7 @@ public class ApiException extends Exception {
      * @return The exception message
      */
     public String getMessage() {
-        return String.format("Message: %s%nHTTP response code: %s%nHTTP response body: %s%nHTTP response headers: %s",
+        return String.format("Request: %s%nMessage: %s%nHTTP response code: %s%nHTTP response body: %s%nHTTP response headers: %s", this.getRequest(),
                 super.getMessage(), this.getCode(), this.getResponseBody(), this.getResponseHeaders());
     }
 }

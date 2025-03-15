@@ -892,7 +892,7 @@ public class ApiClient {
      *   or the Content-Type of the response is not supported.
      */
     @SuppressWarnings("unchecked")
-    public <T> T deserialize(Response response, Type returnType) throws ApiException {
+    public <T> T deserialize(Response response, Type returnType, String request) throws ApiException {
         if (response == null || returnType == null) {
             return null;
         }
@@ -938,7 +938,7 @@ public class ApiClient {
                     "Content type \"" + contentType + "\" is not supported for type: " + returnType,
                     response.code(),
                     response.headers().toMultimap(),
-                    respBody);
+                    respBody, request);
         }
     }
 
@@ -1063,7 +1063,7 @@ public class ApiClient {
     public <T> ApiResponse<T> execute(Call call, Type returnType) throws ApiException {
         try {
             Response response = call.execute();
-            T data = handleResponse(response, returnType);
+            T data = handleResponse(response, returnType, call.request().toString());
             return new ApiResponse<T>(response.code(), response.headers().toMultimap(), data);
         } catch (IOException e) {
             throw new ApiException(e);
@@ -1102,7 +1102,7 @@ public class ApiClient {
             public void onResponse(Call call, Response response) throws IOException {
                 T result;
                 try {
-                    result = (T) handleResponse(response, returnType);
+                    result = (T) handleResponse(response, returnType, call.request().toString());
                 } catch (ApiException e) {
                     callback.onFailure(e, response.code(), response.headers().toMultimap());
                     return;
@@ -1125,7 +1125,7 @@ public class ApiClient {
      * @throws ApiException If the response has an unsuccessful status code or
      *                      fail to deserialize the response body
      */
-    public <T> T handleResponse(Response response, Type returnType) throws ApiException {
+    public <T> T handleResponse(Response response, Type returnType, String request) throws ApiException {
         if (response.isSuccessful()) {
             if (returnType == null || response.code() == 204) {
                 // returning null if the returnType is not defined,
@@ -1134,12 +1134,12 @@ public class ApiClient {
                     try {
                         response.body().close();
                     } catch (Exception e) {
-                        throw new ApiException(response.message(), e, response.code(), response.headers().toMultimap());
+                        throw new ApiException(response.message(), e, response.code(), response.headers().toMultimap(), request);
                     }
                 }
                 return null;
             } else {
-                return deserialize(response, returnType);
+                return deserialize(response, returnType, request);
             }
         } else {
             String respBody = null;
@@ -1147,10 +1147,10 @@ public class ApiClient {
                 try {
                     respBody = response.body().string();
                 } catch (IOException e) {
-                    throw new ApiException(response.message(), e, response.code(), response.headers().toMultimap());
+                    throw new ApiException(response.message(), e, response.code(), response.headers().toMultimap(), request);
                 }
             }
-            throw new ApiException(response.message(), response.code(), response.headers().toMultimap(), respBody);
+            throw new ApiException(response.message(), response.code(), response.headers().toMultimap(), respBody, request);
         }
     }
 
