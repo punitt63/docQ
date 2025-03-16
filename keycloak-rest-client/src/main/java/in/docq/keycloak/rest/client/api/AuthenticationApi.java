@@ -17,10 +17,9 @@ import in.docq.keycloak.rest.client.*;
 
 import com.google.gson.reflect.TypeToken;
 
-import java.io.IOException;
-
 
 import in.docq.keycloak.rest.client.model.GetAccessToken200Response;
+import in.docq.keycloak.rest.client.model.Permission;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -69,7 +68,7 @@ public class AuthenticationApi {
 
     /**
      * Build call for getAccessToken
-     * @param grantType The grant type for the token request (required)
+     * @param realm The realm for the token request (required)
      * @param clientId The client identifier (required)
      * @param clientSecret The client secret (required)
      * @param _callback Callback for upload/download progress
@@ -84,7 +83,7 @@ public class AuthenticationApi {
         <tr><td> 401 </td><td> Unauthorized - invalid credentials </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call getAccessTokenCall(String grantType, String clientId, String clientSecret, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call getServiceAccountAccessTokenCall(String realm, String clientId, String clientSecret, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -101,7 +100,8 @@ public class AuthenticationApi {
         Object localVarPostBody = null;
 
         // create path and map variables
-        String localVarPath = "/realms/health-facility/protocol/openid-connect/token";
+        String localVarPath = "/realms/{realm}/protocol/openid-connect/token"
+                .replace("{" + "realm" + "}", localVarApiClient.escapeString(realm.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -109,9 +109,7 @@ public class AuthenticationApi {
         Map<String, String> localVarCookieParams = new HashMap<String, String>();
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
-        if (grantType != null) {
-            localVarFormParams.put("grant_type", grantType);
-        }
+        localVarFormParams.put("grant_type", "client_credentials");
 
         if (clientId != null) {
             localVarFormParams.put("client_id", clientId);
@@ -141,12 +139,187 @@ public class AuthenticationApi {
         return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
-    @SuppressWarnings("rawtypes")
-    private okhttp3.Call getAccessTokenValidateBeforeCall(String grantType, String clientId, String clientSecret, final ApiCallback _callback) throws ApiException {
-        // verify the required parameter 'grantType' is set
-        if (grantType == null) {
-            throw new ApiException("Missing the required parameter 'grantType' when calling getAccessToken(Async)");
+    public okhttp3.Call getUserAccessTokenCall(String realm, String userName, String password, String clientId, String clientSecret, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
         }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/realms/{realm}/protocol/openid-connect/token"
+                .replace("{" + "realm" + "}", localVarApiClient.escapeString(realm.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        localVarFormParams.put("grant_type", "password");
+
+        if (userName != null) {
+            localVarFormParams.put("username", userName);
+        }
+
+        if (password != null) {
+            localVarFormParams.put("password", password);
+        }
+
+        if (clientId != null) {
+            localVarFormParams.put("client_id", clientId);
+        }
+
+        if (clientSecret != null) {
+            localVarFormParams.put("client_secret", clientSecret);
+        }
+
+        final String[] localVarAccepts = {
+                "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+                "application/x-www-form-urlencoded"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] {  };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    public okhttp3.Call getRefreshUserAccessTokenCall(String realm, String refreshToken, String clientId, String clientSecret, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/realms/{realm}/protocol/openid-connect/token"
+                .replace("{" + "realm" + "}", localVarApiClient.escapeString(realm.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        localVarFormParams.put("grant_type", "refresh_token");
+
+        if (refreshToken != null) {
+            localVarFormParams.put("refresh_token", refreshToken);
+        }
+
+        if (clientId != null) {
+            localVarFormParams.put("client_id", clientId);
+        }
+
+        if (clientSecret != null) {
+            localVarFormParams.put("client_secret", clientSecret);
+        }
+
+        final String[] localVarAccepts = {
+                "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+                "application/x-www-form-urlencoded"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] {  };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    public okhttp3.Call getUserPermissionsCall(String realm, String token, String clientId, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/realms/{realm}/protocol/openid-connect/token"
+                .replace("{" + "realm" + "}", localVarApiClient.escapeString(realm.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        localVarFormParams.put("grant_type", "urn:ietf:params:oauth:grant-type:uma-ticket");
+        localVarFormParams.put("response_mode", "permissions");
+
+        if (clientId != null) {
+            localVarFormParams.put("audience", clientId);
+        }
+
+
+        final String[] localVarAccepts = {
+                "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+                "application/x-www-form-urlencoded"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+            localVarHeaderParams.put("Authorization", "Bearer " + token);
+        }
+
+        String[] localVarAuthNames = new String[] {  };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call getServiceAccountAccessTokenValidateBeforeCall(String realm, String clientId, String clientSecret, final ApiCallback _callback) throws ApiException {
 
         // verify the required parameter 'clientId' is set
         if (clientId == null) {
@@ -158,7 +331,50 @@ public class AuthenticationApi {
             throw new ApiException("Missing the required parameter 'clientSecret' when calling getAccessToken(Async)");
         }
 
-        return getAccessTokenCall(grantType, clientId, clientSecret, _callback);
+        return getServiceAccountAccessTokenCall(realm, clientId, clientSecret, _callback);
+
+    }
+
+    private okhttp3.Call getUserAccessTokenValidateBeforeCall(String realm, String userName, String password, String clientId, String clientSecret, final ApiCallback _callback) throws ApiException {
+
+        // verify the required parameter 'clientId' is set
+        if (clientId == null) {
+            throw new ApiException("Missing the required parameter 'clientId' when calling getAccessToken(Async)");
+        }
+
+        // verify the required parameter 'clientSecret' is set
+        if (clientSecret == null) {
+            throw new ApiException("Missing the required parameter 'clientSecret' when calling getAccessToken(Async)");
+        }
+
+        return getUserAccessTokenCall(realm, userName, password, clientId, clientSecret, _callback);
+
+    }
+
+    private okhttp3.Call getRefreshUserAccessTokenValidateBeforeCall(String realm, String refreshToken, String clientId, String clientSecret, final ApiCallback _callback) throws ApiException {
+
+        // verify the required parameter 'clientId' is set
+        if (clientId == null) {
+            throw new ApiException("Missing the required parameter 'clientId' when calling getAccessToken(Async)");
+        }
+
+        // verify the required parameter 'clientSecret' is set
+        if (clientSecret == null) {
+            throw new ApiException("Missing the required parameter 'clientSecret' when calling getAccessToken(Async)");
+        }
+
+        return getRefreshUserAccessTokenCall(realm, refreshToken, clientId, clientSecret, _callback);
+
+    }
+
+    private okhttp3.Call getUserPermissionsValidateBeforeCall(String realm, String token, String clientId, final ApiCallback _callback) throws ApiException {
+
+        // verify the required parameter 'clientId' is set
+        if (clientId == null) {
+            throw new ApiException("Missing the required parameter 'clientId' when calling getAccessToken(Async)");
+        }
+
+        return getUserPermissionsCall(realm, token, clientId, _callback);
 
     }
 
@@ -187,7 +403,7 @@ public class AuthenticationApi {
     /**
      * Obtain access token
      * Get an access token using client credentials grant type
-     * @param grantType The grant type for the token request (required)
+     * @param realm The realm for the token request (required)
      * @param clientId The client identifier (required)
      * @param clientSecret The client secret (required)
      * @return ApiResponse&lt;GetAccessToken200Response&gt;
@@ -201,8 +417,8 @@ public class AuthenticationApi {
         <tr><td> 401 </td><td> Unauthorized - invalid credentials </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<GetAccessToken200Response> getAccessTokenWithHttpInfo(String grantType, String clientId, String clientSecret) throws ApiException {
-        okhttp3.Call localVarCall = getAccessTokenValidateBeforeCall(grantType, clientId, clientSecret, null);
+    public ApiResponse<GetAccessToken200Response> getAccessTokenWithHttpInfo(String realm, String clientId, String clientSecret) throws ApiException {
+        okhttp3.Call localVarCall = getServiceAccountAccessTokenValidateBeforeCall(realm, clientId, clientSecret, null);
         Type localVarReturnType = new TypeToken<GetAccessToken200Response>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -210,10 +426,9 @@ public class AuthenticationApi {
     /**
      * Obtain access token (asynchronously)
      * Get an access token using client credentials grant type
-     * @param grantType The grant type for the token request (required)
+     * @param realm The realm for the token request (required)
      * @param clientId The client identifier (required)
      * @param clientSecret The client secret (required)
-     * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
      * @http.response.details
@@ -225,12 +440,54 @@ public class AuthenticationApi {
         <tr><td> 401 </td><td> Unauthorized - invalid credentials </td><td>  -  </td></tr>
      </table>
      */
-    public CompletionStage<GetAccessToken200Response> getAccessTokenAsync(String grantType, String clientId, String clientSecret) {
+    public CompletionStage<GetAccessToken200Response> getServiceAccountAccessTokenAsync(String realm, String clientId, String clientSecret) {
 
         try {
             FutureApiCallBack<GetAccessToken200Response> futureAPICallback = FutureApiCallBack.newCallback();
-            okhttp3.Call localVarCall = getAccessTokenValidateBeforeCall(grantType, clientId, clientSecret, futureAPICallback);
+            okhttp3.Call localVarCall = getServiceAccountAccessTokenValidateBeforeCall(realm, clientId, clientSecret, futureAPICallback);
             Type localVarReturnType = new TypeToken<GetAccessToken200Response>() {
+            }.getType();
+            localVarApiClient.executeAsync(localVarCall, localVarReturnType, futureAPICallback);
+            return futureAPICallback.getFuture();
+        } catch (Exception e) {
+            throw new CompletionException(e);
+        }
+    }
+
+    public CompletionStage<GetAccessToken200Response> getUserAccessTokenAsync(String realm, String userName, String password, String clientId, String clientSecret) {
+
+        try {
+            FutureApiCallBack<GetAccessToken200Response> futureAPICallback = FutureApiCallBack.newCallback();
+            okhttp3.Call localVarCall = getUserAccessTokenValidateBeforeCall(realm, userName, password, clientId, clientSecret, futureAPICallback);
+            Type localVarReturnType = new TypeToken<GetAccessToken200Response>() {
+            }.getType();
+            localVarApiClient.executeAsync(localVarCall, localVarReturnType, futureAPICallback);
+            return futureAPICallback.getFuture();
+        } catch (Exception e) {
+            throw new CompletionException(e);
+        }
+    }
+
+    public CompletionStage<GetAccessToken200Response> refreshUserAccessTokenAsync(String realm, String refreshToken, String clientId, String clientSecret) {
+
+        try {
+            FutureApiCallBack<GetAccessToken200Response> futureAPICallback = FutureApiCallBack.newCallback();
+            okhttp3.Call localVarCall = getRefreshUserAccessTokenValidateBeforeCall(realm, refreshToken, clientId, clientSecret, futureAPICallback);
+            Type localVarReturnType = new TypeToken<GetAccessToken200Response>() {
+            }.getType();
+            localVarApiClient.executeAsync(localVarCall, localVarReturnType, futureAPICallback);
+            return futureAPICallback.getFuture();
+        } catch (Exception e) {
+            throw new CompletionException(e);
+        }
+    }
+
+    public CompletionStage<List<Permission>> getUserPermissionsAsync(String realm, String token, String clientId) {
+
+        try {
+            FutureApiCallBack<List<Permission>> futureAPICallback = FutureApiCallBack.newCallback();
+            okhttp3.Call localVarCall = getUserPermissionsValidateBeforeCall(realm, token, clientId, futureAPICallback);
+            Type localVarReturnType = new TypeToken<List<Permission>>() {
             }.getType();
             localVarApiClient.executeAsync(localVarCall, localVarReturnType, futureAPICallback);
             return futureAPICallback.getFuture();

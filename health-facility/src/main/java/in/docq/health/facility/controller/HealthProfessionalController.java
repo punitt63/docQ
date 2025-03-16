@@ -3,12 +3,14 @@ package in.docq.health.facility.controller;
 import in.docq.health.facility.model.HealthProfessional;
 import in.docq.health.facility.model.HealthProfessionalType;
 import in.docq.health.facility.service.HealthProfessionalService;
+import in.docq.keycloak.rest.client.model.Permission;
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 @RestController
@@ -19,6 +21,14 @@ public class HealthProfessionalController {
     @Autowired
     public HealthProfessionalController(HealthProfessionalService healthProfessionalService) {
         this.healthProfessionalService = healthProfessionalService;
+    }
+
+    @PostMapping("/{health-facility-professional-id}/login")
+    public CompletionStage<ResponseEntity<LoginResponse>> loginFacilityProfessional(@PathVariable("health-facility-id") String healthFacilityID,
+                                                                           @PathVariable("health-facility-professional-id") String healthFacilityProfessionalID,
+                                                                           @RequestBody LoginHealthProfessionalRequestBody loginHealthProfessionalRequestBody) {
+        return healthProfessionalService.login(healthFacilityID, healthFacilityProfessionalID, loginHealthProfessionalRequestBody.getPassword())
+                .thenApply(ResponseEntity::ok);
     }
 
     @PostMapping("/onboard")
@@ -41,6 +51,20 @@ public class HealthProfessionalController {
         private final String healthProfessionalID;
         private final HealthProfessionalType type;
         private final String password;
+    }
+
+    @Builder
+    @Getter
+    public static class LoginHealthProfessionalRequestBody {
+        private final String password;
+    }
+
+    @Builder
+    @Getter
+    public static class LoginResponse {
+        private final String accessToken;
+        private final String refreshToken;
+        private final List<Permission> permissions;
     }
 
 

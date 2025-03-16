@@ -2,8 +2,11 @@ import com.google.gson.Gson;
 import configuration.TestAbhaClientConfiguration;
 import in.docq.health.facility.HealthFacilityApplication;
 import in.docq.health.facility.controller.HealthProfessionalController;
+import in.docq.health.facility.dao.HealthProfessionalDao;
 import in.docq.health.facility.model.HealthProfessionalType;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -18,6 +21,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import java.util.concurrent.CompletableFuture;
 
 import static configuration.TestAbhaClientConfiguration.MockAbhaRestClient.testHealthFacilityID;
+import static configuration.TestAbhaClientConfiguration.MockAbhaRestClient.testHealthFacilityManagerID;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -30,16 +34,35 @@ public class HealthProfessionalControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private HealthProfessionalDao healthProfessionalDao;
+
     private static Gson gson = new Gson();
+
+    @Before
+    public void beforeEach() {
+        healthProfessionalDao.truncate().toCompletableFuture().join();
+    }
 
     @Test
     public void testFacilityManagerOnBoarding() throws Exception {
         HealthProfessionalController.OnBoardHealthProfessionalRequestBody requestBody = HealthProfessionalController.OnBoardHealthProfessionalRequestBody.builder()
                         .type(HealthProfessionalType.FACILITY_MANAGER)
-                        .healthProfessionalID("test-abha-id")
+                        .healthProfessionalID(testHealthFacilityManagerID)
                         .password("test-pass")
                         .build();
         handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/onboard")
+                .content(gson.toJson(requestBody))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void testFacilityManagerLogin() throws Exception {
+        HealthProfessionalController.LoginHealthProfessionalRequestBody requestBody = HealthProfessionalController.LoginHealthProfessionalRequestBody.builder()
+                .password("test-pass")
+                .build();
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/" + testHealthFacilityManagerID + "/login")
                 .content(gson.toJson(requestBody))
                 .contentType(MediaType.APPLICATION_JSON)))
                 .andExpect(status().isOk());

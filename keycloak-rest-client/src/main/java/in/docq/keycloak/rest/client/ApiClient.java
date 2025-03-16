@@ -108,9 +108,9 @@ public class ApiClient {
      *
      * @param client a {@link okhttp3.OkHttpClient} object
      */
-    public ApiClient(OkHttpClient client) {
+    public ApiClient(String basePath, OkHttpClient client) {
+        setBasePath(basePath);
         init();
-
         httpClient = client;
 
         // Setup authentications (key: authentication name, value: authentication).

@@ -17,7 +17,7 @@ management:
       exposure:
         include: health,prometheus
       path-mapping:
-        health: 'actuator/health'
+        health: '/health'
 
 spring:
   application:
@@ -51,8 +51,12 @@ spring:
       connection-test-query: select 1
       idle-timeout: 90000
 
-server:
-  port: 9097
+
+  output:
+    ansi:
+      enabled: ALWAYS
+  server:
+    port: 9097
   servlet:
     session:
       cookie:
@@ -70,7 +74,22 @@ keycloak:
   realm: health-facility
   base:
     url: http://localhost:8080/
-  client:
-    id: health-facility-backend-app
-    secret: 99tP4ut4aeaKJAxpLVMGg1u7dZF8rJg7
+  backend:
+    client:
+      id: health-facility-backend-app
+      secret: HawrOyLL9uSdIKAbyrwEhz1agvcudSog
+  desktop:
+    client:
+      id: health-facility-desktop-app
+      secret: 99tP4ut4aeaKJAxpLVMGg1u7dZF8rJg7
+  http:
+    max:
+      idle:
+        connections: 20
+    keep:
+      alive:
+        duration:
+          minutes: 60
+    timeout:
+      seconds: 20
 

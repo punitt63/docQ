@@ -1,10 +1,11 @@
 package in.docq.health.facility.service;
 
 import in.docq.abha.rest.client.AbhaRestClient;
+import in.docq.health.facility.auth.BackendKeyCloakRestClient;
+import in.docq.health.facility.auth.DesktopKeycloakRestClient;
 import in.docq.health.facility.controller.HealthProfessionalController;
 import in.docq.health.facility.dao.HealthProfessionalDao;
 import in.docq.health.facility.model.HealthProfessional;
-import in.docq.keycloak.rest.client.KeyCloakRestClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,14 +15,33 @@ import java.util.concurrent.CompletionStage;
 @Service
 public class HealthProfessionalService {
     private final AbhaRestClient abhaRestClient;
-    private final KeyCloakRestClient keyCloakRestClient;
+    private final BackendKeyCloakRestClient backendKeyCloakRestClient;
+    private final DesktopKeycloakRestClient desktopKeyCloakRestClient;
     private final HealthProfessionalDao healthProfessionalDao;
 
     @Autowired
-    public HealthProfessionalService(AbhaRestClient abhaRestClient, KeyCloakRestClient keyCloakRestClient, HealthProfessionalDao healthProfessionalDao) {
+    public HealthProfessionalService(AbhaRestClient abhaRestClient,
+                                     BackendKeyCloakRestClient backendKeyCloakRestClient,
+                                     DesktopKeycloakRestClient desktopKeyCloakRestClient,
+                                     HealthProfessionalDao healthProfessionalDao) {
         this.abhaRestClient = abhaRestClient;
-        this.keyCloakRestClient = keyCloakRestClient;
+        this.backendKeyCloakRestClient = backendKeyCloakRestClient;
+        this.desktopKeyCloakRestClient = desktopKeyCloakRestClient;
         this.healthProfessionalDao = healthProfessionalDao;
+    }
+
+    public CompletionStage<HealthProfessionalController.LoginResponse> login(String healthFacilityID, String healthFacilityProfessionalID, String password) {
+        HealthProfessional healthProfessional = HealthProfessional.builder()
+                .id(healthFacilityProfessionalID)
+                .healthFacilityID(healthFacilityID)
+                .build();
+        return desktopKeyCloakRestClient.getUserAccessToken(healthProfessional.getKeyCloakUserName(), password)
+                .thenCompose(desktopClientAccessTokenResponse -> backendKeyCloakRestClient.getUserPermissions(desktopClientAccessTokenResponse.getAccessToken())
+                        .thenApply(permissions -> HealthProfessionalController.LoginResponse.builder()
+                                .accessToken(desktopClientAccessTokenResponse.getAccessToken())
+                                .refreshToken(desktopClientAccessTokenResponse.getRefreshToken())
+                                .permissions(permissions)
+                                .build()));
     }
 
     public CompletionStage<Void> onBoard(String healthFacilityID, HealthProfessionalController.OnBoardHealthProfessionalRequestBody onBoardHealthProfessionalRequestBody) {
@@ -32,7 +52,7 @@ public class HealthProfessionalService {
                 .build();
         return abhaRestClient.getHealthFacility(healthFacilityID)
                 .thenCompose(ignore -> abhaRestClient.getHealthProfessionalExists(onBoardHealthProfessionalRequestBody.getHealthProfessionalID()))
-                .thenCompose(ignore -> keyCloakRestClient.createUserIfNotExists(healthProfessional.getKeyCloakUserName(), onBoardHealthProfessionalRequestBody.getPassword(), List.of(healthProfessional.getKeycloakRole())))
+                .thenCompose(ignore -> backendKeyCloakRestClient.createUserIfNotExists(healthProfessional.getKeyCloakUserName(), onBoardHealthProfessionalRequestBody.getPassword(), List.of(healthProfessional.getKeycloakRole())))
                 .thenCompose(ignore -> healthProfessionalDao.insert(healthFacilityID, onBoardHealthProfessionalRequestBody.getHealthProfessionalID(), healthProfessional.getType()));
     }
 

@@ -23,6 +23,7 @@ public class TestAbhaClientConfiguration {
 
     public static class MockAbhaRestClient extends AbhaRestClient {
         public static String testHealthFacilityID = "IN2310020040";
+        public static String testHealthFacilityManagerID = "test-abha-id";
 
         public MockAbhaRestClient() {
             super(null, null, null);

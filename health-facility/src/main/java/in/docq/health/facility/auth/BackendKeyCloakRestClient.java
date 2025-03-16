@@ -1,23 +1,30 @@
-package in.docq.keycloak.rest.client;
+package in.docq.health.facility.auth;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import in.docq.keycloak.rest.client.ApiClient;
 import in.docq.keycloak.rest.client.api.AuthenticationApi;
 import in.docq.keycloak.rest.client.api.UsersApi;
 import in.docq.keycloak.rest.client.model.CredentialRepresentation;
+import in.docq.keycloak.rest.client.model.GetAccessToken200Response;
+import in.docq.keycloak.rest.client.model.Permission;
 import in.docq.keycloak.rest.client.model.UserRepresentation;
+import okhttp3.OkHttpClient;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
-public class KeyCloakRestClient {
+@Component
+public class BackendKeyCloakRestClient {
     private final String realm;
     private final String clientID;
     private final String clientSecret;
@@ -27,11 +34,15 @@ public class KeyCloakRestClient {
     private final Cache<String, String> tokenCache;
     private static final String accessTokenCacheKey = "clientAccessToken";
 
-    public KeyCloakRestClient(String realm, String clientID, String clientSecret, ApiClient apiClient) {
+    public BackendKeyCloakRestClient(@Value("${keycloak.base.url}") String baseUrl,
+                                     @Value("${keycloak.realm}") String realm,
+                                     @Value("${keycloak.backend.client.id}") String clientID,
+                                     @Value("${keycloak.backend.client.secret}") String clientSecret,
+                                     @Qualifier("KeyCloakOkHttpClient") OkHttpClient okHttpClient) {
         this.realm = realm;
         this.clientID = clientID;
         this.clientSecret = clientSecret;
-        this.apiClient = apiClient;
+        this.apiClient = new ApiClient(baseUrl, okHttpClient);
         this.usersApi = new UsersApi(apiClient);
         this.authenticationApi = new AuthenticationApi(apiClient);
         this.tokenCache = CacheBuilder.newBuilder()
@@ -43,7 +54,7 @@ public class KeyCloakRestClient {
     }
 
     private CompletionStage<Void> generateAndCacheAccessToken() {
-        return authenticationApi.getAccessTokenAsync("client_credentials", clientID, clientSecret)
+        return authenticationApi.getServiceAccountAccessTokenAsync(realm, clientID, clientSecret)
                 .thenAccept(getAccessToken200Response -> tokenCache.put(accessTokenCacheKey, getAccessToken200Response.getAccessToken()));
     }
 
@@ -112,6 +123,10 @@ public class KeyCloakRestClient {
                         userName
                         ))
                 .thenApply(userRepresentations -> userRepresentations.size() == 1 ? Boolean.TRUE : Boolean.FALSE);
+    }
+
+    public CompletionStage<List<Permission>> getUserPermissions(String userToken) {
+        return authenticationApi.getUserPermissionsAsync(realm, userToken, clientID);
     }
 
 }

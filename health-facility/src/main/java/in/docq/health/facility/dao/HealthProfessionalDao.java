@@ -40,6 +40,11 @@ public class HealthProfessionalDao {
                 .build(),healthFacilityID, healthProfessionalID);
     }
 
+    public CompletionStage<Void> truncate() {
+        return postgresDAO.update(dbMetricsGroupName, "delete", "DELETE FROM " + table)
+                .thenAccept(ignore -> {});
+    }
+
     public enum Column {
         HEALTH_FACILITY_ID("health_facility_id"),
         HEALTH_PROFESSIONAL_ID("health_professional_id"),

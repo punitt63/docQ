@@ -55,6 +55,11 @@ public class GetAccessToken200Response {
   @javax.annotation.Nullable
   private String accessToken;
 
+  public static final String SERIALIZED_NAME_REFRESH_TOKEN = "refresh_token";
+  @SerializedName(SERIALIZED_NAME_REFRESH_TOKEN)
+  @javax.annotation.Nullable
+  private String refreshToken;
+
   public static final String SERIALIZED_NAME_EXPIRES_IN = "expires_in";
   @SerializedName(SERIALIZED_NAME_EXPIRES_IN)
   @javax.annotation.Nullable
@@ -85,6 +90,11 @@ public class GetAccessToken200Response {
   @javax.annotation.Nullable
   public String getAccessToken() {
     return accessToken;
+  }
+
+  @javax.annotation.Nullable
+  public String getRefreshToken() {
+    return refreshToken;
   }
 
   public void setAccessToken(@javax.annotation.Nullable String accessToken) {
