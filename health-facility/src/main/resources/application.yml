@@ -72,16 +72,18 @@ abha:
 
 keycloak:
   realm: health-facility
+  jwks:
+    cert: /realms/health-facility/protocol/openid-connect/certs
   base:
     url: http://localhost:8080/
   backend:
     client:
       id: health-facility-backend-app
-      secret: HawrOyLL9uSdIKAbyrwEhz1agvcudSog
+      secret: 75WBBos1MjiC2HjAxgE4AIR8UCb0EGKB
   desktop:
     client:
       id: health-facility-desktop-app
-      secret: 99tP4ut4aeaKJAxpLVMGg1u7dZF8rJg7
+      secret: OjBDsJAUfuGINiqOCXF3XNUkUqT34Pa5
   http:
     max:
       idle:

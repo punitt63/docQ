@@ -13,14 +13,7 @@
 
 package in.docq.keycloak.rest.client.api;
 
-import in.docq.keycloak.rest.client.ApiCallback;
-import in.docq.keycloak.rest.client.ApiClient;
-import in.docq.keycloak.rest.client.ApiException;
-import in.docq.keycloak.rest.client.ApiResponse;
-import in.docq.keycloak.rest.client.Configuration;
-import in.docq.keycloak.rest.client.Pair;
-import in.docq.keycloak.rest.client.ProgressRequestBody;
-import in.docq.keycloak.rest.client.ProgressResponseBody;
+import in.docq.keycloak.rest.client.*;
 
 import com.google.gson.reflect.TypeToken;
 
@@ -35,6 +28,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
 
 public class RolesApi {
     private ApiClient localVarApiClient;
@@ -3318,7 +3313,7 @@ public class RolesApi {
         <tr><td> 200 </td><td> OK </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call adminRealmsRealmRolesRoleNameGetCall(String realm, String roleName, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call adminRealmsRealmRolesRoleNameGetCall(String token, String realm, String roleName, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -3354,10 +3349,12 @@ public class RolesApi {
         }
 
         final String[] localVarContentTypes = {
+                "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
         if (localVarContentType != null) {
             localVarHeaderParams.put("Content-Type", localVarContentType);
+            localVarHeaderParams.put("Authorization", "Bearer " + token);
         }
 
         String[] localVarAuthNames = new String[] {  };
@@ -3365,7 +3362,7 @@ public class RolesApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call adminRealmsRealmRolesRoleNameGetValidateBeforeCall(String realm, String roleName, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call adminRealmsRealmRolesRoleNameGetValidateBeforeCall(String token, String realm, String roleName, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'realm' is set
         if (realm == null) {
             throw new ApiException("Missing the required parameter 'realm' when calling adminRealmsRealmRolesRoleNameGet(Async)");
@@ -3376,47 +3373,8 @@ public class RolesApi {
             throw new ApiException("Missing the required parameter 'roleName' when calling adminRealmsRealmRolesRoleNameGet(Async)");
         }
 
-        return adminRealmsRealmRolesRoleNameGetCall(realm, roleName, _callback);
+        return adminRealmsRealmRolesRoleNameGetCall(token, realm, roleName, _callback);
 
-    }
-
-    /**
-     * Get a role by name
-     * 
-     * @param realm realm name (not id!) (required)
-     * @param roleName role&#39;s name (not id!) (required)
-     * @return RoleRepresentation
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table border="1">
-       <caption>Response Details</caption>
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> OK </td><td>  -  </td></tr>
-     </table>
-     */
-    public RoleRepresentation adminRealmsRealmRolesRoleNameGet(String realm, String roleName) throws ApiException {
-        ApiResponse<RoleRepresentation> localVarResp = adminRealmsRealmRolesRoleNameGetWithHttpInfo(realm, roleName);
-        return localVarResp.getData();
-    }
-
-    /**
-     * Get a role by name
-     * 
-     * @param realm realm name (not id!) (required)
-     * @param roleName role&#39;s name (not id!) (required)
-     * @return ApiResponse&lt;RoleRepresentation&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table border="1">
-       <caption>Response Details</caption>
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> OK </td><td>  -  </td></tr>
-     </table>
-     */
-    public ApiResponse<RoleRepresentation> adminRealmsRealmRolesRoleNameGetWithHttpInfo(String realm, String roleName) throws ApiException {
-        okhttp3.Call localVarCall = adminRealmsRealmRolesRoleNameGetValidateBeforeCall(realm, roleName, null);
-        Type localVarReturnType = new TypeToken<RoleRepresentation>(){}.getType();
-        return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
     /**
@@ -3424,7 +3382,6 @@ public class RolesApi {
      * 
      * @param realm realm name (not id!) (required)
      * @param roleName role&#39;s name (not id!) (required)
-     * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
      * @http.response.details
@@ -3434,12 +3391,16 @@ public class RolesApi {
         <tr><td> 200 </td><td> OK </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call adminRealmsRealmRolesRoleNameGetAsync(String realm, String roleName, final ApiCallback<RoleRepresentation> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = adminRealmsRealmRolesRoleNameGetValidateBeforeCall(realm, roleName, _callback);
+    public CompletionStage<RoleRepresentation> adminRealmsRealmRolesRoleNameGetAsync(String token, String realm, String roleName) {
+        try {
+        FutureApiCallBack<RoleRepresentation> futureAPICallback = FutureApiCallBack.newCallback();
+        okhttp3.Call localVarCall = adminRealmsRealmRolesRoleNameGetValidateBeforeCall(token, realm, roleName, futureAPICallback);
         Type localVarReturnType = new TypeToken<RoleRepresentation>(){}.getType();
-        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
-        return localVarCall;
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, futureAPICallback);
+        return futureAPICallback.getFuture();
+    } catch (Exception e) {
+        throw new CompletionException(e);
+    }
     }
     /**
      * Build call for adminRealmsRealmRolesRoleNameGroupsGet

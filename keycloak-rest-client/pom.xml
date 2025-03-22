@@ -58,11 +58,6 @@
             <artifactId>guava</artifactId>
             <version>33.2.0-jre</version>
         </dependency>
-        <dependency>
-            <groupId>com.auth0</groupId>
-            <artifactId>java-jwt</artifactId>
-            <version>4.2.1</version>
-        </dependency>
     </dependencies>
 
     <properties>

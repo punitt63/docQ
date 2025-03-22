@@ -13,26 +13,22 @@
 
 package in.docq.keycloak.rest.client.api;
 
-import in.docq.keycloak.rest.client.ApiCallback;
-import in.docq.keycloak.rest.client.ApiClient;
-import in.docq.keycloak.rest.client.ApiException;
-import in.docq.keycloak.rest.client.ApiResponse;
-import in.docq.keycloak.rest.client.Configuration;
-import in.docq.keycloak.rest.client.Pair;
-import in.docq.keycloak.rest.client.ProgressRequestBody;
-import in.docq.keycloak.rest.client.ProgressResponseBody;
+import in.docq.keycloak.rest.client.*;
 
 import com.google.gson.reflect.TypeToken;
 
 
 import in.docq.keycloak.rest.client.model.MappingsRepresentation;
 import in.docq.keycloak.rest.client.model.RoleRepresentation;
+import in.docq.keycloak.rest.client.model.UserRepresentation;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
 
 public class RoleMapperApi {
     private ApiClient localVarApiClient;
@@ -1609,7 +1605,7 @@ public class RoleMapperApi {
         <tr><td> 204 </td><td> No Content </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call adminRealmsRealmUsersUserIdRoleMappingsRealmPostCall(String realm, String userId, List<RoleRepresentation> roleRepresentation, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call adminRealmsRealmUsersUserIdRoleMappingsRealmPostCall(String token, String realm, String userId, List<RoleRepresentation> roleRepresentation, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -1649,6 +1645,7 @@ public class RoleMapperApi {
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
         if (localVarContentType != null) {
             localVarHeaderParams.put("Content-Type", localVarContentType);
+            localVarHeaderParams.put("Authorization", "Bearer " + token);
         }
 
         String[] localVarAuthNames = new String[] {  };
@@ -1656,7 +1653,7 @@ public class RoleMapperApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call adminRealmsRealmUsersUserIdRoleMappingsRealmPostValidateBeforeCall(String realm, String userId, List<RoleRepresentation> roleRepresentation, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call adminRealmsRealmUsersUserIdRoleMappingsRealmPostValidateBeforeCall(String token, String realm, String userId, List<RoleRepresentation> roleRepresentation, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'realm' is set
         if (realm == null) {
             throw new ApiException("Missing the required parameter 'realm' when calling adminRealmsRealmUsersUserIdRoleMappingsRealmPost(Async)");
@@ -1667,46 +1664,8 @@ public class RoleMapperApi {
             throw new ApiException("Missing the required parameter 'userId' when calling adminRealmsRealmUsersUserIdRoleMappingsRealmPost(Async)");
         }
 
-        return adminRealmsRealmUsersUserIdRoleMappingsRealmPostCall(realm, userId, roleRepresentation, _callback);
+        return adminRealmsRealmUsersUserIdRoleMappingsRealmPostCall(token, realm, userId, roleRepresentation, _callback);
 
-    }
-
-    /**
-     * Add realm-level role mappings to the user
-     * 
-     * @param realm realm name (not id!) (required)
-     * @param userId  (required)
-     * @param roleRepresentation  (optional)
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table border="1">
-       <caption>Response Details</caption>
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> No Content </td><td>  -  </td></tr>
-     </table>
-     */
-    public void adminRealmsRealmUsersUserIdRoleMappingsRealmPost(String realm, String userId, List<RoleRepresentation> roleRepresentation) throws ApiException {
-        adminRealmsRealmUsersUserIdRoleMappingsRealmPostWithHttpInfo(realm, userId, roleRepresentation);
-    }
-
-    /**
-     * Add realm-level role mappings to the user
-     * 
-     * @param realm realm name (not id!) (required)
-     * @param userId  (required)
-     * @param roleRepresentation  (optional)
-     * @return ApiResponse&lt;Void&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table border="1">
-       <caption>Response Details</caption>
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> No Content </td><td>  -  </td></tr>
-     </table>
-     */
-    public ApiResponse<Void> adminRealmsRealmUsersUserIdRoleMappingsRealmPostWithHttpInfo(String realm, String userId, List<RoleRepresentation> roleRepresentation) throws ApiException {
-        okhttp3.Call localVarCall = adminRealmsRealmUsersUserIdRoleMappingsRealmPostValidateBeforeCall(realm, userId, roleRepresentation, null);
-        return localVarApiClient.execute(localVarCall);
     }
 
     /**
@@ -1715,7 +1674,6 @@ public class RoleMapperApi {
      * @param realm realm name (not id!) (required)
      * @param userId  (required)
      * @param roleRepresentation  (optional)
-     * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
      * @http.response.details
@@ -1725,10 +1683,14 @@ public class RoleMapperApi {
         <tr><td> 204 </td><td> No Content </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call adminRealmsRealmUsersUserIdRoleMappingsRealmPostAsync(String realm, String userId, List<RoleRepresentation> roleRepresentation, final ApiCallback<Void> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = adminRealmsRealmUsersUserIdRoleMappingsRealmPostValidateBeforeCall(realm, userId, roleRepresentation, _callback);
-        localVarApiClient.executeAsync(localVarCall, _callback);
-        return localVarCall;
+    public CompletionStage<Void> adminRealmsRealmUsersUserIdRoleMappingsRealmPostAsync(String token, String realm, String userId, List<RoleRepresentation> roleRepresentation) {
+        try {
+            FutureApiCallBack<Void> futureAPICallback = FutureApiCallBack.newCallback();
+            okhttp3.Call localVarCall = adminRealmsRealmUsersUserIdRoleMappingsRealmPostValidateBeforeCall(token, realm, userId, roleRepresentation, futureAPICallback);
+            localVarApiClient.executeAsync(localVarCall, futureAPICallback);
+            return futureAPICallback.getFuture();
+        } catch (Exception e) {
+            throw new CompletionException(e);
+        }
     }
 }

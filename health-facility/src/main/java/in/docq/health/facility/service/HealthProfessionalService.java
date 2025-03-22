@@ -6,6 +6,7 @@ import in.docq.health.facility.auth.DesktopKeycloakRestClient;
 import in.docq.health.facility.controller.HealthProfessionalController;
 import in.docq.health.facility.dao.HealthProfessionalDao;
 import in.docq.health.facility.model.HealthProfessional;
+import in.docq.keycloak.rest.client.model.RoleRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -53,6 +54,7 @@ public class HealthProfessionalService {
         return abhaRestClient.getHealthFacility(healthFacilityID)
                 .thenCompose(ignore -> abhaRestClient.getHealthProfessionalExists(onBoardHealthProfessionalRequestBody.getHealthProfessionalID()))
                 .thenCompose(ignore -> backendKeyCloakRestClient.createUserIfNotExists(healthProfessional.getKeyCloakUserName(), onBoardHealthProfessionalRequestBody.getPassword(), List.of(healthProfessional.getKeycloakRole())))
+                .thenCompose(ignore -> backendKeyCloakRestClient.mapRealmRole(healthProfessional.getKeyCloakUserName(), healthProfessional.getKeycloakRole()))
                 .thenCompose(ignore -> healthProfessionalDao.insert(healthFacilityID, onBoardHealthProfessionalRequestBody.getHealthProfessionalID(), healthProfessional.getType()));
     }
 

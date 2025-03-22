@@ -421,7 +421,6 @@ public class UsersApi {
      * @param q A query to search for custom attributes, in the format &#39;key1:value2 key2:value2&#39; (optional)
      * @param search A String contained in username, first or last name, or email. Default search behavior is prefix-based (e.g., foo or foo*). Use *foo* for infix search and \&quot;foo\&quot; for exact search. (optional)
      * @param username A String contained in username, or the complete username, if param \&quot;exact\&quot; is true (optional)
-     * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
      * @http.response.details
@@ -443,6 +442,33 @@ public class UsersApi {
             throw new CompletionException(e);
         }
     }
+
+    public CompletionStage<UserRepresentation> adminRealmsRealmUsersGetAsync(String token, String realm, String userName) {
+        return adminRealmsRealmUsersGetAsync(
+                token,
+                realm,
+                null,
+                null,
+                null,
+                true,
+                true,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                userName
+        ).thenApply(userRepresentations -> {
+            if(userRepresentations.isEmpty()) {
+                throw new CompletionException(new ApiException(404, userName + " Not Found"));
+            }
+            return userRepresentations.get(0);
+        });
+    }
+
     /**
      * Build call for adminRealmsRealmUsersPost
      * @param realm realm name (not id!) (required)

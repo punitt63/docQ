@@ -7,11 +7,10 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import in.docq.keycloak.rest.client.ApiClient;
 import in.docq.keycloak.rest.client.api.AuthenticationApi;
+import in.docq.keycloak.rest.client.api.RoleMapperApi;
+import in.docq.keycloak.rest.client.api.RolesApi;
 import in.docq.keycloak.rest.client.api.UsersApi;
-import in.docq.keycloak.rest.client.model.CredentialRepresentation;
-import in.docq.keycloak.rest.client.model.GetAccessToken200Response;
-import in.docq.keycloak.rest.client.model.Permission;
-import in.docq.keycloak.rest.client.model.UserRepresentation;
+import in.docq.keycloak.rest.client.model.*;
 import okhttp3.OkHttpClient;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,8 +29,11 @@ public class BackendKeyCloakRestClient {
     private final String clientSecret;
     private final ApiClient apiClient;
     private final UsersApi usersApi;
+    private final RoleMapperApi roleMapperApi;
+    private final RolesApi rolesApi;
     private final AuthenticationApi authenticationApi;
     private final Cache<String, String> tokenCache;
+    private final Cache<String, RoleRepresentation> rolesCache;
     private static final String accessTokenCacheKey = "clientAccessToken";
 
     public BackendKeyCloakRestClient(@Value("${keycloak.base.url}") String baseUrl,
@@ -45,7 +47,14 @@ public class BackendKeyCloakRestClient {
         this.apiClient = new ApiClient(baseUrl, okHttpClient);
         this.usersApi = new UsersApi(apiClient);
         this.authenticationApi = new AuthenticationApi(apiClient);
+        this.roleMapperApi = new RoleMapperApi(apiClient);
+        this.rolesApi = new RolesApi(apiClient);
         this.tokenCache = CacheBuilder.newBuilder()
+                .concurrencyLevel(4)
+                .initialCapacity(1000)
+                .maximumSize(10000)
+                .build();
+        this.rolesCache = CacheBuilder.newBuilder()
                 .concurrencyLevel(4)
                 .initialCapacity(1000)
                 .maximumSize(10000)
@@ -127,6 +136,26 @@ public class BackendKeyCloakRestClient {
 
     public CompletionStage<List<Permission>> getUserPermissions(String userToken) {
         return authenticationApi.getUserPermissionsAsync(realm, userToken, clientID);
+    }
+
+    public CompletionStage<Void> mapRealmRole(String userName, String roleName) {
+        return getAccessToken()
+                .thenCompose(token -> usersApi.adminRealmsRealmUsersGetAsync(token, realm, userName)
+                        .thenCompose(userRepresentation -> getRole(roleName)
+                                .thenCompose(roleRepresentation -> roleMapperApi.adminRealmsRealmUsersUserIdRoleMappingsRealmPostAsync(token, realm, userRepresentation.getId(), List.of(roleRepresentation)))));
+    }
+
+    public CompletionStage<RoleRepresentation> getRole(String roleName) {
+        RoleRepresentation roleRepresentation = rolesCache.getIfPresent(roleName);
+        if(roleRepresentation != null) {
+            return completedFuture(roleRepresentation);
+        }
+        return getAccessToken()
+                .thenCompose(token -> rolesApi.adminRealmsRealmRolesRoleNameGetAsync(token, realm, roleName))
+                .thenApply(roleRepresentation1 -> {
+                    rolesCache.put(roleName, roleRepresentation1);
+                    return roleRepresentation1;
+                });
     }
 
 }
