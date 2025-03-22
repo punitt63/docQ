@@ -55,8 +55,6 @@ spring:
   output:
     ansi:
       enabled: ALWAYS
-  server:
-    port: 9097
   servlet:
     session:
       cookie:
@@ -79,11 +77,11 @@ keycloak:
   backend:
     client:
       id: health-facility-backend-app
-      secret: 75WBBos1MjiC2HjAxgE4AIR8UCb0EGKB
+      secret: 1haud9L9OV6IFrcWESCcPyWD1JS5Z2bk
   desktop:
     client:
       id: health-facility-desktop-app
-      secret: OjBDsJAUfuGINiqOCXF3XNUkUqT34Pa5
+      secret: d8hEtC4ekYFy7HYjTef3TBu8Vt223Hs4
   http:
     max:
       idle:
@@ -94,4 +92,5 @@ keycloak:
           minutes: 60
     timeout:
       seconds: 20
-
+server:
+  port: 9097

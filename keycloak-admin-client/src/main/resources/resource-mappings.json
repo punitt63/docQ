@@ -1,0 +1,32 @@
+{
+  "resources" : [
+    {
+      "name" : "health-facility",
+      "scopes" : ["onboarding"]
+    },
+    {
+      "name" : "prescription",
+      "scopes" : ["read", "write", "delete"]
+    }
+  ],
+  "role-resource-mappings" : [
+    {
+      "role" : "facility-manager",
+      "resource-mappings" : [
+        {
+          "name" : "prescription",
+          "scopes" : ["read"]
+        }
+      ]
+    },
+    {
+      "role" : "doctor",
+      "resource-mappings" : [
+        {
+          "name" : "prescription",
+          "scopes" : ["read", "write", "delete"]
+        }
+      ]
+    }
+  ]
+}
