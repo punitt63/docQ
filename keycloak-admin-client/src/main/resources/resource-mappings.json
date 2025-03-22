@@ -3,19 +3,24 @@
     {
       "name" : "health-facility",
       "scopes" : ["onboarding"]
-    },
-    {
-      "name" : "prescription",
-      "scopes" : ["read", "write", "delete"]
     }
   ],
   "role-resource-mappings" : [
     {
+      "role" : "admin",
+      "resource-mappings" : [
+        {
+          "name" : "health-facility",
+          "scopes" : ["onboarding"]
+        }
+      ]
+    },
+    {
       "role" : "facility-manager",
       "resource-mappings" : [
         {
-          "name" : "prescription",
-          "scopes" : ["read"]
+          "name" : "health-facility",
+          "scopes" : ["onboarding"]
         }
       ]
     },
@@ -23,8 +28,8 @@
       "role" : "doctor",
       "resource-mappings" : [
         {
-          "name" : "prescription",
-          "scopes" : ["read", "write", "delete"]
+          "name" : "health-facility",
+          "scopes" : ["onboarding"]
         }
       ]
     }
