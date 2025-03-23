@@ -11,6 +11,7 @@ import org.keycloak.admin.client.resource.AuthorizationResource;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.representations.idm.*;
+import org.keycloak.representations.idm.authorization.DecisionStrategy;
 import org.keycloak.representations.idm.authorization.PolicyRepresentation;
 import org.keycloak.representations.idm.authorization.ResourceRepresentation;
 import org.keycloak.representations.idm.authorization.ScopeRepresentation;
@@ -82,11 +83,11 @@ public class RolesToResourcesMapper {
                 // Create resources and scopes based on configuration
                 createResourcesAndScopes(keycloak, config.resources);
 
-                // Map admin role to all resources and scopes
-                mapAdminToAllResourcesAndScopes(keycloak, config.resources);
-                
-                // Map roles to resources based on configuration
-                mapRolesToResources(keycloak, config.roleResourceMappings);
+                // Create role policies for all roles
+                Map<String, String> rolePolicies = createRolePolicies(keycloak, config.roleResourceMappings);
+
+                // Create scope-based permissions for each resource-scope pair
+                createScopePermissions(keycloak, config.roleResourceMappings, rolePolicies);
 
                 createAdminUser(keycloak);
 
@@ -299,9 +300,12 @@ public class RolesToResourcesMapper {
                 // Handle scopes
                 Set<ScopeRepresentation> scopeRepresentations = new HashSet<>();
                 for (String scopeName : resourceConfig.scopes) {
-                    ScopeRepresentation scope = new ScopeRepresentation();
-                    scope.setName(scopeName);
-                    scopeRepresentations.add(scope);
+                    ScopeRepresentation scope = authzClient.scopes().findByName(scopeName);
+                    if (scope != null) {
+                        scopeRepresentations.add(scope);
+                    } else {
+                        System.err.println("Scope " + scopeName + " not found, skipping for resource " + resourceConfig.name);
+                    }
                 }
                 resource.setScopes(scopeRepresentations);
 
@@ -325,115 +329,176 @@ public class RolesToResourcesMapper {
         }
     }
 
-    private static void mapRolesToResources(Keycloak keycloak, List<RoleResourceMapping> roleMappings) {
+    private static Map<String, String> createRolePolicies(Keycloak keycloak, List<RoleResourceMapping> roleMappings) {
         RealmResource realmResource = keycloak.realm(HEALTH_FACILITY_REALM);
+        Map<String, String> rolePolicyMap = new HashMap<>();
 
         try {
             AuthorizationResource authzClient = realmResource.clients().get(HEALTH_FACILITY_BACKEND_APP_ID).authorization();
 
-            // Process each role mapping
+            // Create a policy for each role
             for (RoleResourceMapping roleMapping : roleMappings) {
                 String roleName = roleMapping.role;
-                System.out.println("Processing role: " + roleName);
+                System.out.println("Creating policy for role: " + roleName);
 
                 // Get role representation
                 RoleRepresentation role;
                 try {
                     role = realmResource.roles().get(roleName).toRepresentation();
                 } catch (Exception e) {
-                    System.err.println("Role " + roleName + " not found, skipping");
+                    System.err.println("Role " + roleName + " not found, skipping policy creation");
                     continue;
                 }
 
                 // Create role policy if it doesn't exist
                 String rolePolicyName = roleName + "-policy";
-                String rolePolicyId = null;
 
                 // Check if policy already exists
-                try {
-                    PolicyRepresentation existingPolicy = authzClient.policies().findByName(rolePolicyName);
+                PolicyRepresentation existingPolicy = authzClient.policies().findByName(rolePolicyName);
 
-                    if (existingPolicy != null) {
-                        System.out.println("Role policy for " + roleName + " already exists");
-                        rolePolicyId = existingPolicy.getId();
-                    } else {
-                        // Create new role policy
-                        PolicyRepresentation policy = new PolicyRepresentation();
-                        policy.setName(rolePolicyName);
-                        policy.setType("role");
+                if (existingPolicy != null) {
+                    System.out.println("Role policy for " + roleName + " already exists");
+                    rolePolicyMap.put(roleName, existingPolicy.getId());
+                } else {
+                    // Create new role policy
+                    PolicyRepresentation policy = new PolicyRepresentation();
+                    policy.setName(rolePolicyName);
+                    policy.setType("role");
+                    policy.setDecisionStrategy(DecisionStrategy.AFFIRMATIVE);
 
-                        HashMap<String, String> config = new HashMap<>();
-                        config.put("roles", "[{\"id\":\"" + role.getId() + "\",\"required\":false}]");
-                        policy.setConfig(config);
+                    HashMap<String, String> config = new HashMap<>();
+                    config.put("roles", "[{\"id\":\"" + role.getId() + "\",\"required\":false}]");
+                    policy.setConfig(config);
 
-                        authzClient.policies().create(policy);
-                        System.out.println("Created role policy: " + rolePolicyName);
+                    authzClient.policies().create(policy);
+                    System.out.println("Created role policy: " + rolePolicyName);
 
-                        // Get the created policy ID
-                        PolicyRepresentation createdPolicy = authzClient.policies().findByName(rolePolicyName);
-                        if (createdPolicy != null) {
-                            rolePolicyId = createdPolicy.getId();
-                        }
-                    }
-                } catch (Exception e) {
-                    System.err.println("Error handling role policy: " + e.getMessage());
-                    continue;
-                }
-
-                // Process each resource mapping for this role
-                for (ResourceMapping resourceMapping : roleMapping.resourceMappings) {
-                    String resourceName = resourceMapping.name;
-                    List<String> scopes = resourceMapping.scopes;
-
-                    System.out.println("  Mapping resource: " + resourceName + " with scopes: " + String.join(", ", scopes));
-
-                    // Find resource by name
-                    List<ResourceRepresentation> resources = authzClient.resources().findByName(resourceName);
-                    if (resources.isEmpty()) {
-                        System.err.println("Resource " + resourceName + " not found, skipping");
-                        continue;
-                    }
-
-                    ResourceRepresentation resource = resources.get(0);
-                    String resourceId = resource.getId();
-
-                    // For each scope, create a scope-based permission
-                    for (String scopeName : scopes) {
-                        ScopeRepresentation scopeReps = authzClient.scopes().findByName(scopeName);
-                        if (scopeReps == null) {
-                            System.err.println("Scope " + scopeName + " not found, skipping");
-                            continue;
-                        }
-
-                        String permissionName = roleName + "-" + resourceName + "-" + scopeName + "-permission";
-
-                        // Check if permission already exists
-                        PolicyRepresentation existingPermission = authzClient.policies().findByName(permissionName);
-                        if (existingPermission != null) {
-                            System.out.println("  Permission " + permissionName + " already exists");
-                            continue;
-                        }
-
-                        // Create permission
-                        PolicyRepresentation policyRep = new PolicyRepresentation();
-                        policyRep.setName(permissionName);
-                        policyRep.setType("scope");
-
-                        HashMap<String, String> config = new HashMap<>();
-                        config.put("resources", "[\"" + resourceId + "\"]");
-                        config.put("scopes", "[\"" + scopeReps.getId() + "\"]");
-                        config.put("applyPolicies", "[\"" + rolePolicyId + "\"]");
-                        policyRep.setConfig(config);
-
-                        authzClient.policies().create(policyRep);
-                        System.out.println("  Created permission: " + permissionName);
+                    // Get the created policy ID
+                    PolicyRepresentation createdPolicy = authzClient.policies().findByName(rolePolicyName);
+                    if (createdPolicy != null) {
+                        rolePolicyMap.put(roleName, createdPolicy.getId());
                     }
                 }
             }
 
-            System.out.println("Role to resource mappings completed");
+            System.out.println("Role policies created successfully");
+            return rolePolicyMap;
         } catch (Exception e) {
-            System.err.println("Error mapping roles to resources: " + e.getMessage());
+            System.err.println("Error creating role policies: " + e.getMessage());
+            e.printStackTrace();
+            return rolePolicyMap;
+        }
+    }
+
+    private static void createScopePermissions(Keycloak keycloak, List<RoleResourceMapping> roleMappings, Map<String, String> rolePolicies) {
+        RealmResource realmResource = keycloak.realm(HEALTH_FACILITY_REALM);
+
+        try {
+            AuthorizationResource authzClient = realmResource.clients().get(HEALTH_FACILITY_BACKEND_APP_ID).authorization();
+
+            // Create a map of resource-scope pairs to the list of roles that should have access
+            Map<String, Set<String>> resourceScopeToRoles = new HashMap<>();
+
+            // Populate the map
+            for (RoleResourceMapping roleMapping : roleMappings) {
+                String roleName = roleMapping.role;
+
+                for (ResourceMapping resourceMapping : roleMapping.resourceMappings) {
+                    String resourceName = resourceMapping.name;
+
+                    for (String scopeName : resourceMapping.scopes) {
+                        String key = resourceName + ":" + scopeName;
+                        if (!resourceScopeToRoles.containsKey(key)) {
+                            resourceScopeToRoles.put(key, new HashSet<>());
+                        }
+                        resourceScopeToRoles.get(key).add(roleName);
+                    }
+                }
+            }
+
+            // Now create permissions for each resource-scope pair
+            for (Map.Entry<String, Set<String>> entry : resourceScopeToRoles.entrySet()) {
+                String[] parts = entry.getKey().split(":");
+                String resourceName = parts[0];
+                String scopeName = parts[1];
+                Set<String> roles = entry.getValue();
+
+                System.out.println("Creating permission for resource: " + resourceName + ", scope: " + scopeName);
+
+                // Find resource by name
+                List<ResourceRepresentation> resources = authzClient.resources().findByName(resourceName);
+                if (resources.isEmpty()) {
+                    System.err.println("Resource " + resourceName + " not found, skipping permission creation");
+                    continue;
+                }
+
+                ResourceRepresentation resource = resources.get(0);
+                String resourceId = resource.getId();
+
+                // Find scope by name
+                ScopeRepresentation scope = authzClient.scopes().findByName(scopeName);
+                if (scope == null) {
+                    System.err.println("Scope " + scopeName + " not found, skipping permission creation");
+                    continue;
+                }
+
+                // Create a unified permission for this resource-scope pair
+                String permissionName = resourceName + "-" + scopeName + "-permission";
+
+                // Check if permission already exists
+                PolicyRepresentation existingPermission = authzClient.policies().findByName(permissionName);
+                if (existingPermission != null) {
+                    System.out.println("Permission " + permissionName + " already exists, updating");
+                    authzClient.policies().policy(existingPermission.getId()).remove();
+                }
+
+                // Create the permission with all applicable role policies
+                PolicyRepresentation permission = new PolicyRepresentation();
+                permission.setName(permissionName);
+                permission.setType("scope");
+                permission.setDecisionStrategy(DecisionStrategy.AFFIRMATIVE);
+
+                // Collect all policy IDs for roles that should have access
+                List<String> policyIds = new ArrayList<>();
+                for (String role : roles) {
+                    if (rolePolicies.containsKey(role)) {
+                        policyIds.add(rolePolicies.get(role));
+                    } else {
+                        System.err.println("Policy ID for role " + role + " not found, skipping");
+                    }
+                }
+
+                if (policyIds.isEmpty()) {
+                    System.err.println("No policies found for permission " + permissionName + ", skipping");
+                    continue;
+                }
+
+                // Build the config
+                HashMap<String, String> config = new HashMap<>();
+                config.put("resources", "[\"" + resourceId + "\"]");
+                config.put("scopes", "[\"" + scope.getId() + "\"]");
+
+                // Create apply policies string "[\"policy-id-1\",\"policy-id-2\",...]"
+                StringBuilder policyIdsString = new StringBuilder("[");
+                for (int i = 0; i < policyIds.size(); i++) {
+                    policyIdsString.append("\"").append(policyIds.get(i)).append("\"");
+                    if (i < policyIds.size() - 1) {
+                        policyIdsString.append(",");
+                    }
+                }
+                policyIdsString.append("]");
+
+                config.put("applyPolicies", policyIdsString.toString());
+                permission.setConfig(config);
+
+                // Create the permission
+                authzClient.policies().create(permission);
+                System.out.println("Created permission: " + permissionName + " with policies for roles: " + String.join(", ", roles));
+            }
+
+            System.out.println("Scope permissions created successfully");
+        } catch (Exception e) {
+            System.err.println("Error creating scope permissions: " + e.getMessage());
             e.printStackTrace();
         }
     }
