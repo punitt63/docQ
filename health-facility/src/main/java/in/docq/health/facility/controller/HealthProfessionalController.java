@@ -1,5 +1,7 @@
 package in.docq.health.facility.controller;
 
+import in.docq.health.facility.auth.Authorized;
+import in.docq.health.facility.exception.HealthProfessionalNotFound;
 import in.docq.health.facility.model.HealthProfessional;
 import in.docq.health.facility.model.HealthProfessionalType;
 import in.docq.health.facility.service.HealthProfessionalService;
@@ -7,10 +9,12 @@ import in.docq.keycloak.rest.client.model.Permission;
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 @RestController
@@ -32,6 +36,7 @@ public class HealthProfessionalController {
     }
 
     @PostMapping("/onboard")
+    @Authorized(resource = "health-facility", scope = "onboarding")
     public CompletionStage<ResponseEntity<Void>> onBoardHealthFacilityProfessional(@PathVariable("health-facility-id") String healthFacilityID,
                                                                                   @RequestBody OnBoardHealthProfessionalRequestBody createHealthProfessionalRequestBody) {
         return healthProfessionalService.onBoard(healthFacilityID, createHealthProfessionalRequestBody)
@@ -42,7 +47,14 @@ public class HealthProfessionalController {
     public CompletionStage<ResponseEntity<HealthProfessional>> getHealthFacilityProfessional(@PathVariable("health-facility-id") String healthFacilityID,
                                                                                              @PathVariable("health-facility-professional-id") String healthFacilityProfessionalID) {
         return healthProfessionalService.get(healthFacilityID, healthFacilityProfessionalID)
-                .thenApply(ResponseEntity::ok);
+                .thenApply(ResponseEntity::ok)
+                .exceptionally(throwable -> {
+                    throwable = throwable.getCause();
+                    if (throwable instanceof HealthProfessionalNotFound) {
+                        return (ResponseEntity<HealthProfessional>) ResponseEntity.notFound();
+                    }
+                    return (ResponseEntity<HealthProfessional>) ResponseEntity.internalServerError();
+                });
     }
 
     @Builder

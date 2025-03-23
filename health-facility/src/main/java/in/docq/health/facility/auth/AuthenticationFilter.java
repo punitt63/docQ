@@ -23,7 +23,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.interfaces.RSAPublicKey;
 
-//@Component
+@Component
 public class AuthenticationFilter extends OncePerRequestFilter {
 
     private final JwkProvider jwkProvider;
@@ -58,15 +58,17 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             JWTVerifier verifier = JWT.require(algorithm)
                     .withIssuer(keyCloakBaseUrl + "/realms/" + realm)
                     .withAudience("account")
-                    .acceptExpiresAt(decodedJWT.getExpiresAtAsInstant().getEpochSecond())
+                    .ignoreIssuedAt()
                     .build();
             verifier.verify(decodedJWT);
 
             SecurityContextHolder.getContext().setAuthentication(
                     new UsernamePasswordAuthenticationToken(decodedJWT.getSubject(), "***"));
-
+            request.setAttribute("authenticatedUser", decodedJWT.getClaim("preferred_username").asString());
+            request.setAttribute("authenticatedToken", token);
+            logger.info(token);
         } catch (JWTVerificationException jwtVerificationException){
-            logger.error("Verification Exception", jwtVerificationException);
+            logger.error("Verification Exception ", jwtVerificationException);
             ((HttpServletResponse) response).sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token Validation Failed");
         }
         catch (Exception e){

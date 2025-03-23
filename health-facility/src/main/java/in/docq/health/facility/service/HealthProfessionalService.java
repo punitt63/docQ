@@ -1,5 +1,7 @@
 package in.docq.health.facility.service;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import in.docq.abha.rest.client.AbhaRestClient;
 import in.docq.health.facility.auth.BackendKeyCloakRestClient;
 import in.docq.health.facility.auth.DesktopKeycloakRestClient;
@@ -11,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 @Service
@@ -19,6 +22,7 @@ public class HealthProfessionalService {
     private final BackendKeyCloakRestClient backendKeyCloakRestClient;
     private final DesktopKeycloakRestClient desktopKeyCloakRestClient;
     private final HealthProfessionalDao healthProfessionalDao;
+    private final Cache<String, String> healthProfessionalFacilityMappingCache;
 
     @Autowired
     public HealthProfessionalService(AbhaRestClient abhaRestClient,
@@ -29,6 +33,11 @@ public class HealthProfessionalService {
         this.backendKeyCloakRestClient = backendKeyCloakRestClient;
         this.desktopKeyCloakRestClient = desktopKeyCloakRestClient;
         this.healthProfessionalDao = healthProfessionalDao;
+        this.healthProfessionalFacilityMappingCache = CacheBuilder.newBuilder()
+                .concurrencyLevel(4)
+                .initialCapacity(10000)
+                .maximumSize(100000)
+                .build();
     }
 
     public CompletionStage<HealthProfessionalController.LoginResponse> login(String healthFacilityID, String healthFacilityProfessionalID, String password) {

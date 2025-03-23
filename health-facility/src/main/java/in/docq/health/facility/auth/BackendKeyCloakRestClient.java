@@ -33,7 +33,7 @@ public class BackendKeyCloakRestClient {
     private final RolesApi rolesApi;
     private final AuthenticationApi authenticationApi;
     private final Cache<String, String> tokenCache;
-    private final Cache<String, RoleRepresentation> rolesCache;
+    private final Cache<String, List<Permission>> userPermissionsCache;
     private static final String accessTokenCacheKey = "clientAccessToken";
 
     public BackendKeyCloakRestClient(@Value("${keycloak.base.url}") String baseUrl,
@@ -51,13 +51,13 @@ public class BackendKeyCloakRestClient {
         this.rolesApi = new RolesApi(apiClient);
         this.tokenCache = CacheBuilder.newBuilder()
                 .concurrencyLevel(4)
-                .initialCapacity(1000)
-                .maximumSize(10000)
+                .initialCapacity(10000)
+                .maximumSize(100000)
                 .build();
-        this.rolesCache = CacheBuilder.newBuilder()
+        this.userPermissionsCache = CacheBuilder.newBuilder()
                 .concurrencyLevel(4)
-                .initialCapacity(1000)
-                .maximumSize(10000)
+                .initialCapacity(10000)
+                .maximumSize(100000)
                 .build();
         generateAndCacheAccessToken();
     }
@@ -135,27 +135,22 @@ public class BackendKeyCloakRestClient {
     }
 
     public CompletionStage<List<Permission>> getUserPermissions(String userToken) {
-        return authenticationApi.getUserPermissionsAsync(realm, userToken, clientID);
+        List<Permission> cachedPermissions = userPermissionsCache.getIfPresent(userToken);
+        if(cachedPermissions != null) {
+            return completedFuture(cachedPermissions);
+        }
+        return authenticationApi.getUserPermissionsAsync(realm, userToken, clientID)
+                .thenApply(permissions -> {
+                    userPermissionsCache.put(userToken, permissions);
+                    return permissions;
+                });
     }
 
     public CompletionStage<Void> mapRealmRole(String userName, String roleName) {
         return getAccessToken()
                 .thenCompose(token -> usersApi.adminRealmsRealmUsersGetAsync(token, realm, userName)
-                        .thenCompose(userRepresentation -> getRole(roleName)
+                        .thenCompose(userRepresentation -> rolesApi.adminRealmsRealmRolesRoleNameGetAsync(token, realm, roleName)
                                 .thenCompose(roleRepresentation -> roleMapperApi.adminRealmsRealmUsersUserIdRoleMappingsRealmPostAsync(token, realm, userRepresentation.getId(), List.of(roleRepresentation)))));
-    }
-
-    public CompletionStage<RoleRepresentation> getRole(String roleName) {
-        RoleRepresentation roleRepresentation = rolesCache.getIfPresent(roleName);
-        if(roleRepresentation != null) {
-            return completedFuture(roleRepresentation);
-        }
-        return getAccessToken()
-                .thenCompose(token -> rolesApi.adminRealmsRealmRolesRoleNameGetAsync(token, realm, roleName))
-                .thenApply(roleRepresentation1 -> {
-                    rolesCache.put(roleName, roleRepresentation1);
-                    return roleRepresentation1;
-                });
     }
 
 }

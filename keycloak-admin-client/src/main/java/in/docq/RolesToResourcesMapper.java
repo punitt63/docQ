@@ -3,10 +3,13 @@ package in.docq;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.ws.rs.core.Response;
+import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.resource.AuthorizationResource;
 import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.representations.idm.*;
 import org.keycloak.representations.idm.authorization.PolicyRepresentation;
 import org.keycloak.representations.idm.authorization.ResourceRepresentation;
@@ -85,6 +88,8 @@ public class RolesToResourcesMapper {
                 // Map roles to resources based on configuration
                 mapRolesToResources(keycloak, config.roleResourceMappings);
 
+                createAdminUser(keycloak);
+
             } catch (Exception e) {
                 System.err.println("Error setting up Keycloak: " + e.getMessage());
                 e.printStackTrace();
@@ -93,6 +98,47 @@ public class RolesToResourcesMapper {
             System.err.println("Error loading configuration file: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    private static void createAdminUser(Keycloak keycloak) {
+        RealmResource realmResource = keycloak.realm(HEALTH_FACILITY_REALM);
+
+        List<UserRepresentation> users = realmResource.users().search("docq-admin", 0, 1);
+        if(!users.isEmpty()) {
+            return;
+        }
+
+        // Create user representation
+        UserRepresentation user = new UserRepresentation();
+        user.setEnabled(true);
+        user.setUsername("docq-admin");
+        user.setFirstName("admin");
+        user.setLastName("admin");
+
+        // Set initial credentials (optional)
+        CredentialRepresentation credential = new CredentialRepresentation();
+        credential.setType(CredentialRepresentation.PASSWORD);
+        credential.setValue("xf~8QgK^]gw@,");
+        credential.setTemporary(false);
+        user.setCredentials(Arrays.asList(credential));
+
+        // Create user
+        Response response = realmResource.users().create(user);
+        System.out.println("Response: " + response.getStatus());
+
+        // Get created user ID from response
+        String userId = CreatedResponseUtil.getCreatedId(response);
+
+        System.out.println("Created userId: " + userId);
+
+        UserResource userResource = realmResource.users().get(userId);
+
+        RoleRepresentation realmRole = realmResource.roles().get("admin").toRepresentation();
+
+        // Assign realm role to user
+        userResource.roles().realmLevel().add(Arrays.asList(realmRole));
+
+        System.out.println("Assigning admin role to user : " + userId);
     }
 
     private static void mapAdminToAllResourcesAndScopes(Keycloak keycloak, List<ResourceConfig> resources) {

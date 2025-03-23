@@ -1,13 +1,17 @@
 package in.docq.health.facility.dao;
 
+import in.docq.health.facility.exception.HealthProfessionalNotFound;
 import in.docq.health.facility.model.HealthProfessional;
 import in.docq.health.facility.model.HealthProfessionalType;
 import in.docq.spring.boot.commons.postgres.PostgresDAO;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
+import java.util.Optional;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
@@ -22,7 +26,7 @@ public class HealthProfessionalDao {
     @Autowired
     public HealthProfessionalDao(PostgresDAO postgresDAO) {
         this.postgresDAO = postgresDAO;
-        this.insertHealthProfessionalQuery = "INSERT INTO " + table + "(" + Column.allColumNamesSeparatedByComma() + ")" + " VALUES (?, ?, ?)";
+        this.insertHealthProfessionalQuery = "INSERT INTO " + table + "(" + Column.allColumNamesSeparatedByComma() + ")" + " VALUES (?, ?, ?) on conflict do nothing";
         this.getHealthProfessionalQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE health_facility_id = ? and health_professional_id = ?";
     }
 
@@ -37,7 +41,14 @@ public class HealthProfessionalDao {
                         .healthFacilityID(rs.getString("health_facility_id"))
                         .id(rs.getString("health_professional_id"))
                         .type(HealthProfessionalType.valueOf(rs.getString("type")))
-                .build(),healthFacilityID, healthProfessionalID);
+                .build(),healthFacilityID, healthProfessionalID)
+                .exceptionally((throwable) -> {
+                    throwable = throwable.getCause();
+                    if (throwable instanceof EmptyResultDataAccessException) {
+                        throw new CompletionException(new HealthProfessionalNotFound(healthFacilityID, healthProfessionalID));
+                    }
+                    throw new CompletionException(throwable);
+                });
     }
 
     public CompletionStage<Void> truncate() {

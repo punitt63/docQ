@@ -39,7 +39,7 @@ public class KeycloakSetup {
 
         try {
             // Create Health Facility Realm
-            //createHealthFacilityRealm(keycloak);
+            createHealthFacilityRealm(keycloak);
 
             // Create Health Facility Backend App Client
             createHealthFacilityBackendAppClient(keycloak);
