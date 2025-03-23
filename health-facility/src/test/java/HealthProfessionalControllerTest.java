@@ -3,6 +3,8 @@ import configuration.TestAbhaClientConfiguration;
 import in.docq.health.facility.HealthFacilityApplication;
 import in.docq.health.facility.controller.HealthProfessionalController;
 import in.docq.health.facility.dao.HealthProfessionalDao;
+import in.docq.health.facility.exception.ErrorCodes;
+import in.docq.health.facility.exception.ErrorResponse;
 import in.docq.health.facility.model.HealthProfessionalType;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import static configuration.TestAbhaClientConfiguration.MockAbhaRestClient.testHealthFacilityID;
 import static configuration.TestAbhaClientConfiguration.MockAbhaRestClient.testHealthFacilityManagerID;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(classes = {HealthFacilityApplication.class, TestAbhaClientConfiguration.class})
@@ -67,6 +70,32 @@ public class HealthProfessionalControllerTest {
                 .content(gson.toJson(requestBody))
                 .contentType(MediaType.APPLICATION_JSON)))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    public void testFacilityManagerLoginWithWrongPassword() throws Exception {
+        HealthProfessionalController.LoginHealthProfessionalRequestBody requestBody = HealthProfessionalController.LoginHealthProfessionalRequestBody.builder()
+                .password("test-pass-1")
+                .build();
+        ErrorResponse expectedErrorResponse = new ErrorResponse(ErrorCodes.INVALID_USER_CREDENTIALS);
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/" + testHealthFacilityManagerID + "/login")
+                .content(gson.toJson(requestBody))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().is(401))
+                .andExpect(content().json(gson.toJson(expectedErrorResponse)));
+    }
+
+    @Test
+    public void testFacilityManagerLoginWithWrongUsername() throws Exception {
+        HealthProfessionalController.LoginHealthProfessionalRequestBody requestBody = HealthProfessionalController.LoginHealthProfessionalRequestBody.builder()
+                .password("test-pass")
+                .build();
+        ErrorResponse expectedErrorResponse = new ErrorResponse(ErrorCodes.INVALID_USER_CREDENTIALS);
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/random/login")
+                .content(gson.toJson(requestBody))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().is(401))
+                .andExpect(content().json(gson.toJson(expectedErrorResponse)));
     }
 
     protected ResultActions handleAsyncProcessing(ResultActions resultActions) throws Exception {

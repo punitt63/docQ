@@ -13,6 +13,8 @@
 
 package in.docq.keycloak.rest.client;
 
+import com.google.gson.Gson;
+
 import java.util.Map;
 import java.util.List;
 
@@ -27,8 +29,9 @@ public class ApiException extends Exception {
 
     private int code = 0;
     private Map<String, List<String>> responseHeaders = null;
-    private String responseBody = null;
+    private ErrorBody responseBody = null;
     private String request;
+    private static Gson gson = new Gson();
 
     /**
      * <p>Constructor for ApiException.</p>
@@ -66,7 +69,7 @@ public class ApiException extends Exception {
         super(message, throwable);
         this.code = code;
         this.responseHeaders = responseHeaders;
-        this.responseBody = responseBody;
+        this.responseBody = gson.fromJson(responseBody, ErrorBody.class);
         this.request = request;
     }
 
@@ -127,7 +130,7 @@ public class ApiException extends Exception {
     public ApiException(int code, String message, Map<String, List<String>> responseHeaders, String responseBody) {
         this(code, message);
         this.responseHeaders = responseHeaders;
-        this.responseBody = responseBody;
+        this.responseBody = gson.fromJson(responseBody, ErrorBody.class);
     }
 
     public String getRequest() {
@@ -157,7 +160,7 @@ public class ApiException extends Exception {
      *
      * @return Response body in the form of string
      */
-    public String getResponseBody() {
+    public ErrorBody getResponseBody() {
         return responseBody;
     }
 
@@ -168,6 +171,24 @@ public class ApiException extends Exception {
      */
     public String getMessage() {
         return String.format("Request: %s%nMessage: %s%nHTTP response code: %s%nHTTP response body: %s%nHTTP response headers: %s", this.getRequest(),
-                super.getMessage(), this.getCode(), this.getResponseBody(), this.getResponseHeaders());
+                super.getMessage(), this.getCode(), this.getResponseBody().toString(), this.getResponseHeaders());
+    }
+
+    public static class ErrorBody {
+        private final String error;
+        private final String error_description;
+
+        public ErrorBody(String error, String errorDescription) {
+            this.error = error;
+            error_description = errorDescription;
+        }
+
+        public String toString() {
+            return String.format("{errorCode=%s,errorDescription=%s", error, error_description);
+        }
+
+        public ErrorCodes getErrorCode() {
+            return ErrorCodes.valueOf(error);
+        }
     }
 }
