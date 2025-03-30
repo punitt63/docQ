@@ -3914,6 +3914,18 @@ public class UsersApi {
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
+
+    public CompletionStage<Void> adminRealmsRealmUsersUserIdLogoutPostAsync(String realm, String userId)  {
+        try {
+            FutureApiCallBack<Void> futureAPICallback = FutureApiCallBack.newCallback();
+            okhttp3.Call localVarCall = adminRealmsRealmUsersUserIdLogoutPostValidateBeforeCall(realm, userId, futureAPICallback);
+            localVarApiClient.executeAsync(localVarCall, futureAPICallback);
+            return futureAPICallback.getFuture();
+        } catch (Exception e) {
+            throw new CompletionException(e);
+        }
+    }
+
     /**
      * Build call for adminRealmsRealmUsersUserIdOfflineSessionsClientUuidGet
      * @param realm realm name (not id!) (required)

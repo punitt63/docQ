@@ -54,6 +54,10 @@ public class HealthProfessionalService {
                                 .build()));
     }
 
+    public CompletionStage<Void> logout(String realm, String userId) {
+        return desktopKeyCloakRestClient.logoutUser(realm, userId);
+    }
+
     public CompletionStage<Void> onBoard(String healthFacilityID, HealthProfessionalController.OnBoardHealthProfessionalRequestBody onBoardHealthProfessionalRequestBody) {
         HealthProfessional healthProfessional = HealthProfessional.builder()
                 .id(onBoardHealthProfessionalRequestBody.getHealthProfessionalID())

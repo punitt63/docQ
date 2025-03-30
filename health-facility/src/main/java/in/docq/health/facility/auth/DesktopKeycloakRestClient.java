@@ -1,7 +1,5 @@
 package in.docq.health.facility.auth;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import in.docq.keycloak.rest.client.ApiClient;
 import in.docq.keycloak.rest.client.api.AuthenticationApi;
 import in.docq.keycloak.rest.client.api.UsersApi;
@@ -20,6 +18,7 @@ public class DesktopKeycloakRestClient {
     private final String clientSecret;
     private final ApiClient apiClient;
     private final AuthenticationApi authenticationApi;
+    private final UsersApi usersApi;
 
     public DesktopKeycloakRestClient(@Value("${keycloak.base.url}") String baseUrl,
                                      @Value("${keycloak.realm}") String realm,
@@ -31,6 +30,7 @@ public class DesktopKeycloakRestClient {
         this.clientSecret = clientSecret;
         this.apiClient = new ApiClient(baseUrl, okHttpClient);
         this.authenticationApi = new AuthenticationApi(apiClient);
+        this.usersApi = new UsersApi(apiClient);
     }
 
     public CompletionStage<GetAccessToken200Response> getUserAccessToken(String userName, String password) {
@@ -39,6 +39,10 @@ public class DesktopKeycloakRestClient {
 
     public CompletionStage<GetAccessToken200Response> refreshUserAccessToken(String refreshToken) {
         return authenticationApi.refreshUserAccessTokenAsync(realm, refreshToken, clientID, clientSecret);
+    }
+
+    public CompletionStage<Void> logoutUser(String realm, String userId) {
+        return usersApi.adminRealmsRealmUsersUserIdLogoutPostAsync(realm, userId);
     }
 
 

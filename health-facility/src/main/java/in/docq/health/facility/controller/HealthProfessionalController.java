@@ -9,12 +9,10 @@ import in.docq.keycloak.rest.client.model.Permission;
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 @RestController
@@ -32,6 +30,13 @@ public class HealthProfessionalController {
                                                                            @PathVariable("health-facility-professional-id") String healthFacilityProfessionalID,
                                                                            @RequestBody LoginHealthProfessionalRequestBody loginHealthProfessionalRequestBody) {
         return healthProfessionalService.login(healthFacilityID, healthFacilityProfessionalID, loginHealthProfessionalRequestBody.getPassword())
+                .thenApply(ResponseEntity::ok);
+    }
+
+    @PostMapping("realms/{realm}/users/{user-id}/logout")
+    public CompletionStage<ResponseEntity<Void>> logoutFacilityProfessional(@PathVariable("realm") String realm,
+                                                                            @PathVariable("user-id") String userId) {
+        return healthProfessionalService.logout(realm, userId)
                 .thenApply(ResponseEntity::ok);
     }
 
