@@ -1,7 +1,8 @@
+package controller;
+
 import com.google.gson.Gson;
 import configuration.TestAbhaClientConfiguration;
 import in.docq.health.facility.HealthFacilityApplication;
-import in.docq.health.facility.auth.BackendKeyCloakRestClient;
 import in.docq.health.facility.auth.DesktopKeycloakRestClient;
 import in.docq.health.facility.controller.HealthProfessionalController;
 import in.docq.health.facility.dao.HealthProfessionalDao;
@@ -11,7 +12,6 @@ import in.docq.health.facility.model.HealthProfessionalType;
 import in.docq.keycloak.rest.client.model.GetAccessToken200Response;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
