@@ -1,0 +1,20 @@
+CREATE TABLE opd (
+    health_facility_id varchar(20) NOT NULL,
+    health_professional_id varchar(20) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    start_hour INTEGER NOT NULL DEFAULT 0,
+    end_hour INTEGER NOT NULL DEFAULT 0,
+    start_minute INTEGER NOT NULL DEFAULT 0,
+    end_minute INTEGER NOT NULL DEFAULT 0,
+    recurring BOOLEAN NOT NULL DEFAULT true,
+    start_date DATE NOT NULL,
+    schedule_type VARCHAR(255) DEFAULT 'WEEKLY',
+    weekly_template jsonb,
+    max_slots INTEGER NOT NULL,
+    minutes_per_slot INTEGER NOT NULL,
+    instance_creation_minutes_before_start INTEGER NOT NULL,
+    state VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT opd_pkey PRIMARY KEY (health_facility_id, health_professional_id, name)
+);
