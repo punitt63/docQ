@@ -3914,6 +3914,76 @@ public class UsersApi {
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
+
+    public CompletionStage<Void> realmsRealmProtocolOpenIdConnectLogoutPostAsync(String realm, String clientId, String clientSecret, String bearerToken, String refreshToken)  {
+        try {
+            FutureApiCallBack<Void> futureAPICallback = FutureApiCallBack.newCallback();
+            okhttp3.Call localVarCall = realmsRealmProtocolOpenIdConnectLogoutPostCall(realm, clientId, clientSecret, bearerToken, refreshToken, futureAPICallback);
+            localVarApiClient.executeAsync(localVarCall, futureAPICallback);
+            return futureAPICallback.getFuture();
+        } catch (Exception e) {
+            throw new CompletionException(e);
+        }
+    }
+
+    public okhttp3.Call realmsRealmProtocolOpenIdConnectLogoutPostCall(String realm, String clientId, String clientSecret, String bearerToken, String refreshToken, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/realms/{realm}/protocol/openid-connect/logout"
+                .replace("{" + "realm" + "}", localVarApiClient.escapeString(realm.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        if (clientId != null) {
+            localVarFormParams.put("client_id", clientId);
+        }
+
+        if (clientSecret != null) {
+            localVarFormParams.put("client_secret", clientSecret);
+        }
+
+        if (refreshToken != null) {
+            localVarFormParams.put("refresh_token", refreshToken);
+        }
+
+        final String[] localVarAccepts = {
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+            localVarHeaderParams.put("Authorization", "Bearer " + bearerToken);
+        }
+
+        final String[] localVarContentTypes = {
+                "application/x-www-form-urlencoded"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] {  };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
     /**
      * Build call for adminRealmsRealmUsersUserIdOfflineSessionsClientUuidGet
      * @param realm realm name (not id!) (required)

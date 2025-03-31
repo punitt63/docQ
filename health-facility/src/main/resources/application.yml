@@ -73,15 +73,15 @@ keycloak:
   jwks:
     cert: /realms/health-facility/protocol/openid-connect/certs
   base:
-    url: http://localhost:8080/
+    url: http://localhost:8080
   backend:
     client:
       id: health-facility-backend-app
-      secret: 1haud9L9OV6IFrcWESCcPyWD1JS5Z2bk
+      secret: fBJmXyxD1e6yfFlwFEtvgROMbFo2q3j3
   desktop:
     client:
       id: health-facility-desktop-app
-      secret: d8hEtC4ekYFy7HYjTef3TBu8Vt223Hs4
+      secret: jPGd0Be4WCfK5Zh2t1g5y2qMJNOGdYF0
   http:
     max:
       idle:

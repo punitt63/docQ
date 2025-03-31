@@ -9,12 +9,10 @@ import in.docq.keycloak.rest.client.model.Permission;
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 @RestController
@@ -32,6 +30,13 @@ public class HealthProfessionalController {
                                                                            @PathVariable("health-facility-professional-id") String healthFacilityProfessionalID,
                                                                            @RequestBody LoginHealthProfessionalRequestBody loginHealthProfessionalRequestBody) {
         return healthProfessionalService.login(healthFacilityID, healthFacilityProfessionalID, loginHealthProfessionalRequestBody.getPassword())
+                .thenApply(ResponseEntity::ok);
+    }
+
+    @PostMapping("/logout")
+    public CompletionStage<ResponseEntity<Void>> logoutFacilityProfessional(@RequestHeader("Authorization") String bearerToken,
+                                                                            @RequestBody LogoutHealthProfessionalRequestBody logoutHealthProfessionalRequestBody) {
+        return healthProfessionalService.logout(bearerToken, logoutHealthProfessionalRequestBody.getRefreshToken())
                 .thenApply(ResponseEntity::ok);
     }
 
@@ -77,6 +82,12 @@ public class HealthProfessionalController {
         private final String accessToken;
         private final String refreshToken;
         private final List<Permission> permissions;
+    }
+
+    @Builder
+    @Getter
+    public static class LogoutHealthProfessionalRequestBody {
+        private final String refreshToken;
     }
 
 

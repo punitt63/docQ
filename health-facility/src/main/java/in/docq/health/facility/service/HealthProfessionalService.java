@@ -8,12 +8,10 @@ import in.docq.health.facility.auth.DesktopKeycloakRestClient;
 import in.docq.health.facility.controller.HealthProfessionalController;
 import in.docq.health.facility.dao.HealthProfessionalDao;
 import in.docq.health.facility.model.HealthProfessional;
-import in.docq.keycloak.rest.client.model.RoleRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 @Service
@@ -52,6 +50,10 @@ public class HealthProfessionalService {
                                 .refreshToken(desktopClientAccessTokenResponse.getRefreshToken())
                                 .permissions(permissions)
                                 .build()));
+    }
+
+    public CompletionStage<Void> logout(String bearerToken, String refreshToken) {
+        return desktopKeyCloakRestClient.logoutUser(bearerToken, refreshToken);
     }
 
     public CompletionStage<Void> onBoard(String healthFacilityID, HealthProfessionalController.OnBoardHealthProfessionalRequestBody onBoardHealthProfessionalRequestBody) {
