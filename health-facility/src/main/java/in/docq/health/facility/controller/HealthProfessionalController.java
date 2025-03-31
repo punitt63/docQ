@@ -33,10 +33,10 @@ public class HealthProfessionalController {
                 .thenApply(ResponseEntity::ok);
     }
 
-    @PostMapping("realms/{realm}/users/{user-id}/logout")
-    public CompletionStage<ResponseEntity<Void>> logoutFacilityProfessional(@PathVariable("realm") String realm,
-                                                                            @PathVariable("user-id") String userId) {
-        return healthProfessionalService.logout(realm, userId)
+    @PostMapping("/logout")
+    public CompletionStage<ResponseEntity<Void>> logoutFacilityProfessional(@RequestHeader("Authorization") String bearerToken,
+                                                                            @RequestBody LogoutHealthProfessionalRequestBody logoutHealthProfessionalRequestBody) {
+        return healthProfessionalService.logout(bearerToken, logoutHealthProfessionalRequestBody.getRefreshToken())
                 .thenApply(ResponseEntity::ok);
     }
 
@@ -82,6 +82,12 @@ public class HealthProfessionalController {
         private final String accessToken;
         private final String refreshToken;
         private final List<Permission> permissions;
+    }
+
+    @Builder
+    @Getter
+    public static class LogoutHealthProfessionalRequestBody {
+        private final String refreshToken;
     }
 
 

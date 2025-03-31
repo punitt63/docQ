@@ -41,8 +41,8 @@ public class DesktopKeycloakRestClient {
         return authenticationApi.refreshUserAccessTokenAsync(realm, refreshToken, clientID, clientSecret);
     }
 
-    public CompletionStage<Void> logoutUser(String realm, String userId) {
-        return usersApi.adminRealmsRealmUsersUserIdLogoutPostAsync(realm, userId);
+    public CompletionStage<Void> logoutUser(String bearerToken, String refreshToken) {
+        return usersApi.realmsRealmProtocolOpenIdConnectLogoutPostAsync(realm, clientID, clientSecret, bearerToken, refreshToken);
     }
 
 
