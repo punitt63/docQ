@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -12,6 +13,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 import javax.sql.DataSource;
 import java.net.URI;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
@@ -67,8 +70,17 @@ public class PostgresDAO {
                 }));
     }
 
+    public CompletionStage<Integer> batchUpdate(String dbMetricsGroupName, String dbOperationName, String sql, BatchPreparedStatementSetter preparedStatementSetter) {
+        return decorateWithMetrics(dbMetricsGroupName, dbOperationName, supplyAsync(() -> jdbcTemplate.batchUpdate(sql, preparedStatementSetter), executorService))
+                .thenApply(ints -> Arrays.stream(ints).sum());
+    }
+
     public <T> CompletionStage<T> queryForObject(String dbMetricsGroupName, String dbOperationName, String sql, RowMapper<T> rm, Object... args) {
         return decorateWithMetrics(dbMetricsGroupName, dbOperationName, supplyAsync(() -> jdbcTemplate.queryForObject(sql, rm, args), executorService));
+    }
+
+    public <T> CompletionStage<List<T>> query(String dbMetricsGroupName, String dbOperationName, String sql, RowMapper<T> rm, Object... args) {
+        return decorateWithMetrics(dbMetricsGroupName, dbOperationName, supplyAsync(() -> jdbcTemplate.query(sql, rm, args), executorService));
     }
 
     private <T> CompletionStage<T> decorateWithMetrics(String dbMetricsGroupName, String dbOperationName, CompletionStage<T> queryFuture) {

@@ -1,6 +1,5 @@
 package in.docq.health.facility.dao;
 
-import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import in.docq.health.facility.exception.OPDNotFound;
 import in.docq.health.facility.model.OPD;
@@ -9,11 +8,17 @@ import lombok.Getter;
 import org.postgresql.util.PGobject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.stereotype.Component;
 
+import java.sql.Date;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
@@ -25,6 +30,7 @@ public class OPDDao {
     private final String insertOPDQuery;
     private final String getOPDQuery;
     private final String updateOPDQuery;
+    private final String listOPDQuery;
     private final PostgresDAO postgresDAO;
     private static Gson gson = new Gson();
 
@@ -32,53 +38,63 @@ public class OPDDao {
     public OPDDao(PostgresDAO postgresDAO) {
         this.postgresDAO = postgresDAO;
         this.insertOPDQuery = "INSERT INTO " + table + "(" + Column.allColumNamesSeparatedByComma() + ")" + " VALUES (" + Column.allColumnValuesSeparatedByComma() + ") on conflict do nothing";
-        this.getOPDQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE health_facility_id = ? and health_professional_id = ? and name = ?";
-        this.updateOPDQuery = "UPDATE " + table + " set " + Column.allModifiableColumnNamesSeparatedByComma() + " WHERE health_facility_id = ? and health_professional_id = ? and name = ?";
+        this.getOPDQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE opd_date = ? and id = ?";
+        this.updateOPDQuery = "UPDATE " + table + " set " + Column.allModifiableColumnNamesSeparatedByComma() + " WHERE opd_date = ? and id = ?";
+        this.listOPDQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE health_facility_id = ? and health_professional_id = ? and opd_date >= ? and opd_date <= ?";
     }
 
-    public CompletionStage<Void> insert(OPD opd) {
-        return postgresDAO.update(dbMetricsGroupName, "insert", insertOPDQuery,
-                        opd.getHealthFacilityID(),
-                        opd.getHealthProfessionalID(),
-                        opd.getName(),
-                        opd.getStartHour(),
-                        opd.getEndHour(),
-                        opd.getStartMinute(),
-                        opd.getEndMinute(),
-                        opd.isRecurring(),
-                        opd.getStartDate(),
-                        opd.getScheduleType().name(),
-                        getJsonbObject(gson.toJson(opd.getWeeklyTemplate())),
-                        opd.getMaxSlots(),
-                        opd.getMinutesPerSlot(),
-                        opd.getInstanceCreationMinutesBeforeStart(),
-                        opd.getState().name())
-                .thenAccept(ignore -> {});
+    public CompletionStage<Void> insert(List<OPD> opds) {
+        return postgresDAO.batchUpdate(dbMetricsGroupName, "batchInsert", insertOPDQuery, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                OPD opd = opds.get(i);
+                ps.setString(1, opd.getId());
+                ps.setString(2, opd.getHealthFacilityID());
+                ps.setString(3, opd.getHealthProfessionalID());
+                ps.setString(4, opd.getName());
+                ps.setInt(5, opd.getStartHour());
+                ps.setInt(6, opd.getEndHour());
+                ps.setInt(7, opd.getStartMinute());
+                ps.setInt(8, opd.getEndMinute());
+                ps.setDate(9, Date.valueOf(opd.getDate()));
+                ps.setInt(10, opd.getMaxSlots());
+                ps.setInt(11, opd.getMinutesPerSlot());
+                ps.setTimestamp(12, new Timestamp(opd.getActivateTime()));
+                ps.setString(13, opd.getState().name());
+                ps.setTimestamp(14, Optional.ofNullable(opd.getActualStartTime()).map(Timestamp::new).orElse(null));
+                ps.setTimestamp(15, Optional.ofNullable(opd.getActualEndTime()).map(Timestamp::new).orElse(null));
+            }
+
+            @Override
+            public int getBatchSize() {
+                return opds.size();
+            }
+        }).thenAccept(ignore -> {});
     }
 
-    public CompletionStage<OPD> get(String healthFacilityID, String healthProfessionalID, String name) {
+    public CompletionStage<OPD> get(LocalDate opdDate, String id) {
         return postgresDAO.queryForObject(dbMetricsGroupName, "get", getOPDQuery, (rs, rowNum) ->
                         OPD.builder()
-                                .healthFacilityID(rs.getString("health_facility_id"))
-                                .healthProfessionalID(rs.getString("health_professional_id"))
-                                .name(rs.getString("name"))
-                                .startHour(rs.getInt("start_hour"))
-                                .endHour(rs.getInt("end_hour"))
-                                .startMinute(rs.getInt("start_minute"))
-                                .endMinute(rs.getInt("end_minute"))
-                                .startDate(rs.getDate("start_date").toLocalDate())
-                                .recurring(rs.getBoolean("recurring"))
-                                .scheduleType(OPD.ScheduleType.valueOf(rs.getString("schedule_type")))
-                                .weeklyTemplate(gson.fromJson(rs.getString("weekly_template"), new TypeToken<List<Boolean>>(){}.getType()))
-                                .maxSlots(rs.getInt("max_slots"))
-                                .minutesPerSlot(rs.getInt("minutes_per_slot"))
-                                .instanceCreationMinutesBeforeStart(rs.getInt("instance_creation_minutes_before_start"))
-                                .state(OPD.State.valueOf(rs.getString("state")))
-                                .build(), healthFacilityID, healthProfessionalID, name)
+                                .id(rs.getString(Column.ID.columnName))
+                                .healthFacilityID(rs.getString(Column.HEALTH_FACILITY_ID.columnName))
+                                .healthProfessionalID(rs.getString(Column.HEALTH_PROFESSIONAL_ID.columnName))
+                                .name(rs.getString(Column.NAME.columnName))
+                                .startHour(rs.getInt(Column.START_HOUR.columnName))
+                                .endHour(rs.getInt(Column.END_HOUR.columnName))
+                                .startMinute(rs.getInt(Column.START_MINUTE.columnName))
+                                .endMinute(rs.getInt(Column.END_MINUTE.columnName))
+                                .date(rs.getDate(Column.OPD_DATE.columnName).toLocalDate())
+                                .maxSlots(rs.getInt(Column.MAX_SLOTS.columnName))
+                                .minutesPerSlot(rs.getInt(Column.MINUTES_PER_SLOT.columnName))
+                                .activateTime(rs.getTimestamp(Column.ACTIVATE_TIME.columnName).getTime())
+                                .state(OPD.State.valueOf(rs.getString(Column.STATE.columnName)))
+                                .actualStartTime(Optional.ofNullable(rs.getTimestamp(Column.ACTUAL_START_TIME.columnName)).map(Timestamp::getTime).orElse(null))
+                                .actualEndTime(Optional.ofNullable(rs.getTimestamp(Column.ACTUAL_END_TIME.columnName)).map(Timestamp::getTime).orElse(null))
+                                .build(), Date.valueOf(opdDate), id)
                 .exceptionally((throwable) -> {
                     throwable = throwable.getCause();
                     if (throwable instanceof EmptyResultDataAccessException) {
-                        throw new CompletionException(new OPDNotFound(healthFacilityID, healthProfessionalID, name));
+                        throw new CompletionException(new OPDNotFound(id));
                     }
                     throw new CompletionException(throwable);
                 });
@@ -90,17 +106,36 @@ public class OPDDao {
                         opd.getEndHour(),
                         opd.getStartMinute(),
                         opd.getEndMinute(),
-                        opd.isRecurring(),
-                        opd.getScheduleType().name(),
-                        getJsonbObject(gson.toJson(opd.getWeeklyTemplate())),
                         opd.getMaxSlots(),
                         opd.getMinutesPerSlot(),
-                        opd.getInstanceCreationMinutesBeforeStart(),
+                        new Timestamp(opd.getActivateTime()),
                         opd.getState().name(),
-                        opd.getHealthFacilityID(),
-                        opd.getHealthProfessionalID(),
-                        opd.getName())
+                        Optional.ofNullable(opd.getActualStartTime()).map(Timestamp::new).orElse(null),
+                        Optional.ofNullable(opd.getActualEndTime()).map(Timestamp::new).orElse(null),
+                        Date.valueOf(opd.getDate()),
+                        opd.getId())
                 .thenAccept(ignore -> {});
+    }
+
+    public CompletionStage<List<OPD>> list(String healthFacilityID, String healthProfessionalID, LocalDate startDate, LocalDate endDate) {
+        return postgresDAO.query(dbMetricsGroupName, "list", listOPDQuery, (rs, rowNum) ->
+                OPD.builder()
+                        .id(rs.getString(Column.ID.columnName))
+                        .healthFacilityID(rs.getString(Column.HEALTH_FACILITY_ID.columnName))
+                        .healthProfessionalID(rs.getString(Column.HEALTH_PROFESSIONAL_ID.columnName))
+                        .name(rs.getString(Column.NAME.columnName))
+                        .startHour(rs.getInt(Column.START_HOUR.columnName))
+                        .endHour(rs.getInt(Column.END_HOUR.columnName))
+                        .startMinute(rs.getInt(Column.START_MINUTE.columnName))
+                        .endMinute(rs.getInt(Column.END_MINUTE.columnName))
+                        .date(rs.getDate(Column.OPD_DATE.columnName).toLocalDate())
+                        .maxSlots(rs.getInt(Column.MAX_SLOTS.columnName))
+                        .minutesPerSlot(rs.getInt(Column.MINUTES_PER_SLOT.columnName))
+                        .activateTime(rs.getTimestamp(Column.ACTIVATE_TIME.columnName).getTime())
+                        .state(OPD.State.valueOf(rs.getString(Column.STATE.columnName)))
+                        .actualStartTime(Optional.ofNullable(rs.getTimestamp(Column.ACTUAL_START_TIME.columnName)).map(Timestamp::getTime).orElse(null))
+                        .actualEndTime(Optional.ofNullable(rs.getTimestamp(Column.ACTUAL_END_TIME.columnName)).map(Timestamp::getTime).orElse(null))
+                        .build(), healthFacilityID, healthProfessionalID, Date.valueOf(startDate), Date.valueOf(endDate));
     }
 
     public CompletionStage<Void> truncate() {
@@ -120,6 +155,7 @@ public class OPDDao {
     }
 
     public enum Column {
+        ID("id", false),
         HEALTH_FACILITY_ID("health_facility_id", false),
         HEALTH_PROFESSIONAL_ID("health_professional_id", false),
         NAME("name", false),
@@ -127,14 +163,13 @@ public class OPDDao {
         END_HOUR("end_hour", true),
         START_MINUTE("start_minute", true),
         END_MINUTE("end_minute", true),
-        RECURRING("recurring", true),
-        START_DATE("start_date", false),
-        SCHEDULE_TYPE("schedule_type", true),
-        WEEKLY_TEMPLATE("weekly_template", true),
+        OPD_DATE("opd_date", false),
         MAX_SLOTS("max_slots", true),
         MINUTES_PER_SLOT("minutes_per_slot", true),
-        INSTANCE_CREATION_MINUTES_BEFORE_START("instance_creation_minutes_before_start", true),
-        STATE("state", true);
+        ACTIVATE_TIME("activate_time", true),
+        STATE("state", true),
+        ACTUAL_START_TIME("actual_start_time", true),
+        ACTUAL_END_TIME("actual_end_time", true);
 
         @Getter
         private final String columnName;

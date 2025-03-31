@@ -1,7 +1,10 @@
 package controller;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import configuration.TestAbhaClientConfiguration;
+import in.docq.abha.rest.client.JSON;
 import in.docq.health.facility.HealthFacilityApplication;
 import in.docq.health.facility.auth.DesktopKeycloakRestClient;
 import in.docq.health.facility.controller.HealthProfessionalController;
@@ -26,7 +29,11 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static configuration.TestAbhaClientConfiguration.MockAbhaRestClient.*;
@@ -48,7 +55,8 @@ public class OPDControllerTest {
     @Autowired
     private DesktopKeycloakRestClient desktopKeycloakRestClient;
 
-    private static Gson gson = new Gson();
+    private static Gson gson = new GsonBuilder()
+            .registerTypeAdapter(LocalDate.class, new JSON.LocalDateTypeAdapter()).create();
 
     @Before
     public void beforeEach() {
@@ -64,11 +72,11 @@ public class OPDControllerTest {
                 .endHour(12)
                 .startMinute(0)
                 .endMinute(30)
-                .startDate("2025-03-31")
-                .instanceCreationMinutesBeforeStart(60 * 24)
+                .startDate("2025-04-01")
+                .endDate("2026-03-31")
+                .minutesToActivate(60 * 24)
                 .maxSlots(50)
                 .minutesPerSlot(5)
-                .recurring(true)
                 .scheduleType(OPD.ScheduleType.WEEKLY)
                 .weeklyTemplate(Arrays.asList(true, true, true, true, true, false, false))
                 .build();
@@ -77,46 +85,35 @@ public class OPDControllerTest {
                 .content(gson.toJson(createOPDRequestBody))
                 .contentType(MediaType.APPLICATION_JSON)))
                 .andExpect(status().isOk());
-    }
-
-    @Test
-    public void testGetOPDByFacilityManager() throws Exception {
-        String facilityManagerToken = onboardFacilityManagerAndGetToken();
-        createTestOPD(facilityManagerToken);
-        handleAsyncProcessing(mockMvc.perform(get("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/" + testDoctorID + "/opds/test-opd")
-                .header("Authorization", "Bearer " + facilityManagerToken)))
-                .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("test-opd"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.startHour").value(9))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.endHour").value(12))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.startMinute").value(0))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.endMinute").value(30))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.startDate").value("2025-03-31"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.instanceCreationMinutesBeforeStart").value(60 * 24))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.maxSlots").value(50))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.minutesPerSlot").value(5))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.recurring").value(true))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.scheduleType").value("WEEKLY"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.weeklyTemplate", Matchers.containsInAnyOrder(true, true, true, true, true, false, false)));
+        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-04-01"), LocalDate.parse("2025-04-30"), 22);
+        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-05-01"), LocalDate.parse("2025-05-31"), 22);
+        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-06-01"), LocalDate.parse("2025-06-30"), 21);
+        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-07-01"), LocalDate.parse("2025-07-31"), 23);
+        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-08-01"), LocalDate.parse("2025-08-30"), 21);
+        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-09-01"), LocalDate.parse("2025-09-30"), 22);
+        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-10-01"), LocalDate.parse("2025-10-31"), 23);
+        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-11-01"), LocalDate.parse("2025-11-30"), 20);
+        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-12-01"), LocalDate.parse("2025-12-31"), 23);
+        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2026-01-01"), LocalDate.parse("2026-01-31"), 22);
+        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2026-02-01"), LocalDate.parse("2026-02-28"), 20);
+        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2026-03-01"), LocalDate.parse("2026-03-31"), 22);
     }
 
     @Test
     public void testUpdateOPDByFacilityManager() throws Exception {
         String facilityManagerToken = onboardFacilityManagerAndGetToken();
-        createTestOPD(facilityManagerToken);
+        createTestOPDs(facilityManagerToken);
+        List<OPD> opds = getOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-04-15"));
         OPDController.UpdateOPDRequestBody updateOPDRequestBody = OPDController.UpdateOPDRequestBody.builder()
                 .startHour(10)
                 .endHour(13)
                 .startMinute(30)
                 .endMinute(0)
-                .instanceCreationMinutesBeforeStart(60 * 24 * 2)
+                .minutesToActivate(60 * 24 * 2)
                 .maxSlots(51)
                 .minutesPerSlot(6)
-                .recurring(true)
-                .scheduleType(OPD.ScheduleType.WEEKLY)
-                .weeklyTemplate(Arrays.asList(true, true, true, true, false, false, false))
                 .build();
-        handleAsyncProcessing(mockMvc.perform(patch("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/" + testDoctorID + "/opds/test-opd")
+        handleAsyncProcessing(mockMvc.perform(patch("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/" + testDoctorID + "/opd-dates/2025-04-15/opds/" + opds.get(0).getId())
                 .header("Authorization", "Bearer " + facilityManagerToken)
                 .content(gson.toJson(updateOPDRequestBody))
                 .contentType(MediaType.APPLICATION_JSON)))
@@ -126,35 +123,18 @@ public class OPDControllerTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$.endHour").value(13))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.startMinute").value(30))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.endMinute").value(0))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.startDate").value("2025-03-31"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.instanceCreationMinutesBeforeStart").value(60 * 24 * 2))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.date").value("2025-04-15"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.activateTime").value(LocalDate.parse("2025-04-15").atStartOfDay(ZoneId.of("Asia/Kolkata")).plusHours(10).plusMinutes(30).minusMinutes(60 * 24 * 2).toInstant().toEpochMilli()))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.maxSlots").value(51))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.minutesPerSlot").value(6))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.recurring").value(true))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.scheduleType").value("WEEKLY"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.weeklyTemplate", Matchers.containsInAnyOrder(true, true, true, true, false, false, false)));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.minutesPerSlot").value(6));
     }
 
     @Test
     public void testGetOPDByDoctor() throws Exception {
         String facilityManagerToken = onboardFacilityManagerAndGetToken();
-        createTestOPD(facilityManagerToken);
+        createTestOPDs(facilityManagerToken);
         String doctorToken = onboardDoctorAndGetToken(facilityManagerToken);
-        handleAsyncProcessing(mockMvc.perform(get("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/" + testDoctorID + "/opds/test-opd")
-                .header("Authorization", "Bearer " + doctorToken)))
-                .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("test-opd"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.startHour").value(9))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.endHour").value(12))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.startMinute").value(0))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.endMinute").value(30))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.startDate").value("2025-03-31"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.instanceCreationMinutesBeforeStart").value(60 * 24))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.maxSlots").value(50))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.minutesPerSlot").value(5))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.recurring").value(true))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.scheduleType").value("WEEKLY"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.weeklyTemplate", Matchers.containsInAnyOrder(true, true, true, true, true, false, false)));
+        validateOPDs(doctorToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-04-15"), LocalDate.parse("2025-04-15"), 1);
     }
 
     @Test
@@ -168,12 +148,10 @@ public class OPDControllerTest {
                 .startMinute(0)
                 .endMinute(30)
                 .startDate("2025-03-31")
-                .instanceCreationMinutesBeforeStart(60 * 24)
+                .endDate("2026-03-31")
+                .minutesToActivate(60 * 24)
                 .maxSlots(50)
                 .minutesPerSlot(5)
-                .recurring(true)
-                .scheduleType(OPD.ScheduleType.WEEKLY)
-                .weeklyTemplate(Arrays.asList(true, true, true, true, true, false, false))
                 .build();
         handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/" + testDoctorID + "/opds")
                 .header("Authorization", "Bearer " + doctorToken)
@@ -182,18 +160,41 @@ public class OPDControllerTest {
                 .andExpect(status().is(401));
     }
 
-    private void createTestOPD(String facilityManagerToken) throws Exception {
+    private void validateOPDs(String token, String healthFacilityID, String healthProfessionalID, LocalDate startDate, LocalDate endDate, int expectedCount) throws Exception {
+        handleAsyncProcessing(mockMvc.perform(get("/health-facilities/" + healthFacilityID + "/health-facility-professionals/opds")
+                .param("health-facility-professional-id", healthProfessionalID)
+                .param("start-date", startDate.toString())
+                .param("end-date", endDate.toString())
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.length()").value(expectedCount));
+    }
+
+    private List<OPD> getOPDs(String facilityManagerToken, String healthFacilityID, String healthProfessionalID, LocalDate date) throws Exception {
+        return gson.fromJson(handleAsyncProcessing(mockMvc.perform(get("/health-facilities/" + healthFacilityID + "/health-facility-professionals/opds")
+                .param("health-facility-professional-id", healthProfessionalID)
+                .param("start-date", date.toString())
+                .param("end-date", date.toString())
+                .header("Authorization", "Bearer " + facilityManagerToken)
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andReturn()
+                .getResponse()
+                .getContentAsString(), new TypeToken<List<OPD>>(){}.getType());
+    }
+
+    private void createTestOPDs(String facilityManagerToken) throws Exception {
         OPDController.CreateOPDRequestBody createOPDRequestBody = OPDController.CreateOPDRequestBody.builder()
                 .name("test-opd")
                 .startHour(9)
                 .endHour(12)
                 .startMinute(0)
                 .endMinute(30)
-                .startDate("2025-03-31")
-                .instanceCreationMinutesBeforeStart(60 * 24)
+                .startDate("2025-04-01")
+                .endDate("2026-03-31")
+                .minutesToActivate(60 * 24)
                 .maxSlots(50)
                 .minutesPerSlot(5)
-                .recurring(true)
                 .scheduleType(OPD.ScheduleType.WEEKLY)
                 .weeklyTemplate(Arrays.asList(true, true, true, true, true, false, false))
                 .build();
