@@ -40,6 +40,13 @@ public class HealthProfessionalController {
                 .thenApply(ResponseEntity::ok);
     }
 
+    @PostMapping("/reset-password")
+    public CompletionStage<ResponseEntity<Void>> resetPasswordFacilityProfessional(@RequestBody ResetPasswordHealthProfessionalRequestBody resetPasswordHealthProfessionalRequestBody,
+                                                                                   @RequestAttribute("authenticatedUser") String authenticatedUser) {
+        return healthProfessionalService.resetPassword(resetPasswordHealthProfessionalRequestBody, authenticatedUser)
+                .thenApply(ResponseEntity::ok);
+    }
+
     @PostMapping("/onboard")
     @Authorized(resource = "health-facility", scope = "onboarding")
     public CompletionStage<ResponseEntity<Void>> onBoardHealthFacilityProfessional(@PathVariable("health-facility-id") String healthFacilityID,
@@ -90,5 +97,10 @@ public class HealthProfessionalController {
         private final String refreshToken;
     }
 
-
+    @Builder
+    @Getter
+    public static class ResetPasswordHealthProfessionalRequestBody {
+        private final String oldPassword;
+        private final String newPassword;
+    }
 }

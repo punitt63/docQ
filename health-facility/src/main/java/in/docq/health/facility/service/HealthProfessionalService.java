@@ -56,6 +56,12 @@ public class HealthProfessionalService {
         return desktopKeyCloakRestClient.logoutUser(bearerToken, refreshToken);
     }
 
+    public CompletionStage<Void> resetPassword(HealthProfessionalController.ResetPasswordHealthProfessionalRequestBody resetPasswordHealthProfessionalRequestBody, String keyCloakUserName) {
+        return desktopKeyCloakRestClient.getUserAccessToken(keyCloakUserName, resetPasswordHealthProfessionalRequestBody.getOldPassword())
+                .thenCompose(ignore -> backendKeyCloakRestClient.getAccessToken())
+                .thenCompose(adminToken -> desktopKeyCloakRestClient.resetPassword(keyCloakUserName, adminToken, resetPasswordHealthProfessionalRequestBody.getNewPassword()));
+    }
+
     public CompletionStage<Void> onBoard(String healthFacilityID, HealthProfessionalController.OnBoardHealthProfessionalRequestBody onBoardHealthProfessionalRequestBody) {
         HealthProfessional healthProfessional = HealthProfessional.builder()
                 .id(onBoardHealthProfessionalRequestBody.getHealthProfessionalID())
