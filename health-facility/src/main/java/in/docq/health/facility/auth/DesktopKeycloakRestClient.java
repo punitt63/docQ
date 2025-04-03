@@ -3,7 +3,9 @@ package in.docq.health.facility.auth;
 import in.docq.keycloak.rest.client.ApiClient;
 import in.docq.keycloak.rest.client.api.AuthenticationApi;
 import in.docq.keycloak.rest.client.api.UsersApi;
+import in.docq.keycloak.rest.client.model.CredentialRepresentation;
 import in.docq.keycloak.rest.client.model.GetAccessToken200Response;
+import in.docq.keycloak.rest.client.model.UserRepresentation;
 import okhttp3.OkHttpClient;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,6 +45,32 @@ public class DesktopKeycloakRestClient {
 
     public CompletionStage<Void> logoutUser(String bearerToken, String refreshToken) {
         return usersApi.realmsRealmProtocolOpenIdConnectLogoutPostAsync(realm, clientID, clientSecret, bearerToken, refreshToken);
+    }
+
+    public CompletionStage<Void> resetPassword(String userName, String adminToken, String newPassword) {
+        return getUserId(userName, adminToken)
+                .thenCompose(userRepresentation -> usersApi.adminRealmsRealmUsersUserIdResetPasswordPutAsyncCall(realm, adminToken, userRepresentation.getId(), new CredentialRepresentation().type("password").value(newPassword)));
+    }
+
+    public CompletionStage<UserRepresentation> getUserId(String userName, String adminToken) {
+        return usersApi.adminRealmsRealmUsersGetAsync(
+                        adminToken,
+                        realm,
+                        null,
+                        null,
+                        null,
+                        true,
+                        true,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        userName)
+                .thenApply(userRepresentations -> userRepresentations.get(0));
     }
 
 

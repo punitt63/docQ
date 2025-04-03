@@ -455,7 +455,6 @@ public class AuthenticationApi {
     }
 
     public CompletionStage<GetAccessToken200Response> getUserAccessTokenAsync(String realm, String userName, String password, String clientId, String clientSecret) {
-
         try {
             FutureApiCallBack<GetAccessToken200Response> futureAPICallback = FutureApiCallBack.newCallback();
             okhttp3.Call localVarCall = getUserAccessTokenValidateBeforeCall(realm, userName, password, clientId, clientSecret, futureAPICallback);

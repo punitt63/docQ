@@ -67,15 +67,6 @@ public class BackendKeyCloakRestClient {
                 .thenAccept(getAccessToken200Response -> tokenCache.put(accessTokenCacheKey, getAccessToken200Response.getAccessToken()));
     }
 
-    private CompletionStage<String> getAccessToken() {
-        String currentCachedAccessToken = getCachedAccessToken();
-        if(currentCachedAccessToken == null || shouldRefreshAccessToken(currentCachedAccessToken)) {
-            return generateAndCacheAccessToken()
-                    .thenApply(ignore -> this.getCachedAccessToken());
-        }
-        return completedFuture(currentCachedAccessToken);
-    }
-
     private boolean shouldRefreshAccessToken(String accessToken) {
         try {
             DecodedJWT decodedJWT = JWT.decode(accessToken);
@@ -87,6 +78,15 @@ public class BackendKeyCloakRestClient {
 
     private String getCachedAccessToken() {
         return tokenCache.getIfPresent(accessTokenCacheKey);
+    }
+
+    public CompletionStage<String> getAccessToken() {
+        String currentCachedAccessToken = getCachedAccessToken();
+        if(currentCachedAccessToken == null || shouldRefreshAccessToken(currentCachedAccessToken)) {
+            return generateAndCacheAccessToken()
+                    .thenApply(ignore -> this.getCachedAccessToken());
+        }
+        return completedFuture(currentCachedAccessToken);
     }
 
     public CompletionStage<Void> createUser(String userName, String password) {
