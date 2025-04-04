@@ -258,6 +258,48 @@ public class HealthProfessionalControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    public void testRefreshUserAccessToken() throws Exception {
+        // onboard facility manager
+        String adminUserToken = getAdminUserToken();
+        HealthProfessionalController.OnBoardHealthProfessionalRequestBody onBoardFacilityManagerRequestBody = HealthProfessionalController.OnBoardHealthProfessionalRequestBody.builder()
+                .type(HealthProfessionalType.FACILITY_MANAGER)
+                .healthProfessionalID(testHealthFacilityManagerID)
+                .password("test-pass")
+                .build();
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/onboard")
+                .header("Authorization", "Bearer " + adminUserToken)
+                .content(gson.toJson(onBoardFacilityManagerRequestBody))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andReturn();
+
+        String facilityManagerAccessToken = getFacilityManagerLoginResponse().getAccessToken();
+
+        HealthProfessionalController.RefreshAccessTokenRequestBody requestBody = HealthProfessionalController.RefreshAccessTokenRequestBody.builder()
+                .refreshToken(getFacilityManagerLoginResponse().getRefreshToken())
+                .build();
+        MockHttpServletResponse mockHttpServletResponse = handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals" + "/refresh-access-token")
+                .header("Authorization", "Bearer " + facilityManagerAccessToken)
+                .content(gson.toJson(requestBody))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse();
+
+        HealthProfessionalController.RefreshUserAccessTokenResponse refreshUserAccessTokenResponse = gson.fromJson(mockHttpServletResponse.getContentAsString(), HealthProfessionalController.RefreshUserAccessTokenResponse.class);
+        String freshAccessToken = refreshUserAccessTokenResponse.getAccessToken();
+
+        HealthProfessionalController.OnBoardHealthProfessionalRequestBody onBoardHealthProfessionalRequestBody = HealthProfessionalController.OnBoardHealthProfessionalRequestBody.builder()
+                .type(HealthProfessionalType.DOCTOR)
+                .healthProfessionalID(testDoctorID)
+                .password("test-doc-pass")
+                .build();
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/onboard")
+                .header("Authorization", "Bearer " + freshAccessToken)
+                .content(gson.toJson(onBoardHealthProfessionalRequestBody))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+    }
+
     private HealthProfessionalController.LoginResponse getFacilityManagerLoginResponse() throws Exception {
         HealthProfessionalController.LoginHealthProfessionalRequestBody requestBody = HealthProfessionalController.LoginHealthProfessionalRequestBody.builder()
                 .password("test-pass")
