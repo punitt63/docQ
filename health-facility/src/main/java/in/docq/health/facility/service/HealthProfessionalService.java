@@ -8,6 +8,7 @@ import in.docq.health.facility.auth.DesktopKeycloakRestClient;
 import in.docq.health.facility.controller.HealthProfessionalController;
 import in.docq.health.facility.dao.HealthProfessionalDao;
 import in.docq.health.facility.model.HealthProfessional;
+import in.docq.keycloak.rest.client.model.GetAccessToken200Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -36,6 +37,13 @@ public class HealthProfessionalService {
                 .initialCapacity(10000)
                 .maximumSize(100000)
                 .build();
+    }
+
+    public CompletionStage<HealthProfessionalController.RefreshUserAccessTokenResponse> refreshUserAccessToken(String refreshToken) {
+        return desktopKeyCloakRestClient.refreshUserAccessToken(refreshToken)
+                .thenApply(response -> HealthProfessionalController.RefreshUserAccessTokenResponse.builder()
+                        .accessToken(response.getAccessToken())
+                        .build());
     }
 
     public CompletionStage<HealthProfessionalController.LoginResponse> login(String healthFacilityID, String healthFacilityProfessionalID, String password) {

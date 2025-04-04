@@ -33,6 +33,12 @@ public class HealthProfessionalController {
                 .thenApply(ResponseEntity::ok);
     }
 
+    @PostMapping("/refresh-access-token")
+    public CompletionStage<ResponseEntity<RefreshUserAccessTokenResponse>> refreshUserAccessToken(@RequestBody RefreshAccessTokenRequestBody refreshAccessTokenRequestBody) {
+        return healthProfessionalService.refreshUserAccessToken(refreshAccessTokenRequestBody.getRefreshToken())
+                .thenApply(ResponseEntity::ok);
+    }
+
     @PostMapping("/logout")
     public CompletionStage<ResponseEntity<Void>> logoutFacilityProfessional(@RequestHeader("Authorization") String bearerToken,
                                                                             @RequestBody LogoutHealthProfessionalRequestBody logoutHealthProfessionalRequestBody) {
@@ -67,6 +73,18 @@ public class HealthProfessionalController {
                     }
                     return (ResponseEntity<HealthProfessional>) ResponseEntity.internalServerError();
                 });
+    }
+
+    @Builder
+    @Getter
+    public static class RefreshAccessTokenRequestBody {
+        private final String refreshToken;
+    }
+
+    @Builder
+    @Getter
+    public static class RefreshUserAccessTokenResponse {
+        private final String accessToken;
     }
 
     @Builder
