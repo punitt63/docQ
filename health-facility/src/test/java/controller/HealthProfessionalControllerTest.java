@@ -3,6 +3,7 @@ package controller;
 import com.google.gson.Gson;
 import configuration.TestAbhaClientConfiguration;
 import in.docq.health.facility.HealthFacilityApplication;
+import in.docq.health.facility.auth.BackendKeyCloakRestClient;
 import in.docq.health.facility.auth.DesktopKeycloakRestClient;
 import in.docq.health.facility.controller.HealthProfessionalController;
 import in.docq.health.facility.dao.HealthProfessionalDao;
@@ -27,6 +28,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import java.util.concurrent.CompletableFuture;
 
 import static configuration.TestAbhaClientConfiguration.MockAbhaRestClient.*;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -42,6 +44,9 @@ public class HealthProfessionalControllerTest {
 
     @Autowired
     private HealthProfessionalDao healthProfessionalDao;
+
+    @Autowired
+    private BackendKeyCloakRestClient backendKeyCloakRestClient;
 
     @Autowired
     private DesktopKeycloakRestClient desktopKeycloakRestClient;
@@ -167,11 +172,151 @@ public class HealthProfessionalControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    public void testFacilityManagerResetPassword() throws Exception {
+        HealthProfessionalController.ResetPasswordHealthProfessionalRequestBody requestBody = HealthProfessionalController.ResetPasswordHealthProfessionalRequestBody.builder()
+                .oldPassword("test-pass")
+                .newPassword("new-test-pass")
+                .build();
+
+        String accessToken = getFacilityManagerLoginResponse().getAccessToken();
+
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals" + "/reset-password")
+                .header("Authorization", "Bearer " + accessToken)
+                .content(gson.toJson(requestBody))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+
+        HealthProfessionalController.ResetPasswordHealthProfessionalRequestBody requestBody2 = HealthProfessionalController.ResetPasswordHealthProfessionalRequestBody.builder()
+                .oldPassword("new-test-pass")
+                .newPassword("test-pass")
+                .build();
+
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals" + "/reset-password")
+                .header("Authorization", "Bearer " + accessToken)
+                .content(gson.toJson(requestBody2))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void testDoctorResetPassword() throws Exception {
+        HealthProfessionalController.ResetPasswordHealthProfessionalRequestBody requestBody = HealthProfessionalController.ResetPasswordHealthProfessionalRequestBody.builder()
+                .oldPassword("test-doc-pass")
+                .newPassword("new-test-doc-pass")
+                .build();
+
+        String accessToken = getDoctorLoginResponse().getAccessToken();
+
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals" + "/reset-password")
+                .header("Authorization", "Bearer " + accessToken)
+                .content(gson.toJson(requestBody))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+
+        HealthProfessionalController.ResetPasswordHealthProfessionalRequestBody requestBody2 = HealthProfessionalController.ResetPasswordHealthProfessionalRequestBody.builder()
+                .oldPassword("new-test-doc-pass")
+                .newPassword("test-doc-pass")
+                .build();
+
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals" + "/reset-password")
+                .header("Authorization", "Bearer " + accessToken)
+                .content(gson.toJson(requestBody2))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void testFacilityManagerResetPasswordDoctor_unauthorized() throws Exception {
+        HealthProfessionalController.ResetPasswordHealthProfessionalRequestBody requestBody = HealthProfessionalController.ResetPasswordHealthProfessionalRequestBody.builder()
+                .oldPassword("test-doc-pass")
+                .newPassword("new-test-doc-pass")
+                .build();
+
+        String accessToken = getFacilityManagerLoginResponse().getAccessToken();
+
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals" + "/reset-password")
+                .header("Authorization", "Bearer " + accessToken)
+                .content(gson.toJson(requestBody))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void testDoctorResetPasswordFacilityManager_unauthorized() throws Exception {
+        HealthProfessionalController.ResetPasswordHealthProfessionalRequestBody requestBody = HealthProfessionalController.ResetPasswordHealthProfessionalRequestBody.builder()
+                .oldPassword("test-pass")
+                .newPassword("new-test-pass")
+                .build();
+
+        String accessToken = getDoctorLoginResponse().getAccessToken();
+
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals" + "/reset-password")
+                .header("Authorization", "Bearer " + accessToken)
+                .content(gson.toJson(requestBody))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void testRefreshUserAccessToken() throws Exception {
+        // onboard facility manager
+        String adminUserToken = getAdminUserToken();
+        HealthProfessionalController.OnBoardHealthProfessionalRequestBody onBoardFacilityManagerRequestBody = HealthProfessionalController.OnBoardHealthProfessionalRequestBody.builder()
+                .type(HealthProfessionalType.FACILITY_MANAGER)
+                .healthProfessionalID(testHealthFacilityManagerID)
+                .password("test-pass")
+                .build();
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/onboard")
+                .header("Authorization", "Bearer " + adminUserToken)
+                .content(gson.toJson(onBoardFacilityManagerRequestBody))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andReturn();
+
+        String facilityManagerAccessToken = getFacilityManagerLoginResponse().getAccessToken();
+
+        HealthProfessionalController.RefreshAccessTokenRequestBody requestBody = HealthProfessionalController.RefreshAccessTokenRequestBody.builder()
+                .refreshToken(getFacilityManagerLoginResponse().getRefreshToken())
+                .build();
+        MockHttpServletResponse mockHttpServletResponse = handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals" + "/refresh-access-token")
+                .header("Authorization", "Bearer " + facilityManagerAccessToken)
+                .content(gson.toJson(requestBody))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse();
+
+        HealthProfessionalController.RefreshUserAccessTokenResponse refreshUserAccessTokenResponse = gson.fromJson(mockHttpServletResponse.getContentAsString(), HealthProfessionalController.RefreshUserAccessTokenResponse.class);
+        String freshAccessToken = refreshUserAccessTokenResponse.getAccessToken();
+
+        HealthProfessionalController.OnBoardHealthProfessionalRequestBody onBoardHealthProfessionalRequestBody = HealthProfessionalController.OnBoardHealthProfessionalRequestBody.builder()
+                .type(HealthProfessionalType.DOCTOR)
+                .healthProfessionalID(testDoctorID)
+                .password("test-doc-pass")
+                .build();
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/onboard")
+                .header("Authorization", "Bearer " + freshAccessToken)
+                .content(gson.toJson(onBoardHealthProfessionalRequestBody))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+    }
+
     private HealthProfessionalController.LoginResponse getFacilityManagerLoginResponse() throws Exception {
         HealthProfessionalController.LoginHealthProfessionalRequestBody requestBody = HealthProfessionalController.LoginHealthProfessionalRequestBody.builder()
                 .password("test-pass")
                 .build();
         MockHttpServletResponse mockHttpServletResponse = handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/" + testHealthFacilityManagerID + "/login")
+                .content(gson.toJson(requestBody))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andReturn()
+                .getResponse();
+        return gson.fromJson(mockHttpServletResponse.getContentAsString(), HealthProfessionalController.LoginResponse.class);
+    }
+
+    private HealthProfessionalController.LoginResponse getDoctorLoginResponse() throws Exception {
+        HealthProfessionalController.LoginHealthProfessionalRequestBody requestBody = HealthProfessionalController.LoginHealthProfessionalRequestBody.builder()
+                .password("test-doc-pass")
+                .build();
+        MockHttpServletResponse mockHttpServletResponse = handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/" + testDoctorID + "/login")
                 .content(gson.toJson(requestBody))
                 .contentType(MediaType.APPLICATION_JSON)))
                 .andReturn()

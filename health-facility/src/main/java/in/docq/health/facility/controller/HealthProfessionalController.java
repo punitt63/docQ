@@ -33,10 +33,23 @@ public class HealthProfessionalController {
                 .thenApply(ResponseEntity::ok);
     }
 
+    @PostMapping("/refresh-access-token")
+    public CompletionStage<ResponseEntity<RefreshUserAccessTokenResponse>> refreshUserAccessToken(@RequestBody RefreshAccessTokenRequestBody refreshAccessTokenRequestBody) {
+        return healthProfessionalService.refreshUserAccessToken(refreshAccessTokenRequestBody.getRefreshToken())
+                .thenApply(ResponseEntity::ok);
+    }
+
     @PostMapping("/logout")
     public CompletionStage<ResponseEntity<Void>> logoutFacilityProfessional(@RequestHeader("Authorization") String bearerToken,
                                                                             @RequestBody LogoutHealthProfessionalRequestBody logoutHealthProfessionalRequestBody) {
         return healthProfessionalService.logout(bearerToken, logoutHealthProfessionalRequestBody.getRefreshToken())
+                .thenApply(ResponseEntity::ok);
+    }
+
+    @PostMapping("/reset-password")
+    public CompletionStage<ResponseEntity<Void>> resetPasswordFacilityProfessional(@RequestBody ResetPasswordHealthProfessionalRequestBody resetPasswordHealthProfessionalRequestBody,
+                                                                                   @RequestAttribute("authenticatedUser") String authenticatedUser) {
+        return healthProfessionalService.resetPassword(resetPasswordHealthProfessionalRequestBody, authenticatedUser)
                 .thenApply(ResponseEntity::ok);
     }
 
@@ -60,6 +73,18 @@ public class HealthProfessionalController {
                     }
                     return (ResponseEntity<HealthProfessional>) ResponseEntity.internalServerError();
                 });
+    }
+
+    @Builder
+    @Getter
+    public static class RefreshAccessTokenRequestBody {
+        private final String refreshToken;
+    }
+
+    @Builder
+    @Getter
+    public static class RefreshUserAccessTokenResponse {
+        private final String accessToken;
     }
 
     @Builder
@@ -90,5 +115,10 @@ public class HealthProfessionalController {
         private final String refreshToken;
     }
 
-
+    @Builder
+    @Getter
+    public static class ResetPasswordHealthProfessionalRequestBody {
+        private final String oldPassword;
+        private final String newPassword;
+    }
 }
