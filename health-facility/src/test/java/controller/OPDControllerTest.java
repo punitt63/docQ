@@ -32,6 +32,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjuster;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -66,14 +68,15 @@ public class OPDControllerTest {
     @Test
     public void testCreateOPDByFacilityManager() throws Exception {
         String facilityManagerToken = onboardFacilityManagerAndGetToken();
+        LocalDate currDate = LocalDate.now();
         OPDController.CreateOPDRequestBody createOPDRequestBody = OPDController.CreateOPDRequestBody.builder()
                 .name("test-opd")
                 .startHour(9)
                 .endHour(12)
                 .startMinute(0)
                 .endMinute(30)
-                .startDate("2025-04-01")
-                .endDate("2026-03-31")
+                .startDate(currDate.plusDays(1).toString())
+                .endDate(currDate.plusDays(1).plusYears(1).toString())
                 .minutesToActivate(60 * 24)
                 .maxSlots(50)
                 .minutesPerSlot(5)
@@ -85,25 +88,17 @@ public class OPDControllerTest {
                 .content(gson.toJson(createOPDRequestBody))
                 .contentType(MediaType.APPLICATION_JSON)))
                 .andExpect(status().isOk());
-        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-04-01"), LocalDate.parse("2025-04-30"), 22);
-        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-05-01"), LocalDate.parse("2025-05-31"), 22);
-        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-06-01"), LocalDate.parse("2025-06-30"), 21);
-        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-07-01"), LocalDate.parse("2025-07-31"), 23);
-        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-08-01"), LocalDate.parse("2025-08-30"), 21);
-        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-09-01"), LocalDate.parse("2025-09-30"), 22);
-        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-10-01"), LocalDate.parse("2025-10-31"), 23);
-        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-11-01"), LocalDate.parse("2025-11-30"), 20);
-        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-12-01"), LocalDate.parse("2025-12-31"), 23);
-        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2026-01-01"), LocalDate.parse("2026-01-31"), 22);
-        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2026-02-01"), LocalDate.parse("2026-02-28"), 20);
-        validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2026-03-01"), LocalDate.parse("2026-03-31"), 22);
+
+        for(LocalDate date = currDate.plusDays(1);date.isBefore(currDate.plusYears(1).plusDays(2));date = date.plusDays(1)) {
+            validateOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, date, date, OPD.getDaysMatchingWeeklyTemplate(date, date, createOPDRequestBody.getWeeklyTemplate()).size());
+        }
     }
 
     @Test
     public void testUpdateOPDByFacilityManager() throws Exception {
         String facilityManagerToken = onboardFacilityManagerAndGetToken();
         createTestOPDs(facilityManagerToken);
-        List<OPD> opds = getOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-04-15"));
+        List<OPD> opds = getOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.now().plusDays(1), LocalDate.now().plusMonths(1));
         OPDController.UpdateOPDRequestBody updateOPDRequestBody = OPDController.UpdateOPDRequestBody.builder()
                 .startHour(10)
                 .endHour(13)
@@ -113,7 +108,7 @@ public class OPDControllerTest {
                 .maxSlots(51)
                 .minutesPerSlot(6)
                 .build();
-        handleAsyncProcessing(mockMvc.perform(patch("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/" + testDoctorID + "/opd-dates/2025-04-15/opds/" + opds.get(0).getId())
+        handleAsyncProcessing(mockMvc.perform(patch("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/" + testDoctorID + "/opd-dates/" + opds.get(0).getDate().toString() + "/opds/" + opds.get(0).getId())
                 .header("Authorization", "Bearer " + facilityManagerToken)
                 .content(gson.toJson(updateOPDRequestBody))
                 .contentType(MediaType.APPLICATION_JSON)))
@@ -123,8 +118,8 @@ public class OPDControllerTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$.endHour").value(13))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.startMinute").value(30))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.endMinute").value(0))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.date").value("2025-04-15"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.activateTime").value(LocalDate.parse("2025-04-15").atStartOfDay(ZoneId.of("Asia/Kolkata")).plusHours(10).plusMinutes(30).minusMinutes(60 * 24 * 2).toInstant().toEpochMilli()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.date").value(opds.get(0).getDate().toString()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.activateTime").value(opds.get(0).getDate().atStartOfDay(ZoneId.of("Asia/Kolkata")).plusHours(10).plusMinutes(30).minusMinutes(60 * 24 * 2).toInstant().toEpochMilli()))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.maxSlots").value(51))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.minutesPerSlot").value(6));
     }
@@ -171,11 +166,11 @@ public class OPDControllerTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$.length()").value(expectedCount));
     }
 
-    private List<OPD> getOPDs(String facilityManagerToken, String healthFacilityID, String healthProfessionalID, LocalDate date) throws Exception {
+    private List<OPD> getOPDs(String facilityManagerToken, String healthFacilityID, String healthProfessionalID, LocalDate startDate, LocalDate endDate) throws Exception {
         return gson.fromJson(handleAsyncProcessing(mockMvc.perform(get("/health-facilities/" + healthFacilityID + "/health-facility-professionals/opds")
                 .param("health-facility-professional-id", healthProfessionalID)
-                .param("start-date", date.toString())
-                .param("end-date", date.toString())
+                .param("start-date", startDate.toString())
+                .param("end-date", endDate.toString())
                 .header("Authorization", "Bearer " + facilityManagerToken)
                 .contentType(MediaType.APPLICATION_JSON)))
                 .andReturn()
@@ -184,14 +179,15 @@ public class OPDControllerTest {
     }
 
     private void createTestOPDs(String facilityManagerToken) throws Exception {
+        LocalDate currDate = LocalDate.now();
         OPDController.CreateOPDRequestBody createOPDRequestBody = OPDController.CreateOPDRequestBody.builder()
                 .name("test-opd")
                 .startHour(9)
                 .endHour(12)
                 .startMinute(0)
                 .endMinute(30)
-                .startDate("2025-04-01")
-                .endDate("2026-03-31")
+                .startDate(currDate.plusDays(1).toString())
+                .endDate(currDate.plusDays(1).plusYears(1).toString())
                 .minutesToActivate(60 * 24)
                 .maxSlots(50)
                 .minutesPerSlot(5)

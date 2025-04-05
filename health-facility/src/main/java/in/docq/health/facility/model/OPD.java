@@ -44,7 +44,7 @@ public class OPD {
         throw new RuntimeException("Schedule Type NOt Supported Exception");
     }
 
-    private static List<LocalDate> getDaysMatchingWeeklyTemplate(LocalDate startDate, LocalDate endDate, List<Boolean> weeklyTemplate) {
+    public static List<LocalDate> getDaysMatchingWeeklyTemplate(LocalDate startDate, LocalDate endDate, List<Boolean> weeklyTemplate) {
         List<LocalDate> result = new ArrayList<>();
 
         long daysBetween = ChronoUnit.DAYS.between(startDate, endDate) + 1;
@@ -72,7 +72,6 @@ public class OPD {
     public enum State {
         INACTIVE,
         ACTIVE,
-        IN_PROGRESS,
         COMPLETED
     }
 
@@ -92,7 +91,7 @@ public class OPD {
                     .startMinute(createOPDRequestBody.getStartMinute())
                     .endMinute(createOPDRequestBody.getEndMinute())
                     .date(date)
-                    .state(State.ACTIVE)
+                    .state(State.INACTIVE)
                     .maxSlots(createOPDRequestBody.getMaxSlots())
                     .minutesPerSlot(createOPDRequestBody.getMinutesPerSlot())
                     .activateTime(activateInstant.toEpochMilli());
@@ -118,7 +117,9 @@ public class OPD {
                     .state(ObjectUtils.firstNonNull(updateOPDRequestBody.getState(), existingOPD.getState()))
                     .maxSlots(ObjectUtils.firstNonNull(updateOPDRequestBody.getMaxSlots(), existingOPD.getMaxSlots()))
                     .minutesPerSlot(ObjectUtils.firstNonNull(updateOPDRequestBody.getMinutesPerSlot(), existingOPD.getMinutesPerSlot()))
-                    .activateTime(activateTimeInEpochMilli);
+                    .activateTime(activateTimeInEpochMilli)
+                    .actualStartTime(ObjectUtils.firstNonNull(updateOPDRequestBody.getActualStartTime(), existingOPD.getActualStartTime()))
+                    .actualEndTime(ObjectUtils.firstNonNull(updateOPDRequestBody.getActualEndTime(), existingOPD.getActualEndTime()));
         }
     }
 }

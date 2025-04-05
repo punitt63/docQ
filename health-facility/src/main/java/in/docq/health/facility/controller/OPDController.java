@@ -97,7 +97,7 @@ public class OPDController {
             LocalDate start = LocalDate.parse(startDate);
             LocalDate end = LocalDate.parse(endDate);
             checkState(start.isAfter(currentDate), "start Date should be At least Tomorrow");
-            checkState(end.isBefore(start.plusDays(365)), "start Date should be At least Tomorrow");
+            checkState(!end.isBefore(start.plusYears(1)), "End Date should be Maximum One Year From Start");
         }
 
         public LocalDate getStartDateAsLocalDate() {
@@ -126,14 +126,13 @@ public class OPDController {
         @Min(value = 0)
         @Max(value = 59)
         private int endMinute;
-        private boolean recurring;
-        private OPD.ScheduleType scheduleType;
-        private List<Boolean> weeklyTemplate;
         private int maxSlots;
         private int minutesPerSlot;
         @Min(value = 60)
         @Max(value = 7 * 24 * 60)
         private Integer minutesToActivate;
         private OPD.State state;
+        private Long actualStartTime;
+        private Long actualEndTime;
     }
 }
