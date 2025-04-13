@@ -40,7 +40,7 @@ public class OPDDao {
         this.insertOPDQuery = "INSERT INTO " + table + "(" + Column.allColumNamesSeparatedByComma() + ")" + " VALUES (" + Column.allColumnValuesSeparatedByComma() + ") on conflict do nothing";
         this.getOPDQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE opd_date = ? and id = ?";
         this.updateOPDQuery = "UPDATE " + table + " set " + Column.allModifiableColumnNamesSeparatedByComma() + " WHERE opd_date = ? and id = ?";
-        this.listOPDQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE health_facility_id = ? and health_professional_id = ? and opd_date >= ? and opd_date <= ?";
+        this.listOPDQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE health_facility_id = ? and health_professional_id = ? and opd_date >= ? and opd_date <= ? order by opd_date";
     }
 
     public CompletionStage<Void> insert(List<OPD> opds) {
@@ -63,6 +63,7 @@ public class OPDDao {
                 ps.setString(13, opd.getState().name());
                 ps.setTimestamp(14, Optional.ofNullable(opd.getActualStartTime()).map(Timestamp::new).orElse(null));
                 ps.setTimestamp(15, Optional.ofNullable(opd.getActualEndTime()).map(Timestamp::new).orElse(null));
+                ps.setInt(16, opd.getAppointmentsCount());
             }
 
             @Override
@@ -90,6 +91,7 @@ public class OPDDao {
                                 .state(OPD.State.valueOf(rs.getString(Column.STATE.columnName)))
                                 .actualStartTime(Optional.ofNullable(rs.getTimestamp(Column.ACTUAL_START_TIME.columnName)).map(Timestamp::getTime).orElse(null))
                                 .actualEndTime(Optional.ofNullable(rs.getTimestamp(Column.ACTUAL_END_TIME.columnName)).map(Timestamp::getTime).orElse(null))
+                                .appointmentsCount(rs.getInt(Column.APPOINTMENTS_COUNT.columnName))
                                 .build(), Date.valueOf(opdDate), id)
                 .exceptionally((throwable) -> {
                     throwable = throwable.getCause();
@@ -135,6 +137,7 @@ public class OPDDao {
                         .state(OPD.State.valueOf(rs.getString(Column.STATE.columnName)))
                         .actualStartTime(Optional.ofNullable(rs.getTimestamp(Column.ACTUAL_START_TIME.columnName)).map(Timestamp::getTime).orElse(null))
                         .actualEndTime(Optional.ofNullable(rs.getTimestamp(Column.ACTUAL_END_TIME.columnName)).map(Timestamp::getTime).orElse(null))
+                        .appointmentsCount(rs.getInt(Column.APPOINTMENTS_COUNT.columnName))
                         .build(), healthFacilityID, healthProfessionalID, Date.valueOf(startDate), Date.valueOf(endDate));
     }
 
@@ -169,7 +172,8 @@ public class OPDDao {
         ACTIVATE_TIME("activate_time", true),
         STATE("state", true),
         ACTUAL_START_TIME("actual_start_time", true),
-        ACTUAL_END_TIME("actual_end_time", true);
+        ACTUAL_END_TIME("actual_end_time", true),
+        APPOINTMENTS_COUNT("appointments_count", true);
 
         @Getter
         private final String columnName;

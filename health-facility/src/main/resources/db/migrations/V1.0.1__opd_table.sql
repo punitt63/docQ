@@ -14,25 +14,27 @@ CREATE TABLE opd (
     state VARCHAR(20) NOT NULL,
     actual_start_time TIMESTAMP WITH TIME ZONE,
     actual_end_time TIMESTAMP WITH TIME ZONE,
+    appointments_count INT DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT opd_pkey PRIMARY KEY (id, opd_date),
+    CONSTRAINT opd_pkey PRIMARY KEY (opd_date, id),
     CONSTRAINT opd_unique UNIQUE (health_facility_id, health_professional_id, opd_date, start_hour)
 ) PARTITION BY RANGE (opd_date);
 
-CREATE INDEX opd_activate_time_idx ON opd (activate_time);
-
-CREATE OR REPLACE FUNCTION update_modified_column()
+CREATE OR REPLACE FUNCTION update_opd()
 RETURNS TRIGGER AS $$
 BEGIN
+    IF NEW.appointments_count > NEW.max_slots THEN
+        RAISE EXCEPTION 'APPOINTMENTS_COUNT_EXCEEDED';
+    END IF;
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER update_opd_timestamp
-BEFORE UPDATE ON opd
-FOR EACH ROW EXECUTE FUNCTION update_modified_column();
+CREATE TRIGGER update_opd_trigger
+AFTER UPDATE ON opd
+FOR EACH ROW EXECUTE FUNCTION update_opd();
 
 CREATE OR REPLACE FUNCTION create_opd_partitions(start_year INT, num_years INT)
 RETURNS void AS $$

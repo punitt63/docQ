@@ -32,7 +32,8 @@ public class RolesToResourcesMapper {
 
     private static final String HEALTH_FACILITY_REALM = "health-facility";
     private static final String HEALTH_FACILITY_BACKEND_APP_ID = "de51cfc8-70d2-41c8-b251-2e93861fc311";
-
+    private static final Map<String, ResourceRepresentation> cachedResources = new HashMap<>();
+    private static final Map<String, ScopeRepresentation> cachedScopes = new HashMap<>();
     // Configuration model classes
     static class ResourceConfig {
         public String name;
@@ -87,7 +88,7 @@ public class RolesToResourcesMapper {
                 Map<String, String> rolePolicies = createRolePolicies(keycloak, config.roleResourceMappings);
 
                 // Create scope-based permissions for each resource-scope pair
-                createScopePermissions(keycloak, config.roleResourceMappings, rolePolicies);
+                //createScopePermissions(keycloak, config.roleResourceMappings, rolePolicies);
 
                 createAdminUser(keycloak);
 
@@ -279,6 +280,7 @@ public class RolesToResourcesMapper {
                 // Check if scope already exists
                 ScopeRepresentation scopeRepresentation = authzClient.scopes().findByName(scopeName);
                 if (scopeRepresentation != null) {
+                    cachedScopes.put(scopeName, authzClient.scopes().findByName(scopeName));
                     System.out.println("Scope " + scopeName + " already exists");
                     continue;
                 }
@@ -287,6 +289,7 @@ public class RolesToResourcesMapper {
                 scope.setName(scopeName);
 
                 authzClient.scopes().create(scope);
+                cachedScopes.put(scopeName, authzClient.scopes().findByName(scopeName));
                 System.out.println("Created scope: " + scopeName);
             }
 
@@ -300,7 +303,7 @@ public class RolesToResourcesMapper {
                 // Handle scopes
                 Set<ScopeRepresentation> scopeRepresentations = new HashSet<>();
                 for (String scopeName : resourceConfig.scopes) {
-                    ScopeRepresentation scope = authzClient.scopes().findByName(scopeName);
+                    ScopeRepresentation scope = cachedScopes.get(scopeName);
                     if (scope != null) {
                         scopeRepresentations.add(scope);
                     } else {
@@ -316,10 +319,12 @@ public class RolesToResourcesMapper {
                     String resourceId = existingResources.get(0).getId();
                     resource.setId(resourceId);
                     authzClient.resources().resource(resourceId).update(resource);
+                    cachedResources.put(resourceConfig.name, resource);
                     System.out.println("Updated resource: " + resourceConfig.name);
                 } else {
                     // Create new resource
                     authzClient.resources().create(resource);
+                    cachedResources.put(resourceConfig.name, authzClient.resources().findByName(resourceConfig.name).get(0));
                     System.out.println("Created resource: " + resourceConfig.name);
                 }
             }
@@ -426,17 +431,11 @@ public class RolesToResourcesMapper {
                 System.out.println("Creating permission for resource: " + resourceName + ", scope: " + scopeName);
 
                 // Find resource by name
-                List<ResourceRepresentation> resources = authzClient.resources().findByName(resourceName);
-                if (resources.isEmpty()) {
-                    System.err.println("Resource " + resourceName + " not found, skipping permission creation");
-                    continue;
-                }
-
-                ResourceRepresentation resource = resources.get(0);
+                ResourceRepresentation resource = cachedResources.get(resourceName);
                 String resourceId = resource.getId();
 
                 // Find scope by name
-                ScopeRepresentation scope = authzClient.scopes().findByName(scopeName);
+                ScopeRepresentation scope = cachedScopes.get(scopeName);
                 if (scope == null) {
                     System.err.println("Scope " + scopeName + " not found, skipping permission creation");
                     continue;

@@ -32,4 +32,8 @@ public class OPDService {
     public CompletionStage<List<OPD>> list(String healthFacilityID, String healthProfessionalID, LocalDate startDate, LocalDate endDate) {
         return opdDao.list(healthFacilityID, healthProfessionalID, startDate, endDate);
     }
+
+    public CompletionStage<OPD> get(LocalDate opdDate, String id) {
+        return opdDao.get(opdDate, id);
+    }
 }

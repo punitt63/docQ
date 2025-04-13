@@ -7,6 +7,10 @@
     {
       "name" : "opd",
       "scopes" : ["read", "create", "update"]
+    },
+    {
+      "name" : "appointment",
+      "scopes" : ["create", "start", "complete", "cancel" ,"no-show", "no-show-to-waiting", "read"]
     }
   ],
   "role-resource-mappings" : [
@@ -20,6 +24,10 @@
         {
           "name" : "opd",
           "scopes" : ["read", "create", "update"]
+        },
+        {
+          "name" : "appointment",
+          "scopes" : ["create", "start", "complete", "cancel" ,"no-show", "no-show-to-waiting", "read"]
         }
       ]
     },
@@ -33,6 +41,10 @@
         {
           "name" : "opd",
           "scopes" : ["read", "create", "update"]
+        },
+        {
+          "name" : "appointment",
+          "scopes" : ["create", "start", "complete", "cancel" ,"no-show", "no-show-to-waiting", "read"]
         }
       ]
     },
@@ -45,6 +57,10 @@
         },
         {
           "name" : "opd",
+          "scopes" : ["read"]
+        },
+        {
+          "name" : "appointment",
           "scopes" : ["read"]
         }
       ]

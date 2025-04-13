@@ -11,9 +11,15 @@ import java.time.LocalDateTime;
 @ControllerAdvice
 public class GlobalExceptionHandler {
     private final KeyCloakErrorCodesMapper keyCloakErrorCodesMapper= new KeyCloakErrorCodesMapper();
+
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ErrorResponse> handleCustomException(ApiException ex) {
         ErrorCodes errorCode = keyCloakErrorCodesMapper.getErrorCode(ex.getResponseBody().getErrorCode());
-        return new ResponseEntity<>(new ErrorResponse(errorCode), HttpStatusCode.valueOf(ex.getCode()));
+        return new ResponseEntity<>(new ErrorResponse(errorCode), HttpStatusCode.valueOf(errorCode.getHttpCode()));
+    }
+
+    @ExceptionHandler(HealthFacilityException.class)
+    public ResponseEntity<ErrorResponse> handleHealthFacilityException(HealthFacilityException ex) {
+        return new ResponseEntity<>(new ErrorResponse(ex.getErrorCode()), HttpStatusCode.valueOf(ex.getErrorCode().getHttpCode()));
     }
 }

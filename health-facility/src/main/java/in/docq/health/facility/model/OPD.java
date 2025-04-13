@@ -33,6 +33,7 @@ public class OPD {
     private final long activateTime;
     private final Long actualStartTime;
     private final Long actualEndTime;
+    private final int appointmentsCount;
 
     public static List<OPD> getEffectiveOPDs(String healthFacilityID, String healthProfessionalID, OPDController.CreateOPDRequestBody createOPDRequestBody) {
         if(createOPDRequestBody.getScheduleType().equals(ScheduleType.WEEKLY)) {
