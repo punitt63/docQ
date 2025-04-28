@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
@@ -31,6 +32,7 @@ public class OPDDao {
     private final String getOPDQuery;
     private final String updateOPDQuery;
     private final String listOPDQuery;
+    private final String createSequenceQuery;
     private final PostgresDAO postgresDAO;
     private static Gson gson = new Gson();
 
@@ -41,6 +43,7 @@ public class OPDDao {
         this.getOPDQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE opd_date = ? and id = ?";
         this.updateOPDQuery = "UPDATE " + table + " set " + Column.allModifiableColumnNamesSeparatedByComma() + " WHERE opd_date = ? and id = ?";
         this.listOPDQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE health_facility_id = ? and health_professional_id = ? and opd_date >= ? and opd_date <= ? order by opd_date";
+        this.createSequenceQuery = "CREATE SEQUENCE IF NOT EXISTS %s";
     }
 
     public CompletionStage<Void> insert(List<OPD> opds) {
@@ -70,7 +73,19 @@ public class OPDDao {
             public int getBatchSize() {
                 return opds.size();
             }
-        }).thenAccept(ignore -> {});
+        })
+        .thenCompose(ignore -> createSequences(opds))
+        .thenAccept(ignore -> {});
+    }
+
+    private CompletionStage<Void> createSequences(List<OPD> opds) {
+        return CompletableFuture.allOf(opds.stream()
+                .map(this::createSequence)
+                .toList().toArray(new CompletableFuture[0]));
+    }
+
+    private CompletionStage<Integer> createSequence(OPD opd) {
+        return postgresDAO.update(dbMetricsGroupName, "create", String.format(createSequenceQuery, opd.getSequenceName()));
     }
 
     public CompletionStage<OPD> get(LocalDate opdDate, String id) {
@@ -173,7 +188,7 @@ public class OPDDao {
         STATE("state", true),
         ACTUAL_START_TIME("actual_start_time", true),
         ACTUAL_END_TIME("actual_end_time", true),
-        APPOINTMENTS_COUNT("appointments_count", true);
+        APPOINTMENTS_COUNT("appointments_count", false);
 
         @Getter
         private final String columnName;

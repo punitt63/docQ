@@ -4,6 +4,7 @@ import in.docq.health.facility.controller.AppointmentController;
 import in.docq.health.facility.exception.ErrorCodes;
 import in.docq.health.facility.exception.HealthFacilityException;
 import in.docq.health.facility.model.Appointment;
+import in.docq.health.facility.model.OPD;
 import in.docq.spring.boot.commons.postgres.PostgresDAO;
 import lombok.Getter;
 import org.slf4j.Logger;
@@ -41,7 +42,7 @@ public class AppointmentDao {
         WITH update_count AS (
         UPDATE opd set appointments_count = appointments_count + 1 WHERE opd_date = ? and id = ?
         )
-        INSERT INTO appointment (opd_date, opd_id, patient_id, state) VALUES (?, ?, ?, ?) RETURNING *
+        INSERT INTO appointment (opd_date, opd_id, id, patient_id, state) VALUES (?, ?, nextval(?), ?, ?) RETURNING *
         """;
         this.listAppointmentsQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE opd_date >= ? and opd_date <= ?";
         this.getAppointmentQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE opd_date >= ? and opd_id = ? and id = ?";
@@ -63,6 +64,7 @@ public class AppointmentDao {
                         appointment.getOpdId(),
                         Date.valueOf(appointment.getOpdDate()),
                         appointment.getOpdId(),
+                        OPD.getOPDSequenceName(appointment.getOpdId()),
                         appointment.getPatientId(),
                         appointment.getState().name())
                 .handle((res, throwable) -> {
@@ -172,9 +174,8 @@ public class AppointmentDao {
                 args.toArray());
     }
 
-    public CompletionStage<Void> truncate() {
-        return postgresDAO.update(dbMetricsGroupName, "delete", "DELETE FROM " + table)
-                .thenAccept(ignore -> postgresDAO.update(dbMetricsGroupName, "delete", "ALTER SEQUENCE appointment_id_seq RESTART WITH 1"));
+    public CompletionStage<Integer> truncate() {
+        return postgresDAO.update(dbMetricsGroupName, "delete", "DELETE FROM " + table);
     }
 
     public enum Column {

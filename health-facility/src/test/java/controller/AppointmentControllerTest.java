@@ -163,6 +163,93 @@ public class AppointmentControllerTest {
     }
 
     @Test
+    public void testCreate100AppointmentConcurrentlyInTwoOPDs() throws Exception {
+        OPD testOPD = createTestOPD(100);
+        OPD secondTestOPD = getSecondTestOPD(100);
+        String facilityManagerToken = onboardFacilityManagerAndGetToken();
+
+        // 1st OPD 100 appointments
+        List<CompletableFuture<ResultActions>> list = new ArrayList<>();
+        for(int i = 1;i <= 100;i++) {
+            int finalI = i;
+            list.add(CompletableFuture.supplyAsync(() -> {
+                try {
+                    return handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/opd-dates/" + testOPD.getDate().toString() + "/opds/" + testOPD.getId() + "/appointments")
+                            .header("Authorization", "Bearer " + facilityManagerToken)
+                            .content(gson.toJson(AppointmentController.CreateAppointmentRequestBody.builder().patientID(testPatientId + "-" + finalI).build()))
+                            .contentType(MediaType.APPLICATION_JSON)));
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }));
+        }
+
+        // 2nd OPD 100 appointments
+        for(int i = 1;i <= 100;i++) {
+            int finalI = i;
+            list.add(CompletableFuture.supplyAsync(() -> {
+                try {
+                    return handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/opd-dates/" + secondTestOPD.getDate().toString() + "/opds/" + secondTestOPD.getId() + "/appointments")
+                            .header("Authorization", "Bearer " + facilityManagerToken)
+                            .content(gson.toJson(AppointmentController.CreateAppointmentRequestBody.builder().patientID(testPatientId + "-" + finalI).build()))
+                            .contentType(MediaType.APPLICATION_JSON)));
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }));
+        }
+
+        CompletableFuture.allOf(list.toArray(new CompletableFuture[0]))
+                .join();
+
+        // assert 1st OPD appointments
+        assertEquals(100, opdService.get(testOPD.getDate(), testOPD.getId())
+                .toCompletableFuture().join()
+                .getAppointmentsCount());
+        Set<Integer> set = new HashSet<>();
+        for(int i = 1;i <= 100;i++) {
+            List<Appointment> appointments = gson.fromJson(handleAsyncProcessing(mockMvc.perform(get("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/" + testDoctorID + "/appointments")
+                    .header("Authorization", "Bearer " + facilityManagerToken)
+                    .param("start-opd-date", testOPD.getDate().toString())
+                    .param("end-opd-date", testOPD.getDate().toString())
+                    .param("opd-id", testOPD.getId())
+                    .param("patient-id", testPatientId + "-" + i)
+                    .contentType(MediaType.APPLICATION_JSON)))
+                    .andExpect(status().isOk())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString(), new TypeToken<List<Appointment>>(){}.getType());
+            set.add(appointments.get(0).getId());
+        }
+        for(int i = 1;i <=100;i++) {
+            assertTrue("id " + i + " not present ", set.contains(i));
+        }
+
+        // assert 2nd OPD appointments
+        assertEquals(100, opdService.get(secondTestOPD.getDate(), secondTestOPD.getId())
+                .toCompletableFuture().join()
+                .getAppointmentsCount());
+        Set<Integer> sset = new HashSet<>();
+        for(int i = 1;i <= 100;i++) {
+            List<Appointment> appointments = gson.fromJson(handleAsyncProcessing(mockMvc.perform(get("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/" + testDoctorID + "/appointments")
+                    .header("Authorization", "Bearer " + facilityManagerToken)
+                    .param("start-opd-date", secondTestOPD.getDate().toString())
+                    .param("end-opd-date", secondTestOPD.getDate().toString())
+                    .param("opd-id", secondTestOPD.getId())
+                    .param("patient-id", testPatientId + "-" + i)
+                    .contentType(MediaType.APPLICATION_JSON)))
+                    .andExpect(status().isOk())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString(), new TypeToken<List<Appointment>>(){}.getType());
+            sset.add(appointments.get(0).getId());
+        }
+        for(int i = 1;i <=100;i++) {
+            assertTrue("id " + i + " not present ", sset.contains(i));
+        }
+    }
+
+    @Test
     public void testTopAppointmentWhenInProgress() throws Exception {
         String facilityManagerToken = onboardFacilityManagerAndGetToken();
         OPD testOPD = createTestOPD(3);
@@ -486,5 +573,12 @@ public class AppointmentControllerTest {
         return opdService.list(testHealthFacilityID, testDoctorID, currDate.plusDays(1), currDate.plusDays(1).plusWeeks(1))
                 .toCompletableFuture().join()
                 .get(0);
+    }
+
+    private OPD getSecondTestOPD(int maxSlots) {
+        LocalDate currDate = LocalDate.now();
+        return opdService.list(testHealthFacilityID, testDoctorID, currDate.plusDays(1), currDate.plusDays(1).plusWeeks(1))
+                .toCompletableFuture().join()
+                .get(1);
     }
 }

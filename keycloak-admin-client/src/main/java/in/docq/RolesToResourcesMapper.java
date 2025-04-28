@@ -88,7 +88,7 @@ public class RolesToResourcesMapper {
                 Map<String, String> rolePolicies = createRolePolicies(keycloak, config.roleResourceMappings);
 
                 // Create scope-based permissions for each resource-scope pair
-                //createScopePermissions(keycloak, config.roleResourceMappings, rolePolicies);
+                createScopePermissions(keycloak, config.roleResourceMappings, rolePolicies);
 
                 createAdminUser(keycloak);
 
@@ -179,7 +179,7 @@ public class RolesToResourcesMapper {
                 config.put("roles", "[{\"id\":\"" + adminRole.getId() + "\",\"required\":false}]");
                 policy.setConfig(config);
 
-                authzClient.policies().create(policy);
+                authzClient.policies().create(policy).close();
                 System.out.println("Created admin policy: " + adminPolicyName);
 
                 // Get the created policy ID
@@ -234,7 +234,7 @@ public class RolesToResourcesMapper {
                     config.put("applyPolicies", "[\"" + adminPolicyId + "\"]");
                     policyRep.setConfig(config);
 
-                    authzClient.policies().create(policyRep);
+                    authzClient.policies().create(policyRep).close();
                     System.out.println("  Created admin permission: " + permissionName);
                 }
             }
@@ -287,8 +287,7 @@ public class RolesToResourcesMapper {
 
                 ScopeRepresentation scope = new ScopeRepresentation();
                 scope.setName(scopeName);
-
-                authzClient.scopes().create(scope);
+                authzClient.scopes().create(scope).close();
                 cachedScopes.put(scopeName, authzClient.scopes().findByName(scopeName));
                 System.out.println("Created scope: " + scopeName);
             }
@@ -323,7 +322,7 @@ public class RolesToResourcesMapper {
                     System.out.println("Updated resource: " + resourceConfig.name);
                 } else {
                     // Create new resource
-                    authzClient.resources().create(resource);
+                    authzClient.resources().create(resource).close();
                     cachedResources.put(resourceConfig.name, authzClient.resources().findByName(resourceConfig.name).get(0));
                     System.out.println("Created resource: " + resourceConfig.name);
                 }
@@ -375,7 +374,7 @@ public class RolesToResourcesMapper {
                     config.put("roles", "[{\"id\":\"" + role.getId() + "\",\"required\":false}]");
                     policy.setConfig(config);
 
-                    authzClient.policies().create(policy);
+                    authzClient.policies().create(policy).close();
                     System.out.println("Created role policy: " + rolePolicyName);
 
                     // Get the created policy ID
@@ -491,7 +490,7 @@ public class RolesToResourcesMapper {
                 permission.setConfig(config);
 
                 // Create the permission
-                authzClient.policies().create(permission);
+                authzClient.policies().create(permission).close();
                 System.out.println("Created permission: " + permissionName + " with policies for roles: " + String.join(", ", roles));
             }
 

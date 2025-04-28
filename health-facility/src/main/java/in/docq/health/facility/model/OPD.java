@@ -35,6 +35,14 @@ public class OPD {
     private final Long actualEndTime;
     private final int appointmentsCount;
 
+    public String getSequenceName() {
+        return "sequence" + "_" + id.replace("-", "_");
+    }
+
+    public static String getOPDSequenceName(String id) {
+        return "sequence" + "_" + id.replace("-", "_");
+    }
+
     public static List<OPD> getEffectiveOPDs(String healthFacilityID, String healthProfessionalID, OPDController.CreateOPDRequestBody createOPDRequestBody) {
         if(createOPDRequestBody.getScheduleType().equals(ScheduleType.WEEKLY)) {
             List<LocalDate> opdDates = getDaysMatchingWeeklyTemplate(createOPDRequestBody.getStartDateAsLocalDate(), createOPDRequestBody.getEndDateAsLocalDate(), createOPDRequestBody.getWeeklyTemplate());

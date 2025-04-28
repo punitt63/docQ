@@ -129,7 +129,8 @@ public class OPDControllerTest {
         String facilityManagerToken = onboardFacilityManagerAndGetToken();
         createTestOPDs(facilityManagerToken);
         String doctorToken = onboardDoctorAndGetToken(facilityManagerToken);
-        validateOPDs(doctorToken, testHealthFacilityID, testDoctorID, LocalDate.parse("2025-04-15"), LocalDate.parse("2025-04-15"), 1);
+        List<OPD> opds = getOPDs(facilityManagerToken, testHealthFacilityID, testDoctorID, LocalDate.now().plusDays(1), LocalDate.now().plusMonths(1));
+        validateOPDs(doctorToken, testHealthFacilityID, testDoctorID, opds.get(0).getDate(), opds.get(0).getDate(), 1);
     }
 
     @Test
@@ -212,6 +213,7 @@ public class OPDControllerTest {
                 .header("Authorization", "Bearer " + adminUserToken)
                 .content(gson.toJson(onBoardFacilityManagerRequestBody))
                 .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk())
                 .andReturn();
 
         return getFacilityManagerToken();

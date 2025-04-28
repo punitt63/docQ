@@ -75,11 +75,11 @@ keycloak:
   backend:
     client:
       id: health-facility-backend-app
-      secret: mcPDbXtRrdxu4hfdCoRNkonqKzw05LYd
+      secret: PchdBBKN30i865FNVHOiMrEDpMbsNnes
   desktop:
     client:
       id: health-facility-desktop-app
-      secret: rvDL8YOaMVTzOftsWJTOVAQ1Zupm9jf2
+      secret: 4kr76QXKae7U3sgXG4Q74brzqEnsFoRe
   http:
     max:
       idle:
