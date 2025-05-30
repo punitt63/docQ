@@ -1,0 +1,78 @@
+management:
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true
+      percentiles:
+        http:
+          server:
+            requests: 0.5,0.95,0.99,0.999
+  endpoints:
+    prometheus:
+      enabled: true
+    web:
+      base-path: /
+      exposure:
+        include: health,prometheus
+      path-mapping:
+        health: '/health'
+
+spring:
+  application:
+    name: health-facility
+  jmx:
+    enabled: false
+  data:
+    jpa:
+      repositories:
+        bootstrap-mode: deferred
+  main:
+    allow-bean-definition-overriding: true
+  mvc:
+    converters:
+      preferred-json-mapper: gson
+
+
+  output:
+    ansi:
+      enabled: ALWAYS
+  server:
+    port: 9097
+  servlet:
+    session:
+      cookie:
+        http-only: true
+    context-path: /
+
+abha:
+  client:
+    id: test-abha-client-id
+    secret: test-secret
+  base:
+    url: http://localhost:8080/api/
+
+keycloak:
+  realm: patient
+  base:
+    url: http://localhost:8080
+  backend:
+    client:
+      id: patient-backend-app
+      secret: R7c7kn1Nm7mAhpGzWoFImwWSu13qfyNg
+  desktop:
+    client:
+      id: patient-mobile-app
+      secret: jCPH6ogsug1k81S2y7mVaW4Uj0rzBmct
+  http:
+    max:
+      idle:
+        connections: 20
+    keep:
+      alive:
+        duration:
+          minutes: 60
+    timeout:
+      seconds: 20
+
