@@ -17,6 +17,9 @@ import com.google.gson.*;
 import com.google.gson.internal.bind.util.ISO8601Utils;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import in.docq.abha.rest.client.model.AbhaApiV3EnrollmentEnrolByAadhaarPost200Response;
+import in.docq.abha.rest.client.model.AbhaApiV3EnrollmentEnrolByAadhaarPostRequestAuthData;
+import in.docq.abha.rest.client.model.AbhaApiV3PhrWebLoginAbhaVerifyPostRequestAuthData;
 import io.gsonfire.GsonFireBuilder;
 import okio.ByteString;
 
@@ -85,6 +88,9 @@ public class JSON {
         gsonBuilder.registerTypeAdapter(OffsetDateTime.class, offsetDateTimeTypeAdapter);
         gsonBuilder.registerTypeAdapter(LocalDate.class, localDateTypeAdapter);
         gsonBuilder.registerTypeAdapter(byte[].class, byteArrayAdapter);
+        gsonBuilder.registerTypeAdapterFactory(new AbhaApiV3EnrollmentEnrolByAadhaarPostRequestAuthData.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new AbhaApiV3EnrollmentEnrolByAadhaarPost200Response.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new AbhaApiV3PhrWebLoginAbhaVerifyPostRequestAuthData.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new in.docq.abha.rest.client.model.ABDMSoftwareResponse.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new in.docq.abha.rest.client.model.AbdmCompliantSoftware.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new in.docq.abha.rest.client.model.BridgeAddUpdate.CustomTypeAdapterFactory());

@@ -4440,7 +4440,7 @@ public class UsersApi {
         <tr><td> 204 </td><td> No Content </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call adminRealmsRealmUsersUserIdResetPasswordPutCall(String realm, String userId, CredentialRepresentation credentialRepresentation, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call adminRealmsRealmUsersUserIdResetPasswordPutCall(String realm, String token, String userId, CredentialRepresentation credentialRepresentation, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -4482,12 +4482,16 @@ public class UsersApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
+        if (token != null) {
+            localVarHeaderParams.put("Authorization", "Bearer " + token);
+        }
+
         String[] localVarAuthNames = new String[] {  };
         return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call adminRealmsRealmUsersUserIdResetPasswordPutValidateBeforeCall(String realm, String userId, CredentialRepresentation credentialRepresentation, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call adminRealmsRealmUsersUserIdResetPasswordPutValidateBeforeCall(String realm, String adminToken, String userId, CredentialRepresentation credentialRepresentation, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'realm' is set
         if (realm == null) {
             throw new ApiException("Missing the required parameter 'realm' when calling adminRealmsRealmUsersUserIdResetPasswordPut(Async)");
@@ -4498,7 +4502,7 @@ public class UsersApi {
             throw new ApiException("Missing the required parameter 'userId' when calling adminRealmsRealmUsersUserIdResetPasswordPut(Async)");
         }
 
-        return adminRealmsRealmUsersUserIdResetPasswordPutCall(realm, userId, credentialRepresentation, _callback);
+        return adminRealmsRealmUsersUserIdResetPasswordPutCall(realm, adminToken, userId, credentialRepresentation, _callback);
 
     }
 
@@ -4536,7 +4540,7 @@ public class UsersApi {
      </table>
      */
     public ApiResponse<Void> adminRealmsRealmUsersUserIdResetPasswordPutWithHttpInfo(String realm, String userId, CredentialRepresentation credentialRepresentation) throws ApiException {
-        okhttp3.Call localVarCall = adminRealmsRealmUsersUserIdResetPasswordPutValidateBeforeCall(realm, userId, credentialRepresentation, null);
+        okhttp3.Call localVarCall = adminRealmsRealmUsersUserIdResetPasswordPutValidateBeforeCall(realm, null, userId, credentialRepresentation, null);
         return localVarApiClient.execute(localVarCall);
     }
 
@@ -4558,10 +4562,22 @@ public class UsersApi {
      */
     public okhttp3.Call adminRealmsRealmUsersUserIdResetPasswordPutAsync(String realm, String userId, CredentialRepresentation credentialRepresentation, final ApiCallback<Void> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = adminRealmsRealmUsersUserIdResetPasswordPutValidateBeforeCall(realm, userId, credentialRepresentation, _callback);
+        okhttp3.Call localVarCall = adminRealmsRealmUsersUserIdResetPasswordPutValidateBeforeCall(realm, null, userId, credentialRepresentation, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
+
+    public CompletionStage<Void> adminRealmsRealmUsersUserIdResetPasswordPutAsyncCall(String realm, String adminToken, String userId, CredentialRepresentation credentialRepresentation)  {
+        try {
+            FutureApiCallBack<Void> futureAPICallback = FutureApiCallBack.newCallback();
+            okhttp3.Call localVarCall = adminRealmsRealmUsersUserIdResetPasswordPutValidateBeforeCall(realm, adminToken, userId, credentialRepresentation, futureAPICallback);
+            localVarApiClient.executeAsync(localVarCall, futureAPICallback);
+            return futureAPICallback.getFuture();
+        } catch (Exception e) {
+            throw new CompletionException(e);
+        }
+    }
+
     /**
      * Build call for adminRealmsRealmUsersUserIdSendVerifyEmailPut
      * @param realm realm name (not id!) (required)

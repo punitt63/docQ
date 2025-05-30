@@ -12,6 +12,7 @@
 <!--        <module>rest-client-generator</module>-->
         <module>abha-rest-client</module>
         <module>health-facility</module>
+        <module>patient-processor</module>
         <module>spring-boot-commons</module>
         <module>keycloak-rest-client</module>
         <module>keycloak-admin-client</module>

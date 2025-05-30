@@ -1,0 +1,783 @@
+/*
+ * ABHA
+ * It is important to standardize the process of identification of an individual across healthcare providers, to ensure that the created medical records are issued to the right individual or accessed by a Health Information User through appropriate consent. <br><br><b>API Security</b> <br> You need Authorization Token and X-HIP-ID to consume APIs. <br><br> <b>Notes:</b> <ol> <li><b>In order to have access to HealthID APIs, your clientId must have hid role in gateway. So if you want access to these APIs then please request it in your ABDM on-boarding request.</b></li> <li><b>In order to have access to Integrated Programs HealthID APIs, your clientId must have integrated_program role in gateway. So if you want access to these APIs then please request it in your ABDM on-boarding request. Also, you will need to share integrated program benefit name to be used in this case.</b></li> <li><b>When calling APIs, please ensure that Authorization header must have format as <i>Bearer {Token_Value}</i>. Please note the prefix Bearer followed by space before token value.</b></li> <li><b>Check the state and district codes from LGD directory <a href=\"https://lgdirectory.gov.in/\">here.</a></b></li> <li><b>Highlighted Changes in the API Version 3:</b> <ul> <li>Sensitive data (Data like OTP, Aadhaar Number, Password, Username etc.) have to be encrypted.</li> <li>Data is encrypted by the public certificate. The certificate can be downloaded from the <code>/v3/auth/cert</code> API under the <b>Authentication</b> tag in version 3.</li> <li>RSA Encryption to encrypt the data. Cipher Type - <b>RSA/ECB/PKCS1Padding</b>. An online tool to encrypt data is available <a href=\"https://www.devglan.com/online-tools/rsa-encryption-decryption\">here.</a></li> </ul> </li> </ol> <br> <b> <font size=\"3\">Validations Regex Patterns </font> </b> <ol><li> Mobile Number  Validation :<code>  <b>(\\\\+91|0)?[1-9][0-9]{9}</b></code> </li> <li>Date of Birth Validation : <code> <b>\\d{4}\\-(0[0-9]|1[012])\\-(0[0-9]|[12][0-9]|3[01])$</b> </code> </li> <li>Abha Address Validation: <code><b>(^[a-zA-Z0-9]+[.]?[a-zA-Z0-9]*[_]?[a-zA-Z0-9]+$)|(^[a-zA-Z0-9]+[_]?[a-zA-Z0-9]*[.]?[a-zA-Z0-9]+$)</b></code></li> <li> ABHA Number Validation: <code><b>\\d{2}-\\d{4}-\\d{4}-\\d{4}</b></code> <li> OTP Validation: <b><code>[0-9]{6}</code></b></li> <li>Password Validation: <b><code>^(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$^*_-])[A-Za-z\\d!@#$%^&*_-]{8,}$</b></code></li> <li>UUID Validation: <code>^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$</code></li> <li>Email  Validation: <code>^[a-zA-Z0-9_-]+(?:\\.[a-zA-Z0-9_-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$ </code></li> <li>Driving License Validation: <code>^[a-zA-Z0-9_-]+(?:\\.[a-zA-Z0-9_-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$</code></li> <li> Transaction Id Validation: <code>^[a-zA-Z0-9_-]+(?:\\.[a-zA-Z0-9_-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$</code></li><br><br> </ol><b> <font size=\"3\"> Brief Description about Regex Patterns </b> <ol><li><b>Mobile Number Validation</b><ol type=\"a\"><li>Optional Country Code or Leading Zero: Matches either +91 (country code for India) or 0, or neither, at the beginning of the string.</li><li>First Digit Non-Zero: Ensures the first digit after the country code or zero is a digit from 1 to 9 (non-zero).</li><li>Phone Number Length: Validates that the phone number part is exactly 10 digits long.</li><li>For example: <code>9876543210,+911234567890 </code></li></ol></li><li><b>Date of Birth Validation</b><ol type=\"a\"><li>Year Validation: Matches exactly 4 digits. Ensures the year is a 4-digit number.</li><li>Month Validation: Matches a hyphen followed by either a digit from 0-9 (for months 01 to 09), a digit from 10 to 12 (for months 10 to 12). Ensures the month is between 01 and 12.</li><li>Day Validation: Matches a hyphen followed by either a digit from 0-9 (for days 01 to 09), a digit from 10 to 29 (for days 10 to 29), a digit from 30 to 31 (for days 30 and 31). Ensures the day is between 01 and 31.</li><li>For Example: <code>2023-04-15</code></li></ol></li></ol><ol start=\"3\"><li><b>Abha Address Validation</b><ol type=\"a\"><li>Start and End with Alphanumeric Characters: Ensures the address starts with one or more alphanumeric characters. Ensures the address ends with one or more alphanumeric characters.</li><li>Optional Period (.): Allows for an optional period (.) anywhere within the address.</li><li>Optional Underscore: Allows for an optional underscore (_) in between the alphanumeric characters.</li><li>Length Validation: Ensures the ABHA address is between 8 to 18 characters long.</li><li>For Example: <code>john.doe_123, alice_smith.456, user.name_1</code></li></ol></li></ol><ol start=\"4\"><li><b>ABHA Number Validation</b><ol type=\"a\"><li>Two Digit Prefix: Matches exactly 2 digits at the beginning.</li><li>Four Digit Groups: Matches exactly 4 digits, separated by hyphens.</li><li>Hyphen Separation: Each group of digits is separated by a hyphen.</li><li>Complete Format: Ensures the ABHA number is in the format 11-XXXX-XXXX-XXXX.</li></ol></li></ol> <ol start=\"5\"><li><b>OTP Validation</b><ol type=\"a\"><li>Digit Only: Ensures that only numeric digits (0-9) are used.</li><li>Exact Length: Ensures the OTP is exactly 6 digits long.</li><li>Complete Format: The OTP must match the format [0-9]{6}.</li><li>For Example: <code>123456, 654321, 000123</code></li></ol> <li><b>Password Validation</b><ol type=\"a\"><li>Uppercase Letter: Ensures the password contains at least one uppercase letter (A-Z).</li><li>Digit: Ensures the password contains at least one digit (0-9).</li><li>Special Character: Ensures the password contains at least one special character from <code>!@#$%^&*-</code>.</li><li>Length: Ensures the password is at least 8 characters long.</li><li>Allowed Characters: The password can contain uppercase letters, lowercase letters, digits, and the specified special characters.</li><li>Complete Format: The password must match the pattern ^(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*-])[A-Za-z\\d!@#$%^&*-]{8,}$.</li><li>For Example: <code>Password1!, Secure#123, My_Pass4$ </code></li></ol></li> <li><b>UUID Validation</b><ol type=\"a\"><li><b>8</b> Hexadecimal Characters: Ensures the UUID starts with exactly 8 hexadecimal characters (0-9, a-f).</li><li><b>4</b> Hexadecimal Characters: Ensures the next segment contains exactly 4 hexadecimal characters.</li><li>Version Indicator: Ensures the next segment starts with a digit between 1 and 5, followed by 3 hexadecimal characters.</li><li>Variant Indicator: Ensures the next segment starts with a digit from 8, 9, a, or b, followed by 3 hexadecimal characters.</li><li><b>12</b> Hexadecimal Characters: Ensures the UUID ends with exactly 12 hexadecimal characters.</li><li>Hyphen Separation: Each segment is separated by a hyphen (-).</li><li>Complete Format: The UUID must match the pattern ^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$.</li><li>For Example: <code>123e4567-e89b-12d3-a456-426614174000, 550e8400-e29b-41d4-a716-446655440000</code></li></ol></li><li><b>Email Validation</b><ol type = \"a\"><li>Alphanumeric Characters: Allows letters (a-z, A-Z) and numbers (0-9), as well as underscores (_) and hyphens (-).</li><li>Dot Separator: Allows dots (.) within the local part of the email.</li><li>At Symbol: Requires an @ symbol separating the local part and the domain part.</li><li>Domain: Allows letters (a-z, A-Z), numbers (0-9), and hyphens (-).</li><li>Domain Extension: Requires a domain extension with only letters, ranging from 2 to 7 characters.</li><li>Complete Format: The email must match the pattern ^[a-zA-Z0-9_-]+(?:\\\\.[a-zA-Z0-9_-]+)*@(?:[a-zA-Z0-9-]+\\\\.)+[a-zA-Z]{2,7}$.</li><li>For Example: <code>user.name@example.com, username_123@domain.org</code></li></ol></li><li><b>Driving License Validation</b><ol type = \"a\"><li>Alphanumeric Characters: The license must start with letters (a-z, A-Z) or numbers (0-9).</li><li>Optional Separator: Allows for an optional hyphen (-) or space ( ) as a separator, but only one.</li><li>Continuation: After the optional separator, the license continues with letters (a-z, A-Z) or numbers (0-9).</li><li>Complete Format: The license must match the pattern ^[a-zA-Z0-9]+([-\\s]{0,1})[a-zA-Z0-9]+$.</li><li>For Example: <code>ABC123, ABC-123, ABC 123</code></li></ol></li><li><b>Transaction Id Validation</b><ol type=\"a\"><li>8 Hexadecimal Characters: Ensures the Txn Id starts with exactly 8 hexadecimal characters (0-9, a-f).</li><li>4 Hexadecimal Characters: Ensures the next segment contains exactly 4 hexadecimal characters.</li><li>Version Indicator: Ensures the next segment starts with a digit between 1 and 5, followed by 3 hexadecimal characters.</li><li>Variant Indicator: Ensures the next segment starts with a digit from 8, 9, a, or b, followed by 3 hexadecimal characters.</li><li>12 Hexadecimal Characters: Ensures the Txn Id ends with exactly 12 hexadecimal characters.</li><li>Hyphen Separation: Each segment is separated by a hyphen (-).</li><li>Complete Format: The Txn Id must match the pattern ^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$.</li><li>For Example: <code>123e4567-e89b-12d3-a456-426614174000, 550e8400-e29b-41d4-a716-446655440000</code></li></ol></li>
+ *
+ * The version of the OpenAPI document: 3.0.0
+ * 
+ *
+ * NOTE: This class is auto generated by OpenAPI Generator (https://openapi-generator.tech).
+ * https://openapi-generator.tech
+ * Do not edit the class manually.
+ */
+
+
+package in.docq.abha.rest.client.api;
+
+import com.google.common.reflect.TypeToken;
+import in.docq.abha.rest.client.*;
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletionException;
+import in.docq.abha.rest.client.model.*;
+import java.util.concurrent.CompletionStage;
+
+public class AbhaLoginApi {
+    private ApiClient localVarApiClient;
+    private int localHostIndex;
+    private String localCustomBaseUrl;
+
+    public AbhaLoginApi() {
+        this(Configuration.getDefaultApiClient());
+    }
+
+    public AbhaLoginApi(ApiClient apiClient) {
+        this.localVarApiClient = apiClient;
+    }
+
+    public ApiClient getApiClient() {
+        return localVarApiClient;
+    }
+
+    public void setApiClient(ApiClient apiClient) {
+        this.localVarApiClient = apiClient;
+    }
+
+    public int getHostIndex() {
+        return localHostIndex;
+    }
+
+    public void setHostIndex(int hostIndex) {
+        this.localHostIndex = hostIndex;
+    }
+
+    public String getCustomBaseUrl() {
+        return localCustomBaseUrl;
+    }
+
+    public void setCustomBaseUrl(String customBaseUrl) {
+        this.localCustomBaseUrl = customBaseUrl;
+    }
+
+    /**
+     * Build call for abhaApiV3ProfileLoginRequestOtpPost
+     *
+     * @param token
+     * @param REQUEST_ID                                 (required)
+     * @param TIMESTAMP                                  (required)
+     * @param abhaApiV3ProfileLoginRequestOtpPostRequest &lt;b&gt;Below is the Request Body description:&lt;/b&gt;&lt;br&gt;&lt;br&gt;      &lt;b&gt;Note:&lt;/b&gt; Mandatory fields can&#39;t be null. &lt;ul&gt;  &lt;li&gt; &lt;p&gt;&lt;strong&gt;scope&lt;/strong&gt; (required):&lt;/p&gt;  &lt;ul&gt;  &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; Specifies the scope of the OTP request.&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;[\&quot;abha-login\&quot;, \&quot;aadhaar-verify\&quot;]&lt;/code&gt;&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Possible Values:&lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt;aadhaar-verify&lt;/code&gt;, &lt;code&gt;mobile-verify&lt;/code&gt;, &lt;code&gt;re-activate&lt;/code&gt;, &lt;code&gt; search-abha &lt;/code&gt; &lt;code&gt;retrieval&lt;/code&gt;, &lt;code&gt;de-activate&lt;/code&gt;, &lt;code&gt;delete&lt;/code&gt;, &lt;code&gt;re-kyc&lt;/code&gt; &lt;code&gt;aadhaar-face-verify&lt;/code&gt;, &lt;code&gt;aadhaar-iris-verify&lt;/code&gt;, &lt;code&gt;aadhaar-bio-verify&lt;/code&gt;etc.&lt;/li&gt;  &lt;/ul&gt;  &lt;/li&gt;  &lt;li&gt; &lt;p&gt;&lt;strong&gt;loginHint&lt;/strong&gt; (required):&lt;/p&gt;  &lt;ul&gt;  &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; Indicates the type of identifier being used for the OTP request.&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;aadhaar&lt;/code&gt;&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Possible Values:&lt;/strong&gt; &lt;code&gt;aadhaar&lt;/code&gt;, &lt;code&gt;mobile&lt;/code&gt;, &lt;code&gt;abha-number&lt;/code&gt; &lt;code&gt; index &lt;/code&gt; &lt;/li&gt;  &lt;/ul&gt;  &lt;/li&gt;  &lt;li&gt; &lt;p&gt;&lt;strong&gt;loginId&lt;/strong&gt; (required):&lt;/p&gt;  &lt;ul&gt;  &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; The encrypted identifier (ABHA Number, or Mobile Number) for which the OTP is being requested.&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;{{encrypted aadhaar number}}, {{encrypted mobile number}}, {{encrypted abha-number}}, {{rsaIndexEncryptionOutput}}&lt;/code&gt;&lt;/li&gt;  &lt;/ul&gt;  &lt;/li&gt;  &lt;li&gt; &lt;p&gt;&lt;strong&gt;otpSystem&lt;/strong&gt; (required):&lt;/p&gt;  &lt;ul&gt;  &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; Specifies the system used for OTP generation.&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;abdm&lt;/code&gt;&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Possible Values:&lt;/strong&gt; &lt;code&gt;abdm&lt;/code&gt;, &lt;code&gt;aadhaar&lt;/code&gt;&lt;/li&gt;  &lt;/ul&gt;  &lt;/li&gt;  &lt;/ul&gt;   (optional)
+     * @param _callback                                  Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details <table border="1">
+     * <caption>Response Details</caption>
+     * <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+     * <tr><td> 200 </td><td> The 200 response code indicates a successful request. In this context, it refers to the successful generation and delivery of an OTP (One-Time Password) for various services.&lt;br&gt;&lt;br&gt; &lt;strong&gt;Types of OTP Responses:&lt;/strong&gt; &lt;ol&gt;  &lt;li&gt;&lt;strong&gt;Login Via Mobile Number - Positive flow:&lt;/strong&gt; This action allows users to log in to their ABHA (Ayushman Bharat Health Account) using their mobile number. An OTP (One-Time Password) is sent to the provided mobile number. This ensures that the user’s identity is securely verified before granting access to their ABHA profile.&lt;/li&gt;  &lt;br&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number using ABHA OTP - Positive flow:&lt;/strong&gt; This action allows users to log in to their ABHA using their ABHA Number. An OTP is sent to the mobile number registered with the ABHA Number. This ensures that the user’s identity is securely verified before granting access to their ABHA profile.&lt;/li&gt; &lt;/ol&gt;   &lt;ol start&#x3D;\&quot;3\&quot;&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using Aadhaar OTP-positive flow:&lt;/strong&gt; This action allows users to log in to their ABHA using their Aadhaar Number. An OTP is sent to the mobile number registered with the aadhaar Number. This ensures that the user’s identity is securely verified before granting access to their ABHA profile.&lt;/li&gt; &lt;/ol&gt; &lt;ol start &#x3D;\&quot;4\&quot;&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar- Positive Flow.&lt;/strong&gt; This action allows users to log in to their ABHA using their Aadhaar number. An OTP is sent to the mobile number registered with the Aadhaar. This ensures that the user’s identity is securely verified before granting access to their ABHA profile.&lt;/li&gt; &lt;/ol&gt; &lt;ol start &#x3D;\&quot;5\&quot;&gt; &lt;li&gt;&lt;strong&gt;Forgot ABHA via Mobile OTP- Positive flow:&lt;/strong&gt; This action allows users to retrieve their ABHA number by sending an OTP to the mobile number registered with their ABHA profile. This ensures that the user’s identity is securely verified before retrieving the ABHA number&lt;/li&gt;  &lt;br&gt; &lt;li&gt;&lt;strong&gt;Forgot ABHA via Aadhaar OTP- Positive Flow:&lt;/strong&gt;  This action allows users to retrieve their ABHA number by sending an OTP to the mobile number registered with their Aadhaar. This ensures that the user’s identity is securely verified before retrieving the ABHA number.&lt;/li&gt; &lt;br&gt; &lt;li&gt;&lt;strong&gt;Retrieval of Enrolment- Positive flow:&lt;/strong&gt;This action allows users to retrieve their enrolment details by sending an OTP to the mobile number registered with their ABHA profile. This ensures that the user’s identity is securely verified before retrieving the enrolment details.&lt;/li&gt; </td><td>  -  </td></tr>
+     * <tr><td> 400 </td><td> Indicates various errors encountered during the OTP generation process .&lt;br&gt;&lt;br&gt; &lt;strong&gt;Types of OTP Responses:&lt;/strong&gt; &lt;ol&gt; &lt;li&gt;&lt;strong&gt;Login Via Mobile Number - Invalid LoginHint:&lt;/strong&gt; This action attempts to log in to ABHA (Ayushman Bharat Health Account) using an invalid loginHint. The loginHint provided does not match the expected values.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using ABHA OTP - Invalid Scope&lt;/strong&gt;  This action attempts to log in to ABHA using an invalid scope. The scope provided does not match the expected values for the OTP request.&lt;/li&gt; &lt;/ol&gt; &lt;ol start &#x3D;\&quot;2\&quot;&gt; &lt;/ol&gt;  &lt;ol start &#x3D;\&quot;3\&quot;&gt;&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar - Invalid Login Hint:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid loginHint. The loginHint provided does not match the expected values.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar OTP - Invalid Scope:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid scope. The scope provided does not match the expected values for the OTP request&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar OTP - Invalid LoginId:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid loginId. The loginId provided does not match the expected format or value&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar OTP - Invalid Login Hint:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid loginHint. The loginHint provided does not match the expected values&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using ABHA OTP - Invalid LoginHint:&lt;/strong&gt;  This action attempts to log in to ABHA using an invalid loginHint. The loginHint provided does not match the expected values&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using ABHA OTP - Invalid LoginId:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid loginId. The loginId provided does not match the expected format or value.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar - Invalid Scope:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid scope. The scope provided does not match the expected values for the OTP request.&lt;/li&gt; </td><td>  -  </td></tr>
+     * <tr><td> 401 </td><td> The 401 response code indicates an unauthorized request. In this context, it refers to the lack of proper authentication during the operation of the Invalid Credentials.&lt;br&gt;&lt;br&gt; &lt;strong&gt;Types of OTP Response Errors:&lt;/strong&gt; &lt;ol&gt; &lt;li&gt;&lt;strong&gt;Login Via Mobile Number - Invalid Access Token&lt;/strong&gt;: This action attempts to log in to ABHA (Ayushman Bharat Health Account) using a mobile number, but fails due to an invalid access token. The access token provided for authorization is invalid, meaning the server cannot verify the user’s identity.&lt;/li&gt; &lt;/ol&gt; &lt;ol start&#x3D;\&quot;2\&quot;&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar - Invalid Access Token&lt;/strong&gt;:  This action attempts to log in to ABHA using an Aadhaar number, but fails due to an invalid access token. The access token provided for authorization is invalid, meaning the server cannot verify the user’s identity.&lt;/li&gt; &lt;/ol&gt; &lt;/ol&gt; &lt;ol start&#x3D;\&quot;3\&quot;&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using ABHA OTP - Invalid Access Token&lt;/strong&gt;:This action attempts to log in to ABHA using an ABHA number and ABHA OTP, but fails due to an invalid access token. The access token provided for authorization is invalid, meaning the server cannot verify the user’s identity.&lt;/li&gt; &lt;/ol&gt; &lt;ol start&#x3D;\&quot;4\&quot;&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using Aadhaar OTP - Invalid Access Token&lt;/strong&gt;: This action attempts to log in to ABHA using an ABHA number and Aadhaar OTP, but fails due to an invalid access token. The access token provided for authorization is invalid, meaning the server cannot verify the user’s identity..&lt;/li&gt; &lt;/ol&gt; </td><td>  -  </td></tr>
+     * <tr><td> 404 </td><td> Not Found </td><td>  -  </td></tr>
+     * <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     * </table>
+     */
+    public okhttp3.Call abhaApiV3ProfileLoginRequestOtpPostCall(String token, String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginRequestOtpPostRequest abhaApiV3ProfileLoginRequestOtpPostRequest, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = abhaApiV3ProfileLoginRequestOtpPostRequest;
+
+        // create path and map variables
+        String localVarPath = "/abha/api/v3/profile/login/request/otp";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        if (token != null) {
+            localVarHeaderParams.put("Authorization", "Bearer " + localVarApiClient.parameterToString(token));
+        }
+
+        if (REQUEST_ID != null) {
+            localVarHeaderParams.put("REQUEST-ID", localVarApiClient.parameterToString(REQUEST_ID));
+        }
+
+
+        if (TIMESTAMP != null) {
+            localVarHeaderParams.put("TIMESTAMP", localVarApiClient.parameterToString(TIMESTAMP));
+        }
+
+
+        String[] localVarAuthNames = new String[] { "bearerAuth" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call abhaApiV3ProfileLoginRequestOtpPostValidateBeforeCall(String token, String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginRequestOtpPostRequest abhaApiV3ProfileLoginRequestOtpPostRequest, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'REQUEST_ID' is set
+        if (REQUEST_ID == null) {
+            throw new ApiException("Missing the required parameter 'REQUEST_ID' when calling abhaApiV3ProfileLoginRequestOtpPost(Async)");
+        }
+
+        // verify the required parameter 'TIMESTAMP' is set
+        if (TIMESTAMP == null) {
+            throw new ApiException("Missing the required parameter 'TIMESTAMP' when calling abhaApiV3ProfileLoginRequestOtpPost(Async)");
+        }
+
+        return abhaApiV3ProfileLoginRequestOtpPostCall(token, REQUEST_ID, TIMESTAMP, abhaApiV3ProfileLoginRequestOtpPostRequest, _callback);
+
+    }
+
+    /**
+     * Use Case: ABHA Login - Send OTP using Aadhaar number, ABHA number, Mobile number, Biometric Login, Search ABHA, Find ABHA via Biometrics
+     * \&quot;This API endpoint is used to request an OTP (One-Time Password) for logging into an ABHA (Ayushman Bharat Health Account) profile. It is used to send the OTP to the user’s registered mobile number or email address for the purpose of logging into their ABHA profile. The OTP is essential for verifying the user’s identity and ensuring secure access to their profile.&lt;br&gt; &lt;br&gt;**Example of OTP Request**&lt;br&gt; &lt;br&gt;Example 1:&lt;br&gt; **Login via ABHA Number - Using Aadhaar OTP:** This endpoint sends the OTP to the user’s registered mobile number for logging into their ABHA profile using their ABHA number and Aadhaar.&lt;br&gt; &lt;br&gt;Example 2:&lt;br&gt; **Login via ABHA Number - Using ABHA OTP:** This endpoint sends the OTP to the user’s registered mobile number for logging into their ABHA profile using their ABHA number and ABHA number. &lt;br&gt; &lt;br&gt;Example 3 :&lt;br&gt; **Login via Aadhaar:** This endpoint sends the OTP to the user’s registered mobile number for logging into their ABHA profile using their Aadhaar number.&lt;br&gt;&lt;br&gt; Example 4:&lt;br&gt; **Login via Mobile number:** This endpoint sends the OTP to the user’s registered mobile number for logging into their ABHA profile using their mobile number.  &lt;br&gt;&lt;br&gt; Example 5:&lt;br&gt;  **ABHA PROFILE (Login via Biometric) -** It is used to send the OTP to user registered mobile number for logging into their ABHA profile. The request body should include the scope, loginHint loginId, otpSystem. &lt;br&gt; &lt;br&gt; For Login via Biometric using face &lt;br&gt; &lt;strong&gt;scope: &lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt; aadhaar-face-verify &lt;/code&gt;   &lt;br&gt;&lt;br&gt; For Login via Biometric using fingerprint &lt;br&gt; &lt;strong&gt;scope: &lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt; aadhaar-bio-verify &lt;/code&gt; &lt;br&gt;&lt;br&gt;For Login via Biometric using Iris &lt;br&gt; &lt;strong&gt;scope: &lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt; aadhaar-iris-verify &lt;/code&gt;   &lt;br&gt;&lt;br&gt;Example 6:&lt;br&gt;  **Find ABHA  - Send OTP:** It is used to send OTP on user registered Mobile number to fetch complete ABHA Details along with JWT Tokens. &lt;br&gt;&lt;br&gt; For requesting an OTP incase of Find ABHA, the loginHint will be &lt;code&gt;index &lt;/code&gt; and loginId will be RSA encrypted index key to fetch the complete ABHA details of that particular ABHA number. &lt;br&gt;&lt;br&gt;Example 7:&lt;br&gt;  **Find ABHA  - Request Biometric Authentication:** It is used to request Biometric authentication (Face/Fingerprint/Iris) to fetch complete ABHA Details along with JWT Tokens. &lt;br&gt;&lt;br&gt; For authentication request  incase of Find ABHA, the loginHint will be &lt;code&gt;index &lt;/code&gt; and loginId will be RSA encrypted index key to fetch the complete ABHA details of that particular ABHA number. &lt;br&gt;&lt;br&gt;&lt;strong&gt;Note : &lt;/strong&gt; OTP will be valid for 10 minute only &lt;br&gt;&lt;br&gt;
+     * @param REQUEST_ID  (required)
+     * @param TIMESTAMP  (required)
+     * @param abhaApiV3ProfileLoginRequestOtpPostRequest &lt;b&gt;Below is the Request Body description:&lt;/b&gt;&lt;br&gt;&lt;br&gt;      &lt;b&gt;Note:&lt;/b&gt; Mandatory fields can&#39;t be null. &lt;ul&gt;  &lt;li&gt; &lt;p&gt;&lt;strong&gt;scope&lt;/strong&gt; (required):&lt;/p&gt;  &lt;ul&gt;  &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; Specifies the scope of the OTP request.&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;[\&quot;abha-login\&quot;, \&quot;aadhaar-verify\&quot;]&lt;/code&gt;&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Possible Values:&lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt;aadhaar-verify&lt;/code&gt;, &lt;code&gt;mobile-verify&lt;/code&gt;, &lt;code&gt;re-activate&lt;/code&gt;, &lt;code&gt; search-abha &lt;/code&gt; &lt;code&gt;retrieval&lt;/code&gt;, &lt;code&gt;de-activate&lt;/code&gt;, &lt;code&gt;delete&lt;/code&gt;, &lt;code&gt;re-kyc&lt;/code&gt; &lt;code&gt;aadhaar-face-verify&lt;/code&gt;, &lt;code&gt;aadhaar-iris-verify&lt;/code&gt;, &lt;code&gt;aadhaar-bio-verify&lt;/code&gt;etc.&lt;/li&gt;  &lt;/ul&gt;  &lt;/li&gt;  &lt;li&gt; &lt;p&gt;&lt;strong&gt;loginHint&lt;/strong&gt; (required):&lt;/p&gt;  &lt;ul&gt;  &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; Indicates the type of identifier being used for the OTP request.&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;aadhaar&lt;/code&gt;&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Possible Values:&lt;/strong&gt; &lt;code&gt;aadhaar&lt;/code&gt;, &lt;code&gt;mobile&lt;/code&gt;, &lt;code&gt;abha-number&lt;/code&gt; &lt;code&gt; index &lt;/code&gt; &lt;/li&gt;  &lt;/ul&gt;  &lt;/li&gt;  &lt;li&gt; &lt;p&gt;&lt;strong&gt;loginId&lt;/strong&gt; (required):&lt;/p&gt;  &lt;ul&gt;  &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; The encrypted identifier (ABHA Number, or Mobile Number) for which the OTP is being requested.&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;{{encrypted aadhaar number}}, {{encrypted mobile number}}, {{encrypted abha-number}}, {{rsaIndexEncryptionOutput}}&lt;/code&gt;&lt;/li&gt;  &lt;/ul&gt;  &lt;/li&gt;  &lt;li&gt; &lt;p&gt;&lt;strong&gt;otpSystem&lt;/strong&gt; (required):&lt;/p&gt;  &lt;ul&gt;  &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; Specifies the system used for OTP generation.&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;abdm&lt;/code&gt;&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Possible Values:&lt;/strong&gt; &lt;code&gt;abdm&lt;/code&gt;, &lt;code&gt;aadhaar&lt;/code&gt;&lt;/li&gt;  &lt;/ul&gt;  &lt;/li&gt;  &lt;/ul&gt;   (optional)
+     * @return AbhaApiV3ProfileLoginRequestOtpPost200Response
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> The 200 response code indicates a successful request. In this context, it refers to the successful generation and delivery of an OTP (One-Time Password) for various services.&lt;br&gt;&lt;br&gt; &lt;strong&gt;Types of OTP Responses:&lt;/strong&gt; &lt;ol&gt;  &lt;li&gt;&lt;strong&gt;Login Via Mobile Number - Positive flow:&lt;/strong&gt; This action allows users to log in to their ABHA (Ayushman Bharat Health Account) using their mobile number. An OTP (One-Time Password) is sent to the provided mobile number. This ensures that the user’s identity is securely verified before granting access to their ABHA profile.&lt;/li&gt;  &lt;br&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number using ABHA OTP - Positive flow:&lt;/strong&gt; This action allows users to log in to their ABHA using their ABHA Number. An OTP is sent to the mobile number registered with the ABHA Number. This ensures that the user’s identity is securely verified before granting access to their ABHA profile.&lt;/li&gt; &lt;/ol&gt;   &lt;ol start&#x3D;\&quot;3\&quot;&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using Aadhaar OTP-positive flow:&lt;/strong&gt; This action allows users to log in to their ABHA using their Aadhaar Number. An OTP is sent to the mobile number registered with the aadhaar Number. This ensures that the user’s identity is securely verified before granting access to their ABHA profile.&lt;/li&gt; &lt;/ol&gt; &lt;ol start &#x3D;\&quot;4\&quot;&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar- Positive Flow.&lt;/strong&gt; This action allows users to log in to their ABHA using their Aadhaar number. An OTP is sent to the mobile number registered with the Aadhaar. This ensures that the user’s identity is securely verified before granting access to their ABHA profile.&lt;/li&gt; &lt;/ol&gt; &lt;ol start &#x3D;\&quot;5\&quot;&gt; &lt;li&gt;&lt;strong&gt;Forgot ABHA via Mobile OTP- Positive flow:&lt;/strong&gt; This action allows users to retrieve their ABHA number by sending an OTP to the mobile number registered with their ABHA profile. This ensures that the user’s identity is securely verified before retrieving the ABHA number&lt;/li&gt;  &lt;br&gt; &lt;li&gt;&lt;strong&gt;Forgot ABHA via Aadhaar OTP- Positive Flow:&lt;/strong&gt;  This action allows users to retrieve their ABHA number by sending an OTP to the mobile number registered with their Aadhaar. This ensures that the user’s identity is securely verified before retrieving the ABHA number.&lt;/li&gt; &lt;br&gt; &lt;li&gt;&lt;strong&gt;Retrieval of Enrolment- Positive flow:&lt;/strong&gt;This action allows users to retrieve their enrolment details by sending an OTP to the mobile number registered with their ABHA profile. This ensures that the user’s identity is securely verified before retrieving the enrolment details.&lt;/li&gt; </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Indicates various errors encountered during the OTP generation process .&lt;br&gt;&lt;br&gt; &lt;strong&gt;Types of OTP Responses:&lt;/strong&gt; &lt;ol&gt; &lt;li&gt;&lt;strong&gt;Login Via Mobile Number - Invalid LoginHint:&lt;/strong&gt; This action attempts to log in to ABHA (Ayushman Bharat Health Account) using an invalid loginHint. The loginHint provided does not match the expected values.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using ABHA OTP - Invalid Scope&lt;/strong&gt;  This action attempts to log in to ABHA using an invalid scope. The scope provided does not match the expected values for the OTP request.&lt;/li&gt; &lt;/ol&gt; &lt;ol start &#x3D;\&quot;2\&quot;&gt; &lt;/ol&gt;  &lt;ol start &#x3D;\&quot;3\&quot;&gt;&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar - Invalid Login Hint:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid loginHint. The loginHint provided does not match the expected values.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar OTP - Invalid Scope:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid scope. The scope provided does not match the expected values for the OTP request&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar OTP - Invalid LoginId:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid loginId. The loginId provided does not match the expected format or value&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar OTP - Invalid Login Hint:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid loginHint. The loginHint provided does not match the expected values&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using ABHA OTP - Invalid LoginHint:&lt;/strong&gt;  This action attempts to log in to ABHA using an invalid loginHint. The loginHint provided does not match the expected values&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using ABHA OTP - Invalid LoginId:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid loginId. The loginId provided does not match the expected format or value.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar - Invalid Scope:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid scope. The scope provided does not match the expected values for the OTP request.&lt;/li&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> The 401 response code indicates an unauthorized request. In this context, it refers to the lack of proper authentication during the operation of the Invalid Credentials.&lt;br&gt;&lt;br&gt; &lt;strong&gt;Types of OTP Response Errors:&lt;/strong&gt; &lt;ol&gt; &lt;li&gt;&lt;strong&gt;Login Via Mobile Number - Invalid Access Token&lt;/strong&gt;: This action attempts to log in to ABHA (Ayushman Bharat Health Account) using a mobile number, but fails due to an invalid access token. The access token provided for authorization is invalid, meaning the server cannot verify the user’s identity.&lt;/li&gt; &lt;/ol&gt; &lt;ol start&#x3D;\&quot;2\&quot;&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar - Invalid Access Token&lt;/strong&gt;:  This action attempts to log in to ABHA using an Aadhaar number, but fails due to an invalid access token. The access token provided for authorization is invalid, meaning the server cannot verify the user’s identity.&lt;/li&gt; &lt;/ol&gt; &lt;/ol&gt; &lt;ol start&#x3D;\&quot;3\&quot;&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using ABHA OTP - Invalid Access Token&lt;/strong&gt;:This action attempts to log in to ABHA using an ABHA number and ABHA OTP, but fails due to an invalid access token. The access token provided for authorization is invalid, meaning the server cannot verify the user’s identity.&lt;/li&gt; &lt;/ol&gt; &lt;ol start&#x3D;\&quot;4\&quot;&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using Aadhaar OTP - Invalid Access Token&lt;/strong&gt;: This action attempts to log in to ABHA using an ABHA number and Aadhaar OTP, but fails due to an invalid access token. The access token provided for authorization is invalid, meaning the server cannot verify the user’s identity..&lt;/li&gt; &lt;/ol&gt; </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Not Found </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public AbhaApiV3ProfileLoginRequestOtpPost200Response abhaApiV3ProfileLoginRequestOtpPost(String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginRequestOtpPostRequest abhaApiV3ProfileLoginRequestOtpPostRequest) throws ApiException {
+        ApiResponse<AbhaApiV3ProfileLoginRequestOtpPost200Response> localVarResp = abhaApiV3ProfileLoginRequestOtpPostWithHttpInfo(REQUEST_ID, TIMESTAMP, abhaApiV3ProfileLoginRequestOtpPostRequest);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Use Case: ABHA Login - Send OTP using Aadhaar number, ABHA number, Mobile number, Biometric Login, Search ABHA, Find ABHA via Biometrics
+     * \&quot;This API endpoint is used to request an OTP (One-Time Password) for logging into an ABHA (Ayushman Bharat Health Account) profile. It is used to send the OTP to the user’s registered mobile number or email address for the purpose of logging into their ABHA profile. The OTP is essential for verifying the user’s identity and ensuring secure access to their profile.&lt;br&gt; &lt;br&gt;**Example of OTP Request**&lt;br&gt; &lt;br&gt;Example 1:&lt;br&gt; **Login via ABHA Number - Using Aadhaar OTP:** This endpoint sends the OTP to the user’s registered mobile number for logging into their ABHA profile using their ABHA number and Aadhaar.&lt;br&gt; &lt;br&gt;Example 2:&lt;br&gt; **Login via ABHA Number - Using ABHA OTP:** This endpoint sends the OTP to the user’s registered mobile number for logging into their ABHA profile using their ABHA number and ABHA number. &lt;br&gt; &lt;br&gt;Example 3 :&lt;br&gt; **Login via Aadhaar:** This endpoint sends the OTP to the user’s registered mobile number for logging into their ABHA profile using their Aadhaar number.&lt;br&gt;&lt;br&gt; Example 4:&lt;br&gt; **Login via Mobile number:** This endpoint sends the OTP to the user’s registered mobile number for logging into their ABHA profile using their mobile number.  &lt;br&gt;&lt;br&gt; Example 5:&lt;br&gt;  **ABHA PROFILE (Login via Biometric) -** It is used to send the OTP to user registered mobile number for logging into their ABHA profile. The request body should include the scope, loginHint loginId, otpSystem. &lt;br&gt; &lt;br&gt; For Login via Biometric using face &lt;br&gt; &lt;strong&gt;scope: &lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt; aadhaar-face-verify &lt;/code&gt;   &lt;br&gt;&lt;br&gt; For Login via Biometric using fingerprint &lt;br&gt; &lt;strong&gt;scope: &lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt; aadhaar-bio-verify &lt;/code&gt; &lt;br&gt;&lt;br&gt;For Login via Biometric using Iris &lt;br&gt; &lt;strong&gt;scope: &lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt; aadhaar-iris-verify &lt;/code&gt;   &lt;br&gt;&lt;br&gt;Example 6:&lt;br&gt;  **Find ABHA  - Send OTP:** It is used to send OTP on user registered Mobile number to fetch complete ABHA Details along with JWT Tokens. &lt;br&gt;&lt;br&gt; For requesting an OTP incase of Find ABHA, the loginHint will be &lt;code&gt;index &lt;/code&gt; and loginId will be RSA encrypted index key to fetch the complete ABHA details of that particular ABHA number. &lt;br&gt;&lt;br&gt;Example 7:&lt;br&gt;  **Find ABHA  - Request Biometric Authentication:** It is used to request Biometric authentication (Face/Fingerprint/Iris) to fetch complete ABHA Details along with JWT Tokens. &lt;br&gt;&lt;br&gt; For authentication request  incase of Find ABHA, the loginHint will be &lt;code&gt;index &lt;/code&gt; and loginId will be RSA encrypted index key to fetch the complete ABHA details of that particular ABHA number. &lt;br&gt;&lt;br&gt;&lt;strong&gt;Note : &lt;/strong&gt; OTP will be valid for 10 minute only &lt;br&gt;&lt;br&gt;
+     * @param REQUEST_ID  (required)
+     * @param TIMESTAMP  (required)
+     * @param abhaApiV3ProfileLoginRequestOtpPostRequest &lt;b&gt;Below is the Request Body description:&lt;/b&gt;&lt;br&gt;&lt;br&gt;      &lt;b&gt;Note:&lt;/b&gt; Mandatory fields can&#39;t be null. &lt;ul&gt;  &lt;li&gt; &lt;p&gt;&lt;strong&gt;scope&lt;/strong&gt; (required):&lt;/p&gt;  &lt;ul&gt;  &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; Specifies the scope of the OTP request.&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;[\&quot;abha-login\&quot;, \&quot;aadhaar-verify\&quot;]&lt;/code&gt;&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Possible Values:&lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt;aadhaar-verify&lt;/code&gt;, &lt;code&gt;mobile-verify&lt;/code&gt;, &lt;code&gt;re-activate&lt;/code&gt;, &lt;code&gt; search-abha &lt;/code&gt; &lt;code&gt;retrieval&lt;/code&gt;, &lt;code&gt;de-activate&lt;/code&gt;, &lt;code&gt;delete&lt;/code&gt;, &lt;code&gt;re-kyc&lt;/code&gt; &lt;code&gt;aadhaar-face-verify&lt;/code&gt;, &lt;code&gt;aadhaar-iris-verify&lt;/code&gt;, &lt;code&gt;aadhaar-bio-verify&lt;/code&gt;etc.&lt;/li&gt;  &lt;/ul&gt;  &lt;/li&gt;  &lt;li&gt; &lt;p&gt;&lt;strong&gt;loginHint&lt;/strong&gt; (required):&lt;/p&gt;  &lt;ul&gt;  &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; Indicates the type of identifier being used for the OTP request.&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;aadhaar&lt;/code&gt;&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Possible Values:&lt;/strong&gt; &lt;code&gt;aadhaar&lt;/code&gt;, &lt;code&gt;mobile&lt;/code&gt;, &lt;code&gt;abha-number&lt;/code&gt; &lt;code&gt; index &lt;/code&gt; &lt;/li&gt;  &lt;/ul&gt;  &lt;/li&gt;  &lt;li&gt; &lt;p&gt;&lt;strong&gt;loginId&lt;/strong&gt; (required):&lt;/p&gt;  &lt;ul&gt;  &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; The encrypted identifier (ABHA Number, or Mobile Number) for which the OTP is being requested.&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;{{encrypted aadhaar number}}, {{encrypted mobile number}}, {{encrypted abha-number}}, {{rsaIndexEncryptionOutput}}&lt;/code&gt;&lt;/li&gt;  &lt;/ul&gt;  &lt;/li&gt;  &lt;li&gt; &lt;p&gt;&lt;strong&gt;otpSystem&lt;/strong&gt; (required):&lt;/p&gt;  &lt;ul&gt;  &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; Specifies the system used for OTP generation.&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;abdm&lt;/code&gt;&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Possible Values:&lt;/strong&gt; &lt;code&gt;abdm&lt;/code&gt;, &lt;code&gt;aadhaar&lt;/code&gt;&lt;/li&gt;  &lt;/ul&gt;  &lt;/li&gt;  &lt;/ul&gt;   (optional)
+     * @return ApiResponse&lt;AbhaApiV3ProfileLoginRequestOtpPost200Response&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> The 200 response code indicates a successful request. In this context, it refers to the successful generation and delivery of an OTP (One-Time Password) for various services.&lt;br&gt;&lt;br&gt; &lt;strong&gt;Types of OTP Responses:&lt;/strong&gt; &lt;ol&gt;  &lt;li&gt;&lt;strong&gt;Login Via Mobile Number - Positive flow:&lt;/strong&gt; This action allows users to log in to their ABHA (Ayushman Bharat Health Account) using their mobile number. An OTP (One-Time Password) is sent to the provided mobile number. This ensures that the user’s identity is securely verified before granting access to their ABHA profile.&lt;/li&gt;  &lt;br&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number using ABHA OTP - Positive flow:&lt;/strong&gt; This action allows users to log in to their ABHA using their ABHA Number. An OTP is sent to the mobile number registered with the ABHA Number. This ensures that the user’s identity is securely verified before granting access to their ABHA profile.&lt;/li&gt; &lt;/ol&gt;   &lt;ol start&#x3D;\&quot;3\&quot;&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using Aadhaar OTP-positive flow:&lt;/strong&gt; This action allows users to log in to their ABHA using their Aadhaar Number. An OTP is sent to the mobile number registered with the aadhaar Number. This ensures that the user’s identity is securely verified before granting access to their ABHA profile.&lt;/li&gt; &lt;/ol&gt; &lt;ol start &#x3D;\&quot;4\&quot;&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar- Positive Flow.&lt;/strong&gt; This action allows users to log in to their ABHA using their Aadhaar number. An OTP is sent to the mobile number registered with the Aadhaar. This ensures that the user’s identity is securely verified before granting access to their ABHA profile.&lt;/li&gt; &lt;/ol&gt; &lt;ol start &#x3D;\&quot;5\&quot;&gt; &lt;li&gt;&lt;strong&gt;Forgot ABHA via Mobile OTP- Positive flow:&lt;/strong&gt; This action allows users to retrieve their ABHA number by sending an OTP to the mobile number registered with their ABHA profile. This ensures that the user’s identity is securely verified before retrieving the ABHA number&lt;/li&gt;  &lt;br&gt; &lt;li&gt;&lt;strong&gt;Forgot ABHA via Aadhaar OTP- Positive Flow:&lt;/strong&gt;  This action allows users to retrieve their ABHA number by sending an OTP to the mobile number registered with their Aadhaar. This ensures that the user’s identity is securely verified before retrieving the ABHA number.&lt;/li&gt; &lt;br&gt; &lt;li&gt;&lt;strong&gt;Retrieval of Enrolment- Positive flow:&lt;/strong&gt;This action allows users to retrieve their enrolment details by sending an OTP to the mobile number registered with their ABHA profile. This ensures that the user’s identity is securely verified before retrieving the enrolment details.&lt;/li&gt; </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Indicates various errors encountered during the OTP generation process .&lt;br&gt;&lt;br&gt; &lt;strong&gt;Types of OTP Responses:&lt;/strong&gt; &lt;ol&gt; &lt;li&gt;&lt;strong&gt;Login Via Mobile Number - Invalid LoginHint:&lt;/strong&gt; This action attempts to log in to ABHA (Ayushman Bharat Health Account) using an invalid loginHint. The loginHint provided does not match the expected values.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using ABHA OTP - Invalid Scope&lt;/strong&gt;  This action attempts to log in to ABHA using an invalid scope. The scope provided does not match the expected values for the OTP request.&lt;/li&gt; &lt;/ol&gt; &lt;ol start &#x3D;\&quot;2\&quot;&gt; &lt;/ol&gt;  &lt;ol start &#x3D;\&quot;3\&quot;&gt;&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar - Invalid Login Hint:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid loginHint. The loginHint provided does not match the expected values.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar OTP - Invalid Scope:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid scope. The scope provided does not match the expected values for the OTP request&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar OTP - Invalid LoginId:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid loginId. The loginId provided does not match the expected format or value&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar OTP - Invalid Login Hint:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid loginHint. The loginHint provided does not match the expected values&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using ABHA OTP - Invalid LoginHint:&lt;/strong&gt;  This action attempts to log in to ABHA using an invalid loginHint. The loginHint provided does not match the expected values&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using ABHA OTP - Invalid LoginId:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid loginId. The loginId provided does not match the expected format or value.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar - Invalid Scope:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid scope. The scope provided does not match the expected values for the OTP request.&lt;/li&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> The 401 response code indicates an unauthorized request. In this context, it refers to the lack of proper authentication during the operation of the Invalid Credentials.&lt;br&gt;&lt;br&gt; &lt;strong&gt;Types of OTP Response Errors:&lt;/strong&gt; &lt;ol&gt; &lt;li&gt;&lt;strong&gt;Login Via Mobile Number - Invalid Access Token&lt;/strong&gt;: This action attempts to log in to ABHA (Ayushman Bharat Health Account) using a mobile number, but fails due to an invalid access token. The access token provided for authorization is invalid, meaning the server cannot verify the user’s identity.&lt;/li&gt; &lt;/ol&gt; &lt;ol start&#x3D;\&quot;2\&quot;&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar - Invalid Access Token&lt;/strong&gt;:  This action attempts to log in to ABHA using an Aadhaar number, but fails due to an invalid access token. The access token provided for authorization is invalid, meaning the server cannot verify the user’s identity.&lt;/li&gt; &lt;/ol&gt; &lt;/ol&gt; &lt;ol start&#x3D;\&quot;3\&quot;&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using ABHA OTP - Invalid Access Token&lt;/strong&gt;:This action attempts to log in to ABHA using an ABHA number and ABHA OTP, but fails due to an invalid access token. The access token provided for authorization is invalid, meaning the server cannot verify the user’s identity.&lt;/li&gt; &lt;/ol&gt; &lt;ol start&#x3D;\&quot;4\&quot;&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using Aadhaar OTP - Invalid Access Token&lt;/strong&gt;: This action attempts to log in to ABHA using an ABHA number and Aadhaar OTP, but fails due to an invalid access token. The access token provided for authorization is invalid, meaning the server cannot verify the user’s identity..&lt;/li&gt; &lt;/ol&gt; </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Not Found </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<AbhaApiV3ProfileLoginRequestOtpPost200Response> abhaApiV3ProfileLoginRequestOtpPostWithHttpInfo(String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginRequestOtpPostRequest abhaApiV3ProfileLoginRequestOtpPostRequest) throws ApiException {
+        okhttp3.Call localVarCall = abhaApiV3ProfileLoginRequestOtpPostValidateBeforeCall(null, REQUEST_ID, TIMESTAMP, abhaApiV3ProfileLoginRequestOtpPostRequest, null);
+        Type localVarReturnType = new TypeToken<AbhaApiV3ProfileLoginRequestOtpPost200Response>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Use Case: ABHA Login - Send OTP using Aadhaar number, ABHA number, Mobile number, Biometric Login, Search ABHA, Find ABHA via Biometrics (asynchronously)
+     * \&quot;This API endpoint is used to request an OTP (One-Time Password) for logging into an ABHA (Ayushman Bharat Health Account) profile. It is used to send the OTP to the user’s registered mobile number or email address for the purpose of logging into their ABHA profile. The OTP is essential for verifying the user’s identity and ensuring secure access to their profile.&lt;br&gt; &lt;br&gt;**Example of OTP Request**&lt;br&gt; &lt;br&gt;Example 1:&lt;br&gt; **Login via ABHA Number - Using Aadhaar OTP:** This endpoint sends the OTP to the user’s registered mobile number for logging into their ABHA profile using their ABHA number and Aadhaar.&lt;br&gt; &lt;br&gt;Example 2:&lt;br&gt; **Login via ABHA Number - Using ABHA OTP:** This endpoint sends the OTP to the user’s registered mobile number for logging into their ABHA profile using their ABHA number and ABHA number. &lt;br&gt; &lt;br&gt;Example 3 :&lt;br&gt; **Login via Aadhaar:** This endpoint sends the OTP to the user’s registered mobile number for logging into their ABHA profile using their Aadhaar number.&lt;br&gt;&lt;br&gt; Example 4:&lt;br&gt; **Login via Mobile number:** This endpoint sends the OTP to the user’s registered mobile number for logging into their ABHA profile using their mobile number.  &lt;br&gt;&lt;br&gt; Example 5:&lt;br&gt;  **ABHA PROFILE (Login via Biometric) -** It is used to send the OTP to user registered mobile number for logging into their ABHA profile. The request body should include the scope, loginHint loginId, otpSystem. &lt;br&gt; &lt;br&gt; For Login via Biometric using face &lt;br&gt; &lt;strong&gt;scope: &lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt; aadhaar-face-verify &lt;/code&gt;   &lt;br&gt;&lt;br&gt; For Login via Biometric using fingerprint &lt;br&gt; &lt;strong&gt;scope: &lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt; aadhaar-bio-verify &lt;/code&gt; &lt;br&gt;&lt;br&gt;For Login via Biometric using Iris &lt;br&gt; &lt;strong&gt;scope: &lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt; aadhaar-iris-verify &lt;/code&gt;   &lt;br&gt;&lt;br&gt;Example 6:&lt;br&gt;  **Find ABHA  - Send OTP:** It is used to send OTP on user registered Mobile number to fetch complete ABHA Details along with JWT Tokens. &lt;br&gt;&lt;br&gt; For requesting an OTP incase of Find ABHA, the loginHint will be &lt;code&gt;index &lt;/code&gt; and loginId will be RSA encrypted index key to fetch the complete ABHA details of that particular ABHA number. &lt;br&gt;&lt;br&gt;Example 7:&lt;br&gt;  **Find ABHA  - Request Biometric Authentication:** It is used to request Biometric authentication (Face/Fingerprint/Iris) to fetch complete ABHA Details along with JWT Tokens. &lt;br&gt;&lt;br&gt; For authentication request  incase of Find ABHA, the loginHint will be &lt;code&gt;index &lt;/code&gt; and loginId will be RSA encrypted index key to fetch the complete ABHA details of that particular ABHA number. &lt;br&gt;&lt;br&gt;&lt;strong&gt;Note : &lt;/strong&gt; OTP will be valid for 10 minute only &lt;br&gt;&lt;br&gt;
+     * @param REQUEST_ID  (required)
+     * @param TIMESTAMP  (required)
+     * @param abhaApiV3ProfileLoginRequestOtpPostRequest &lt;b&gt;Below is the Request Body description:&lt;/b&gt;&lt;br&gt;&lt;br&gt;      &lt;b&gt;Note:&lt;/b&gt; Mandatory fields can&#39;t be null. &lt;ul&gt;  &lt;li&gt; &lt;p&gt;&lt;strong&gt;scope&lt;/strong&gt; (required):&lt;/p&gt;  &lt;ul&gt;  &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; Specifies the scope of the OTP request.&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;[\&quot;abha-login\&quot;, \&quot;aadhaar-verify\&quot;]&lt;/code&gt;&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Possible Values:&lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt;aadhaar-verify&lt;/code&gt;, &lt;code&gt;mobile-verify&lt;/code&gt;, &lt;code&gt;re-activate&lt;/code&gt;, &lt;code&gt; search-abha &lt;/code&gt; &lt;code&gt;retrieval&lt;/code&gt;, &lt;code&gt;de-activate&lt;/code&gt;, &lt;code&gt;delete&lt;/code&gt;, &lt;code&gt;re-kyc&lt;/code&gt; &lt;code&gt;aadhaar-face-verify&lt;/code&gt;, &lt;code&gt;aadhaar-iris-verify&lt;/code&gt;, &lt;code&gt;aadhaar-bio-verify&lt;/code&gt;etc.&lt;/li&gt;  &lt;/ul&gt;  &lt;/li&gt;  &lt;li&gt; &lt;p&gt;&lt;strong&gt;loginHint&lt;/strong&gt; (required):&lt;/p&gt;  &lt;ul&gt;  &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; Indicates the type of identifier being used for the OTP request.&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;aadhaar&lt;/code&gt;&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Possible Values:&lt;/strong&gt; &lt;code&gt;aadhaar&lt;/code&gt;, &lt;code&gt;mobile&lt;/code&gt;, &lt;code&gt;abha-number&lt;/code&gt; &lt;code&gt; index &lt;/code&gt; &lt;/li&gt;  &lt;/ul&gt;  &lt;/li&gt;  &lt;li&gt; &lt;p&gt;&lt;strong&gt;loginId&lt;/strong&gt; (required):&lt;/p&gt;  &lt;ul&gt;  &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; The encrypted identifier (ABHA Number, or Mobile Number) for which the OTP is being requested.&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;{{encrypted aadhaar number}}, {{encrypted mobile number}}, {{encrypted abha-number}}, {{rsaIndexEncryptionOutput}}&lt;/code&gt;&lt;/li&gt;  &lt;/ul&gt;  &lt;/li&gt;  &lt;li&gt; &lt;p&gt;&lt;strong&gt;otpSystem&lt;/strong&gt; (required):&lt;/p&gt;  &lt;ul&gt;  &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; Specifies the system used for OTP generation.&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;abdm&lt;/code&gt;&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Possible Values:&lt;/strong&gt; &lt;code&gt;abdm&lt;/code&gt;, &lt;code&gt;aadhaar&lt;/code&gt;&lt;/li&gt;  &lt;/ul&gt;  &lt;/li&gt;  &lt;/ul&gt;   (optional)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> The 200 response code indicates a successful request. In this context, it refers to the successful generation and delivery of an OTP (One-Time Password) for various services.&lt;br&gt;&lt;br&gt; &lt;strong&gt;Types of OTP Responses:&lt;/strong&gt; &lt;ol&gt;  &lt;li&gt;&lt;strong&gt;Login Via Mobile Number - Positive flow:&lt;/strong&gt; This action allows users to log in to their ABHA (Ayushman Bharat Health Account) using their mobile number. An OTP (One-Time Password) is sent to the provided mobile number. This ensures that the user’s identity is securely verified before granting access to their ABHA profile.&lt;/li&gt;  &lt;br&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number using ABHA OTP - Positive flow:&lt;/strong&gt; This action allows users to log in to their ABHA using their ABHA Number. An OTP is sent to the mobile number registered with the ABHA Number. This ensures that the user’s identity is securely verified before granting access to their ABHA profile.&lt;/li&gt; &lt;/ol&gt;   &lt;ol start&#x3D;\&quot;3\&quot;&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using Aadhaar OTP-positive flow:&lt;/strong&gt; This action allows users to log in to their ABHA using their Aadhaar Number. An OTP is sent to the mobile number registered with the aadhaar Number. This ensures that the user’s identity is securely verified before granting access to their ABHA profile.&lt;/li&gt; &lt;/ol&gt; &lt;ol start &#x3D;\&quot;4\&quot;&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar- Positive Flow.&lt;/strong&gt; This action allows users to log in to their ABHA using their Aadhaar number. An OTP is sent to the mobile number registered with the Aadhaar. This ensures that the user’s identity is securely verified before granting access to their ABHA profile.&lt;/li&gt; &lt;/ol&gt; &lt;ol start &#x3D;\&quot;5\&quot;&gt; &lt;li&gt;&lt;strong&gt;Forgot ABHA via Mobile OTP- Positive flow:&lt;/strong&gt; This action allows users to retrieve their ABHA number by sending an OTP to the mobile number registered with their ABHA profile. This ensures that the user’s identity is securely verified before retrieving the ABHA number&lt;/li&gt;  &lt;br&gt; &lt;li&gt;&lt;strong&gt;Forgot ABHA via Aadhaar OTP- Positive Flow:&lt;/strong&gt;  This action allows users to retrieve their ABHA number by sending an OTP to the mobile number registered with their Aadhaar. This ensures that the user’s identity is securely verified before retrieving the ABHA number.&lt;/li&gt; &lt;br&gt; &lt;li&gt;&lt;strong&gt;Retrieval of Enrolment- Positive flow:&lt;/strong&gt;This action allows users to retrieve their enrolment details by sending an OTP to the mobile number registered with their ABHA profile. This ensures that the user’s identity is securely verified before retrieving the enrolment details.&lt;/li&gt; </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Indicates various errors encountered during the OTP generation process .&lt;br&gt;&lt;br&gt; &lt;strong&gt;Types of OTP Responses:&lt;/strong&gt; &lt;ol&gt; &lt;li&gt;&lt;strong&gt;Login Via Mobile Number - Invalid LoginHint:&lt;/strong&gt; This action attempts to log in to ABHA (Ayushman Bharat Health Account) using an invalid loginHint. The loginHint provided does not match the expected values.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using ABHA OTP - Invalid Scope&lt;/strong&gt;  This action attempts to log in to ABHA using an invalid scope. The scope provided does not match the expected values for the OTP request.&lt;/li&gt; &lt;/ol&gt; &lt;ol start &#x3D;\&quot;2\&quot;&gt; &lt;/ol&gt;  &lt;ol start &#x3D;\&quot;3\&quot;&gt;&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar - Invalid Login Hint:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid loginHint. The loginHint provided does not match the expected values.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar OTP - Invalid Scope:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid scope. The scope provided does not match the expected values for the OTP request&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar OTP - Invalid LoginId:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid loginId. The loginId provided does not match the expected format or value&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar OTP - Invalid Login Hint:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid loginHint. The loginHint provided does not match the expected values&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using ABHA OTP - Invalid LoginHint:&lt;/strong&gt;  This action attempts to log in to ABHA using an invalid loginHint. The loginHint provided does not match the expected values&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using ABHA OTP - Invalid LoginId:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid loginId. The loginId provided does not match the expected format or value.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar - Invalid Scope:&lt;/strong&gt; This action attempts to log in to ABHA using an invalid scope. The scope provided does not match the expected values for the OTP request.&lt;/li&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> The 401 response code indicates an unauthorized request. In this context, it refers to the lack of proper authentication during the operation of the Invalid Credentials.&lt;br&gt;&lt;br&gt; &lt;strong&gt;Types of OTP Response Errors:&lt;/strong&gt; &lt;ol&gt; &lt;li&gt;&lt;strong&gt;Login Via Mobile Number - Invalid Access Token&lt;/strong&gt;: This action attempts to log in to ABHA (Ayushman Bharat Health Account) using a mobile number, but fails due to an invalid access token. The access token provided for authorization is invalid, meaning the server cannot verify the user’s identity.&lt;/li&gt; &lt;/ol&gt; &lt;ol start&#x3D;\&quot;2\&quot;&gt; &lt;li&gt;&lt;strong&gt;Login via Aadhaar - Invalid Access Token&lt;/strong&gt;:  This action attempts to log in to ABHA using an Aadhaar number, but fails due to an invalid access token. The access token provided for authorization is invalid, meaning the server cannot verify the user’s identity.&lt;/li&gt; &lt;/ol&gt; &lt;/ol&gt; &lt;ol start&#x3D;\&quot;3\&quot;&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using ABHA OTP - Invalid Access Token&lt;/strong&gt;:This action attempts to log in to ABHA using an ABHA number and ABHA OTP, but fails due to an invalid access token. The access token provided for authorization is invalid, meaning the server cannot verify the user’s identity.&lt;/li&gt; &lt;/ol&gt; &lt;ol start&#x3D;\&quot;4\&quot;&gt; &lt;li&gt;&lt;strong&gt;Login Via ABHA Number - Using Aadhaar OTP - Invalid Access Token&lt;/strong&gt;: This action attempts to log in to ABHA using an ABHA number and Aadhaar OTP, but fails due to an invalid access token. The access token provided for authorization is invalid, meaning the server cannot verify the user’s identity..&lt;/li&gt; &lt;/ol&gt; </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Not Found </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call abhaApiV3ProfileLoginRequestOtpPostAsync(String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginRequestOtpPostRequest abhaApiV3ProfileLoginRequestOtpPostRequest, final ApiCallback<AbhaApiV3ProfileLoginRequestOtpPost200Response> _callback) throws ApiException {
+        okhttp3.Call localVarCall = abhaApiV3ProfileLoginRequestOtpPostValidateBeforeCall(null, REQUEST_ID, TIMESTAMP, abhaApiV3ProfileLoginRequestOtpPostRequest, _callback);
+        Type localVarReturnType = new TypeToken<AbhaApiV3ProfileLoginRequestOtpPost200Response>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+
+    public CompletionStage<AbhaApiV3ProfileLoginRequestOtpPost200Response> abhaApiV3ProfileLoginRequestOtpPostAsyncCall(String token, String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginRequestOtpPostRequest abhaApiV3ProfileLoginRequestOtpPostRequest) throws ApiException {
+        FutureApiCallBack<AbhaApiV3ProfileLoginRequestOtpPost200Response> callback = FutureApiCallBack.newCallback();
+        okhttp3.Call localVarCall = abhaApiV3ProfileLoginRequestOtpPostValidateBeforeCall(token, REQUEST_ID, TIMESTAMP, abhaApiV3ProfileLoginRequestOtpPostRequest, callback);
+        Type localVarReturnType = new TypeToken<AbhaApiV3ProfileLoginRequestOtpPost200Response>() {
+        }.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, callback);
+        return callback.getFuture();
+
+    }
+
+    /**
+     * Build call for abhaApiV3ProfileLoginSearchPost
+     * @param REQUEST_ID  (required)
+     * @param TIMESTAMP  (required)
+     * @param abhaApiV3ProfileLoginSearchPostRequest  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Successfully retrieved ABHA details. </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Invalid ABHA number. </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Missing Credentials. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> User not found. </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> Internal Server Error. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call abhaApiV3ProfileLoginSearchPostCall(String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginSearchPostRequest abhaApiV3ProfileLoginSearchPostRequest, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = abhaApiV3ProfileLoginSearchPostRequest;
+
+        // create path and map variables
+        String localVarPath = "/abha/api/v3/profile/login/search";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        if (REQUEST_ID != null) {
+            localVarHeaderParams.put("REQUEST-ID", localVarApiClient.parameterToString(REQUEST_ID));
+        }
+
+
+        if (TIMESTAMP != null) {
+            localVarHeaderParams.put("TIMESTAMP", localVarApiClient.parameterToString(TIMESTAMP));
+        }
+
+
+        String[] localVarAuthNames = new String[] { "bearerAuth" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call abhaApiV3ProfileLoginSearchPostValidateBeforeCall(String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginSearchPostRequest abhaApiV3ProfileLoginSearchPostRequest, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'REQUEST_ID' is set
+        if (REQUEST_ID == null) {
+            throw new ApiException("Missing the required parameter 'REQUEST_ID' when calling abhaApiV3ProfileLoginSearchPost(Async)");
+        }
+
+        // verify the required parameter 'TIMESTAMP' is set
+        if (TIMESTAMP == null) {
+            throw new ApiException("Missing the required parameter 'TIMESTAMP' when calling abhaApiV3ProfileLoginSearchPost(Async)");
+        }
+
+        // verify the required parameter 'abhaApiV3ProfileLoginSearchPostRequest' is set
+        if (abhaApiV3ProfileLoginSearchPostRequest == null) {
+            throw new ApiException("Missing the required parameter 'abhaApiV3ProfileLoginSearchPostRequest' when calling abhaApiV3ProfileLoginSearchPost(Async)");
+        }
+
+        return abhaApiV3ProfileLoginSearchPostCall(REQUEST_ID, TIMESTAMP, abhaApiV3ProfileLoginSearchPostRequest, _callback);
+
+    }
+
+    /**
+     * Use Case: Search ABHA Account Existence
+     * This API endpoint is utilized to verify the existence of an Ayushman Bharat Health Account (ABHA) before proceeding with the OTP request for ABHA login. The request body must include the abhaNumber, which the user should provide. If the specified abhaNumber exists, the response will contain the basic details of the corresponding ABHA account.
+     * @param REQUEST_ID  (required)
+     * @param TIMESTAMP  (required)
+     * @param abhaApiV3ProfileLoginSearchPostRequest  (required)
+     * @return List&lt;AbhaApiV3ProfileLoginSearchPost200ResponseInner&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Successfully retrieved ABHA details. </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Invalid ABHA number. </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Missing Credentials. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> User not found. </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> Internal Server Error. </td><td>  -  </td></tr>
+     </table>
+     */
+    public List<AbhaApiV3ProfileLoginSearchPost200ResponseInner> abhaApiV3ProfileLoginSearchPost(String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginSearchPostRequest abhaApiV3ProfileLoginSearchPostRequest) throws ApiException {
+        ApiResponse<List<AbhaApiV3ProfileLoginSearchPost200ResponseInner>> localVarResp = abhaApiV3ProfileLoginSearchPostWithHttpInfo(REQUEST_ID, TIMESTAMP, abhaApiV3ProfileLoginSearchPostRequest);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Use Case: Search ABHA Account Existence
+     * This API endpoint is utilized to verify the existence of an Ayushman Bharat Health Account (ABHA) before proceeding with the OTP request for ABHA login. The request body must include the abhaNumber, which the user should provide. If the specified abhaNumber exists, the response will contain the basic details of the corresponding ABHA account.
+     * @param REQUEST_ID  (required)
+     * @param TIMESTAMP  (required)
+     * @param abhaApiV3ProfileLoginSearchPostRequest  (required)
+     * @return ApiResponse&lt;List&lt;AbhaApiV3ProfileLoginSearchPost200ResponseInner&gt;&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Successfully retrieved ABHA details. </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Invalid ABHA number. </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Missing Credentials. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> User not found. </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> Internal Server Error. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<List<AbhaApiV3ProfileLoginSearchPost200ResponseInner>> abhaApiV3ProfileLoginSearchPostWithHttpInfo(String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginSearchPostRequest abhaApiV3ProfileLoginSearchPostRequest) throws ApiException {
+        okhttp3.Call localVarCall = abhaApiV3ProfileLoginSearchPostValidateBeforeCall(REQUEST_ID, TIMESTAMP, abhaApiV3ProfileLoginSearchPostRequest, null);
+        Type localVarReturnType = new TypeToken<List<AbhaApiV3ProfileLoginSearchPost200ResponseInner>>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Use Case: Search ABHA Account Existence (asynchronously)
+     * This API endpoint is utilized to verify the existence of an Ayushman Bharat Health Account (ABHA) before proceeding with the OTP request for ABHA login. The request body must include the abhaNumber, which the user should provide. If the specified abhaNumber exists, the response will contain the basic details of the corresponding ABHA account.
+     * @param REQUEST_ID  (required)
+     * @param TIMESTAMP  (required)
+     * @param abhaApiV3ProfileLoginSearchPostRequest  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Successfully retrieved ABHA details. </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Invalid ABHA number. </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Missing Credentials. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> User not found. </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> Internal Server Error. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call abhaApiV3ProfileLoginSearchPostAsync(String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginSearchPostRequest abhaApiV3ProfileLoginSearchPostRequest, final ApiCallback<List<AbhaApiV3ProfileLoginSearchPost200ResponseInner>> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = abhaApiV3ProfileLoginSearchPostValidateBeforeCall(REQUEST_ID, TIMESTAMP, abhaApiV3ProfileLoginSearchPostRequest, _callback);
+        Type localVarReturnType = new TypeToken<List<AbhaApiV3ProfileLoginSearchPost200ResponseInner>>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for abhaApiV3ProfileLoginVerifyPost
+     * @param REQUEST_ID  (required)
+     * @param TIMESTAMP  (required)
+     * @param abhaApiV3ProfileLoginVerifyPostRequest &lt;b&gt;Below is the Request Body description:&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;!--&lt;div&gt; &lt;table&gt; &lt;thead&gt; &lt;tr&gt; &lt;th&gt;Attributes&lt;/th&gt; &lt;th&gt;Description&lt;/th&gt; &lt;/tr&gt; &lt;/thead&gt; &lt;tbody&gt; &lt;tr&gt; &lt;td&gt;scope &lt;sup&gt;* required&lt;/sup&gt;&lt;/td&gt; &lt;td&gt;Aadhaar/Abha/mobile&lt;/td&gt; &lt;/tr&gt; &lt;tr&gt; &lt;td&gt;loginHint &lt;sup&gt;* required&lt;/sup&gt;&lt;/td&gt; &lt;td&gt;Aadhaar,Abha And Mobile Number&lt;/td&gt; &lt;/tr&gt; &lt;tr&gt; &lt;td&gt;loginId &lt;sup&gt;* required&lt;/sup&gt;&lt;/td&gt; &lt;td&gt;encrypted mobile-number&lt;/td&gt; &lt;/tr&gt; &lt;tr&gt; &lt;td&gt;otpSystem &lt;sup&gt;* required&lt;/sup&gt;&lt;/td&gt; &lt;td&gt;abdm/aadhaar&lt;/td&gt; &lt;/tr&gt; &lt;/tbody&gt; &lt;/table&gt; &lt;/div&gt; &lt;hr&gt; --&gt; &lt;b&gt;Note:&lt;/b&gt; Mandatory fields can&#39;t be null.&lt;ol&gt; &lt;li&gt; &lt;p&gt;&lt;strong&gt;scope&lt;/strong&gt; (required):&lt;/p&gt; &lt;ul&gt; &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; Specifies the scope of the OTP verification.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;[\&quot;abha-login\&quot;, \&quot;aadhaar-verify\&quot;]&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Possible Values:&lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt;aadhaar-verify&lt;/code&gt;, &lt;code&gt;mobile-verify&lt;/code&gt;, &lt;code&gt;re-activate&lt;/code&gt;, &lt;code&gt;retrieval&lt;/code&gt;, &lt;code&gt;de-activate&lt;/code&gt;, &lt;code&gt;delete&lt;/code&gt;, &lt;code&gt;aadhaar-face-verify&lt;/code&gt;, &lt;code&gt;aadhaar-bio-verify&lt;/code&gt; ,&lt;code&gt;aadhaar-iris-verify&lt;/code&gt;, &lt;code&gt;re-kyc&lt;/code&gt;, etc.&lt;/li&gt; &lt;/ul&gt; &lt;/li&gt; &lt;li&gt; &lt;p&gt;&lt;strong&gt;auth methods&lt;/strong&gt; (required):&lt;/p&gt; &lt;ul&gt; &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; Indicates the type of auth method being used for the OTP verification.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;otp&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Possible Values:&lt;/strong&gt; &lt;code&gt;otp&lt;/code&gt;, &lt;code&gt;bio&lt;/code&gt;, &lt;code&gt;face&lt;/code&gt;, &lt;code&gt;demo&lt;/code&gt;&lt;/li&gt; &lt;/ul&gt; &lt;/li&gt; &lt;/ol&gt; (optional)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> The 200 response code indicates a successful request. In this context, it refers to the successful generation and delivery of an OTP (One-Time Password) for various services.&lt;br&gt;&lt;br&gt; &lt;strong&gt;Types of OTP Responses:&lt;/strong&gt; &lt;ol&gt; &lt;li&gt;&lt;strong&gt;Login via ABHA Number - Using Aadhaar OTP (Positive Flow) :&lt;/strong&gt; This endpoint handles the login process via ABHA number using an Aadhaar OTP. If the OTP entered by the user matches the OTP sent by Aadhaar, the system will authenticate the user and display the user&#39;s profile along with a JWT token and profile details.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via ABHA Number - Using ABHA OTP  (Positive Flow) :  &lt;/strong&gt;This endpoint handles the login process via ABHA number using an ABHA OTP. If the OTP entered by the user matches the OTP sent by Aadhaar, the system will authenticate the user and display the user&#39;s profile along with a JWT token and profile details.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Mobile Number - (Positive Flow) :  &lt;/strong&gt;This endpoint handles the login process via mobile number using an mobile OTP. If the OTP entered by the user matches the OTP sent by Aadhaar, the system will authenticate the user and display the user&#39;s profile along with a JWT token and profile details.&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Login via Password -  (Positive Flow) : &lt;/strong&gt;This endpoint handles the login process via Password using password. If the password(encrypted) entered by the user matches the password already set by user, then the system will authenticate the user and display the user&#39;s profile along with a JWT token and profile details.&lt;/li&gt;   &lt;li&gt;&lt;strong&gt;Login via Biometric - FingerPrint/Face/Iris -  (Positive Flow) : &lt;/strong&gt;This endpoint handles the login process via encrypted PID. If the pid(encrypted) entered by the user matches the details of the user, then the system will authenticate the user and display the user&#39;s profile along with a JWT token and profile details.&lt;/li&gt;   &lt;li&gt;&lt;strong&gt;Retrieval of Enrolment - Positive Flow:&lt;/strong&gt; This scenario describes the successful retrieval of enrolment details using a mobile OTP. The user provides their mobile number and the correct OTP received on their registered mobile number. Upon successful verification, the enrolment details are retrieved.&lt;/li&gt;    &lt;li&gt;&lt;strong&gt;Forgot ABHA via Aadhaar OTP - Positive Flow:&lt;/strong&gt; This scenario describes the process of recovering an ABHA number using an Aadhaar OTP. The user provides their Aadhaar number and the correct OTP received on their registered mobile number. Upon successful verification, the ABHA number is recovered.&lt;/li&gt;    &lt;li&gt;&lt;strong&gt;Forgot ABHA via Mobile OTP - Positive Flow:&lt;/strong&gt; This scenario describes the process of recovering an ABHA number using a Mobile OTP. The user provides their registered Mobile number and the correct OTP received on their mobile number. Upon successful verification, the ABHA number is recovered.&lt;/li&gt;   &lt;li&gt;&lt;strong&gt;Find ABHA via Biometric  - Positive Flow:&lt;/strong&gt; This scenario describes the process of Finding an ABHA details using a Biometric . The user provides correct Biometric data in the form pid. Upon successful verification, the ABHA number is recovered.&lt;/li&gt;  </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Indicates various errors encountered during the search process, such as invalid identifiers or missing parameters. </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized Access. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The requested resource was not found. This can occur if the profile does not exist. </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call abhaApiV3ProfileLoginVerifyPostCall(String token, String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginVerifyPostRequest abhaApiV3ProfileLoginVerifyPostRequest, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = abhaApiV3ProfileLoginVerifyPostRequest;
+
+        // create path and map variables
+        String localVarPath = "/abha/api/v3/profile/login/verify";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        if (token != null) {
+            localVarHeaderParams.put("Authorization", "Bearer " + localVarApiClient.parameterToString(token));
+        }
+
+        if (REQUEST_ID != null) {
+            localVarHeaderParams.put("REQUEST-ID", localVarApiClient.parameterToString(REQUEST_ID));
+        }
+
+
+        if (TIMESTAMP != null) {
+            localVarHeaderParams.put("TIMESTAMP", localVarApiClient.parameterToString(TIMESTAMP));
+        }
+
+
+        String[] localVarAuthNames = new String[] { "bearerAuth" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call abhaApiV3ProfileLoginVerifyPostValidateBeforeCall(String token, String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginVerifyPostRequest abhaApiV3ProfileLoginVerifyPostRequest, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'REQUEST_ID' is set
+        if (REQUEST_ID == null) {
+            throw new ApiException("Missing the required parameter 'REQUEST_ID' when calling abhaApiV3ProfileLoginVerifyPost(Async)");
+        }
+
+        // verify the required parameter 'TIMESTAMP' is set
+        if (TIMESTAMP == null) {
+            throw new ApiException("Missing the required parameter 'TIMESTAMP' when calling abhaApiV3ProfileLoginVerifyPost(Async)");
+        }
+
+        return abhaApiV3ProfileLoginVerifyPostCall(token, REQUEST_ID, TIMESTAMP, abhaApiV3ProfileLoginVerifyPostRequest, _callback);
+
+    }
+
+    /**
+     * Use Case: ABHA Login - Verify OTP using Aadhaar number, ABHA number, Mobile number, Biometric Verify Login, Find ABHA via Aadhaar, Mobile, Biometrics
+     * \&quot;This API endpoint is used to verify the OTP (One-Time Password) for logging into an ABHA (Ayushman Bharat Health Account) profile. It is used to verify the OTP sent to the user’s registered mobile number or email address for the purpose of logging into their ABHA profile. The OTP is essential for verifying the user’s identity and ensuring secure access to their profile.&lt;br&gt; &lt;br&gt;**Example of OTP Request**&lt;br&gt; &lt;br&gt;Example 1:&lt;br&gt; **Login via ABHA Number - Using Aadhaar OTP:** This endpoint verifies the OTP sent to the user’s registered mobile number for logging into their ABHA profile using their ABHA number and Aadhaar OTP.  &lt;br&gt; &lt;br&gt;Example 2:&lt;br&gt; **Login via ABHA Number - Using ABHA OTP:** This endpoint verifies the OTP sent to the user’s registered mobile number for logging into their ABHA profile using their ABHA number and ABHA OTP. &lt;br&gt; &lt;br&gt;Example3:&lt;br&gt; **Verify Password:** This endpoint verifies the user’s password for logging into their ABHA profile.&lt;br&gt; &lt;br&gt;Example 4:&lt;br&gt; **Login via Aadhaar:** verifies the OTP sent to the user’s registered mobile number for logging into their ABHA profile using their Aadhaar number..&lt;br&gt;&lt;br&gt; Example 5:&lt;br&gt; **Login via Mobile number:** This endpoint verifies the OTP sent to the user’s registered mobile number for logging into their ABHA profile using their mobile number.  &lt;br&gt;&lt;br&gt; Example 6:&lt;br&gt;  **ABHA PROFILE (Login via Biometric) -** Its used to verify the user’s identity using biometric data (such as fingerprints, face, Iris) for logging into their ABHA profile. The request body should include the scope, authentication methods, and biometric data. &lt;br&gt; &lt;br&gt; For Login via Biometric using face &lt;br&gt; &lt;strong&gt;scope: &lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt; aadhaar-face-verify &lt;/code&gt;   &lt;br&gt;&lt;br&gt; For Login via Biometric using fingerprint &lt;br&gt; &lt;strong&gt;scope: &lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt; aadhaar-bio-verify &lt;/code&gt; &lt;br&gt;&lt;br&gt;For Login via Biometric using Iris &lt;br&gt; &lt;strong&gt;scope: &lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt; aadhaar-iris-verify &lt;/code&gt;   &lt;br&gt;&lt;br&gt;Example 7:&lt;br&gt;  **Find ABHA  - Verify OTP:** It is used to verify the OTP to Fetch Complete ABHA Details along with JWT Tokens. &lt;br&gt;&lt;br&gt;&lt;strong&gt;Note : &lt;/strong&gt; OTP will be valid for 10 minute only &lt;br&gt;&lt;br&gt;Example 8:&lt;br&gt;  **Find ABHA  - Verify via Biometric:** It is used to find the ABHA details using Biometric(Fingerprint, Face, Iris) data in the form of PID.
+     * @param REQUEST_ID  (required)
+     * @param TIMESTAMP  (required)
+     * @param abhaApiV3ProfileLoginVerifyPostRequest &lt;b&gt;Below is the Request Body description:&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;!--&lt;div&gt; &lt;table&gt; &lt;thead&gt; &lt;tr&gt; &lt;th&gt;Attributes&lt;/th&gt; &lt;th&gt;Description&lt;/th&gt; &lt;/tr&gt; &lt;/thead&gt; &lt;tbody&gt; &lt;tr&gt; &lt;td&gt;scope &lt;sup&gt;* required&lt;/sup&gt;&lt;/td&gt; &lt;td&gt;Aadhaar/Abha/mobile&lt;/td&gt; &lt;/tr&gt; &lt;tr&gt; &lt;td&gt;loginHint &lt;sup&gt;* required&lt;/sup&gt;&lt;/td&gt; &lt;td&gt;Aadhaar,Abha And Mobile Number&lt;/td&gt; &lt;/tr&gt; &lt;tr&gt; &lt;td&gt;loginId &lt;sup&gt;* required&lt;/sup&gt;&lt;/td&gt; &lt;td&gt;encrypted mobile-number&lt;/td&gt; &lt;/tr&gt; &lt;tr&gt; &lt;td&gt;otpSystem &lt;sup&gt;* required&lt;/sup&gt;&lt;/td&gt; &lt;td&gt;abdm/aadhaar&lt;/td&gt; &lt;/tr&gt; &lt;/tbody&gt; &lt;/table&gt; &lt;/div&gt; &lt;hr&gt; --&gt; &lt;b&gt;Note:&lt;/b&gt; Mandatory fields can&#39;t be null.&lt;ol&gt; &lt;li&gt; &lt;p&gt;&lt;strong&gt;scope&lt;/strong&gt; (required):&lt;/p&gt; &lt;ul&gt; &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; Specifies the scope of the OTP verification.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;[\&quot;abha-login\&quot;, \&quot;aadhaar-verify\&quot;]&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Possible Values:&lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt;aadhaar-verify&lt;/code&gt;, &lt;code&gt;mobile-verify&lt;/code&gt;, &lt;code&gt;re-activate&lt;/code&gt;, &lt;code&gt;retrieval&lt;/code&gt;, &lt;code&gt;de-activate&lt;/code&gt;, &lt;code&gt;delete&lt;/code&gt;, &lt;code&gt;aadhaar-face-verify&lt;/code&gt;, &lt;code&gt;aadhaar-bio-verify&lt;/code&gt; ,&lt;code&gt;aadhaar-iris-verify&lt;/code&gt;, &lt;code&gt;re-kyc&lt;/code&gt;, etc.&lt;/li&gt; &lt;/ul&gt; &lt;/li&gt; &lt;li&gt; &lt;p&gt;&lt;strong&gt;auth methods&lt;/strong&gt; (required):&lt;/p&gt; &lt;ul&gt; &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; Indicates the type of auth method being used for the OTP verification.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;otp&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Possible Values:&lt;/strong&gt; &lt;code&gt;otp&lt;/code&gt;, &lt;code&gt;bio&lt;/code&gt;, &lt;code&gt;face&lt;/code&gt;, &lt;code&gt;demo&lt;/code&gt;&lt;/li&gt; &lt;/ul&gt; &lt;/li&gt; &lt;/ol&gt; (optional)
+     * @return AbhaApiV3ProfileLoginVerifyPost200Response
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> The 200 response code indicates a successful request. In this context, it refers to the successful generation and delivery of an OTP (One-Time Password) for various services.&lt;br&gt;&lt;br&gt; &lt;strong&gt;Types of OTP Responses:&lt;/strong&gt; &lt;ol&gt; &lt;li&gt;&lt;strong&gt;Login via ABHA Number - Using Aadhaar OTP (Positive Flow) :&lt;/strong&gt; This endpoint handles the login process via ABHA number using an Aadhaar OTP. If the OTP entered by the user matches the OTP sent by Aadhaar, the system will authenticate the user and display the user&#39;s profile along with a JWT token and profile details.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via ABHA Number - Using ABHA OTP  (Positive Flow) :  &lt;/strong&gt;This endpoint handles the login process via ABHA number using an ABHA OTP. If the OTP entered by the user matches the OTP sent by Aadhaar, the system will authenticate the user and display the user&#39;s profile along with a JWT token and profile details.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Mobile Number - (Positive Flow) :  &lt;/strong&gt;This endpoint handles the login process via mobile number using an mobile OTP. If the OTP entered by the user matches the OTP sent by Aadhaar, the system will authenticate the user and display the user&#39;s profile along with a JWT token and profile details.&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Login via Password -  (Positive Flow) : &lt;/strong&gt;This endpoint handles the login process via Password using password. If the password(encrypted) entered by the user matches the password already set by user, then the system will authenticate the user and display the user&#39;s profile along with a JWT token and profile details.&lt;/li&gt;   &lt;li&gt;&lt;strong&gt;Login via Biometric - FingerPrint/Face/Iris -  (Positive Flow) : &lt;/strong&gt;This endpoint handles the login process via encrypted PID. If the pid(encrypted) entered by the user matches the details of the user, then the system will authenticate the user and display the user&#39;s profile along with a JWT token and profile details.&lt;/li&gt;   &lt;li&gt;&lt;strong&gt;Retrieval of Enrolment - Positive Flow:&lt;/strong&gt; This scenario describes the successful retrieval of enrolment details using a mobile OTP. The user provides their mobile number and the correct OTP received on their registered mobile number. Upon successful verification, the enrolment details are retrieved.&lt;/li&gt;    &lt;li&gt;&lt;strong&gt;Forgot ABHA via Aadhaar OTP - Positive Flow:&lt;/strong&gt; This scenario describes the process of recovering an ABHA number using an Aadhaar OTP. The user provides their Aadhaar number and the correct OTP received on their registered mobile number. Upon successful verification, the ABHA number is recovered.&lt;/li&gt;    &lt;li&gt;&lt;strong&gt;Forgot ABHA via Mobile OTP - Positive Flow:&lt;/strong&gt; This scenario describes the process of recovering an ABHA number using a Mobile OTP. The user provides their registered Mobile number and the correct OTP received on their mobile number. Upon successful verification, the ABHA number is recovered.&lt;/li&gt;   &lt;li&gt;&lt;strong&gt;Find ABHA via Biometric  - Positive Flow:&lt;/strong&gt; This scenario describes the process of Finding an ABHA details using a Biometric . The user provides correct Biometric data in the form pid. Upon successful verification, the ABHA number is recovered.&lt;/li&gt;  </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Indicates various errors encountered during the search process, such as invalid identifiers or missing parameters. </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized Access. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The requested resource was not found. This can occur if the profile does not exist. </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public AbhaApiV3ProfileLoginVerifyPost200Response abhaApiV3ProfileLoginVerifyPost(String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginVerifyPostRequest abhaApiV3ProfileLoginVerifyPostRequest) throws ApiException {
+        ApiResponse<AbhaApiV3ProfileLoginVerifyPost200Response> localVarResp = abhaApiV3ProfileLoginVerifyPostWithHttpInfo(REQUEST_ID, TIMESTAMP, abhaApiV3ProfileLoginVerifyPostRequest);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Use Case: ABHA Login - Verify OTP using Aadhaar number, ABHA number, Mobile number, Biometric Verify Login, Find ABHA via Aadhaar, Mobile, Biometrics
+     * \&quot;This API endpoint is used to verify the OTP (One-Time Password) for logging into an ABHA (Ayushman Bharat Health Account) profile. It is used to verify the OTP sent to the user’s registered mobile number or email address for the purpose of logging into their ABHA profile. The OTP is essential for verifying the user’s identity and ensuring secure access to their profile.&lt;br&gt; &lt;br&gt;**Example of OTP Request**&lt;br&gt; &lt;br&gt;Example 1:&lt;br&gt; **Login via ABHA Number - Using Aadhaar OTP:** This endpoint verifies the OTP sent to the user’s registered mobile number for logging into their ABHA profile using their ABHA number and Aadhaar OTP.  &lt;br&gt; &lt;br&gt;Example 2:&lt;br&gt; **Login via ABHA Number - Using ABHA OTP:** This endpoint verifies the OTP sent to the user’s registered mobile number for logging into their ABHA profile using their ABHA number and ABHA OTP. &lt;br&gt; &lt;br&gt;Example3:&lt;br&gt; **Verify Password:** This endpoint verifies the user’s password for logging into their ABHA profile.&lt;br&gt; &lt;br&gt;Example 4:&lt;br&gt; **Login via Aadhaar:** verifies the OTP sent to the user’s registered mobile number for logging into their ABHA profile using their Aadhaar number..&lt;br&gt;&lt;br&gt; Example 5:&lt;br&gt; **Login via Mobile number:** This endpoint verifies the OTP sent to the user’s registered mobile number for logging into their ABHA profile using their mobile number.  &lt;br&gt;&lt;br&gt; Example 6:&lt;br&gt;  **ABHA PROFILE (Login via Biometric) -** Its used to verify the user’s identity using biometric data (such as fingerprints, face, Iris) for logging into their ABHA profile. The request body should include the scope, authentication methods, and biometric data. &lt;br&gt; &lt;br&gt; For Login via Biometric using face &lt;br&gt; &lt;strong&gt;scope: &lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt; aadhaar-face-verify &lt;/code&gt;   &lt;br&gt;&lt;br&gt; For Login via Biometric using fingerprint &lt;br&gt; &lt;strong&gt;scope: &lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt; aadhaar-bio-verify &lt;/code&gt; &lt;br&gt;&lt;br&gt;For Login via Biometric using Iris &lt;br&gt; &lt;strong&gt;scope: &lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt; aadhaar-iris-verify &lt;/code&gt;   &lt;br&gt;&lt;br&gt;Example 7:&lt;br&gt;  **Find ABHA  - Verify OTP:** It is used to verify the OTP to Fetch Complete ABHA Details along with JWT Tokens. &lt;br&gt;&lt;br&gt;&lt;strong&gt;Note : &lt;/strong&gt; OTP will be valid for 10 minute only &lt;br&gt;&lt;br&gt;Example 8:&lt;br&gt;  **Find ABHA  - Verify via Biometric:** It is used to find the ABHA details using Biometric(Fingerprint, Face, Iris) data in the form of PID.
+     * @param REQUEST_ID  (required)
+     * @param TIMESTAMP  (required)
+     * @param abhaApiV3ProfileLoginVerifyPostRequest &lt;b&gt;Below is the Request Body description:&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;!--&lt;div&gt; &lt;table&gt; &lt;thead&gt; &lt;tr&gt; &lt;th&gt;Attributes&lt;/th&gt; &lt;th&gt;Description&lt;/th&gt; &lt;/tr&gt; &lt;/thead&gt; &lt;tbody&gt; &lt;tr&gt; &lt;td&gt;scope &lt;sup&gt;* required&lt;/sup&gt;&lt;/td&gt; &lt;td&gt;Aadhaar/Abha/mobile&lt;/td&gt; &lt;/tr&gt; &lt;tr&gt; &lt;td&gt;loginHint &lt;sup&gt;* required&lt;/sup&gt;&lt;/td&gt; &lt;td&gt;Aadhaar,Abha And Mobile Number&lt;/td&gt; &lt;/tr&gt; &lt;tr&gt; &lt;td&gt;loginId &lt;sup&gt;* required&lt;/sup&gt;&lt;/td&gt; &lt;td&gt;encrypted mobile-number&lt;/td&gt; &lt;/tr&gt; &lt;tr&gt; &lt;td&gt;otpSystem &lt;sup&gt;* required&lt;/sup&gt;&lt;/td&gt; &lt;td&gt;abdm/aadhaar&lt;/td&gt; &lt;/tr&gt; &lt;/tbody&gt; &lt;/table&gt; &lt;/div&gt; &lt;hr&gt; --&gt; &lt;b&gt;Note:&lt;/b&gt; Mandatory fields can&#39;t be null.&lt;ol&gt; &lt;li&gt; &lt;p&gt;&lt;strong&gt;scope&lt;/strong&gt; (required):&lt;/p&gt; &lt;ul&gt; &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; Specifies the scope of the OTP verification.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;[\&quot;abha-login\&quot;, \&quot;aadhaar-verify\&quot;]&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Possible Values:&lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt;aadhaar-verify&lt;/code&gt;, &lt;code&gt;mobile-verify&lt;/code&gt;, &lt;code&gt;re-activate&lt;/code&gt;, &lt;code&gt;retrieval&lt;/code&gt;, &lt;code&gt;de-activate&lt;/code&gt;, &lt;code&gt;delete&lt;/code&gt;, &lt;code&gt;aadhaar-face-verify&lt;/code&gt;, &lt;code&gt;aadhaar-bio-verify&lt;/code&gt; ,&lt;code&gt;aadhaar-iris-verify&lt;/code&gt;, &lt;code&gt;re-kyc&lt;/code&gt;, etc.&lt;/li&gt; &lt;/ul&gt; &lt;/li&gt; &lt;li&gt; &lt;p&gt;&lt;strong&gt;auth methods&lt;/strong&gt; (required):&lt;/p&gt; &lt;ul&gt; &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; Indicates the type of auth method being used for the OTP verification.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;otp&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Possible Values:&lt;/strong&gt; &lt;code&gt;otp&lt;/code&gt;, &lt;code&gt;bio&lt;/code&gt;, &lt;code&gt;face&lt;/code&gt;, &lt;code&gt;demo&lt;/code&gt;&lt;/li&gt; &lt;/ul&gt; &lt;/li&gt; &lt;/ol&gt; (optional)
+     * @return ApiResponse&lt;AbhaApiV3ProfileLoginVerifyPost200Response&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> The 200 response code indicates a successful request. In this context, it refers to the successful generation and delivery of an OTP (One-Time Password) for various services.&lt;br&gt;&lt;br&gt; &lt;strong&gt;Types of OTP Responses:&lt;/strong&gt; &lt;ol&gt; &lt;li&gt;&lt;strong&gt;Login via ABHA Number - Using Aadhaar OTP (Positive Flow) :&lt;/strong&gt; This endpoint handles the login process via ABHA number using an Aadhaar OTP. If the OTP entered by the user matches the OTP sent by Aadhaar, the system will authenticate the user and display the user&#39;s profile along with a JWT token and profile details.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via ABHA Number - Using ABHA OTP  (Positive Flow) :  &lt;/strong&gt;This endpoint handles the login process via ABHA number using an ABHA OTP. If the OTP entered by the user matches the OTP sent by Aadhaar, the system will authenticate the user and display the user&#39;s profile along with a JWT token and profile details.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Mobile Number - (Positive Flow) :  &lt;/strong&gt;This endpoint handles the login process via mobile number using an mobile OTP. If the OTP entered by the user matches the OTP sent by Aadhaar, the system will authenticate the user and display the user&#39;s profile along with a JWT token and profile details.&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Login via Password -  (Positive Flow) : &lt;/strong&gt;This endpoint handles the login process via Password using password. If the password(encrypted) entered by the user matches the password already set by user, then the system will authenticate the user and display the user&#39;s profile along with a JWT token and profile details.&lt;/li&gt;   &lt;li&gt;&lt;strong&gt;Login via Biometric - FingerPrint/Face/Iris -  (Positive Flow) : &lt;/strong&gt;This endpoint handles the login process via encrypted PID. If the pid(encrypted) entered by the user matches the details of the user, then the system will authenticate the user and display the user&#39;s profile along with a JWT token and profile details.&lt;/li&gt;   &lt;li&gt;&lt;strong&gt;Retrieval of Enrolment - Positive Flow:&lt;/strong&gt; This scenario describes the successful retrieval of enrolment details using a mobile OTP. The user provides their mobile number and the correct OTP received on their registered mobile number. Upon successful verification, the enrolment details are retrieved.&lt;/li&gt;    &lt;li&gt;&lt;strong&gt;Forgot ABHA via Aadhaar OTP - Positive Flow:&lt;/strong&gt; This scenario describes the process of recovering an ABHA number using an Aadhaar OTP. The user provides their Aadhaar number and the correct OTP received on their registered mobile number. Upon successful verification, the ABHA number is recovered.&lt;/li&gt;    &lt;li&gt;&lt;strong&gt;Forgot ABHA via Mobile OTP - Positive Flow:&lt;/strong&gt; This scenario describes the process of recovering an ABHA number using a Mobile OTP. The user provides their registered Mobile number and the correct OTP received on their mobile number. Upon successful verification, the ABHA number is recovered.&lt;/li&gt;   &lt;li&gt;&lt;strong&gt;Find ABHA via Biometric  - Positive Flow:&lt;/strong&gt; This scenario describes the process of Finding an ABHA details using a Biometric . The user provides correct Biometric data in the form pid. Upon successful verification, the ABHA number is recovered.&lt;/li&gt;  </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Indicates various errors encountered during the search process, such as invalid identifiers or missing parameters. </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized Access. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The requested resource was not found. This can occur if the profile does not exist. </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<AbhaApiV3ProfileLoginVerifyPost200Response> abhaApiV3ProfileLoginVerifyPostWithHttpInfo(String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginVerifyPostRequest abhaApiV3ProfileLoginVerifyPostRequest) throws ApiException {
+        okhttp3.Call localVarCall = abhaApiV3ProfileLoginVerifyPostValidateBeforeCall(null, REQUEST_ID, TIMESTAMP, abhaApiV3ProfileLoginVerifyPostRequest, null);
+        Type localVarReturnType = new TypeToken<AbhaApiV3ProfileLoginVerifyPost200Response>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Use Case: ABHA Login - Verify OTP using Aadhaar number, ABHA number, Mobile number, Biometric Verify Login, Find ABHA via Aadhaar, Mobile, Biometrics (asynchronously)
+     * \&quot;This API endpoint is used to verify the OTP (One-Time Password) for logging into an ABHA (Ayushman Bharat Health Account) profile. It is used to verify the OTP sent to the user’s registered mobile number or email address for the purpose of logging into their ABHA profile. The OTP is essential for verifying the user’s identity and ensuring secure access to their profile.&lt;br&gt; &lt;br&gt;**Example of OTP Request**&lt;br&gt; &lt;br&gt;Example 1:&lt;br&gt; **Login via ABHA Number - Using Aadhaar OTP:** This endpoint verifies the OTP sent to the user’s registered mobile number for logging into their ABHA profile using their ABHA number and Aadhaar OTP.  &lt;br&gt; &lt;br&gt;Example 2:&lt;br&gt; **Login via ABHA Number - Using ABHA OTP:** This endpoint verifies the OTP sent to the user’s registered mobile number for logging into their ABHA profile using their ABHA number and ABHA OTP. &lt;br&gt; &lt;br&gt;Example3:&lt;br&gt; **Verify Password:** This endpoint verifies the user’s password for logging into their ABHA profile.&lt;br&gt; &lt;br&gt;Example 4:&lt;br&gt; **Login via Aadhaar:** verifies the OTP sent to the user’s registered mobile number for logging into their ABHA profile using their Aadhaar number..&lt;br&gt;&lt;br&gt; Example 5:&lt;br&gt; **Login via Mobile number:** This endpoint verifies the OTP sent to the user’s registered mobile number for logging into their ABHA profile using their mobile number.  &lt;br&gt;&lt;br&gt; Example 6:&lt;br&gt;  **ABHA PROFILE (Login via Biometric) -** Its used to verify the user’s identity using biometric data (such as fingerprints, face, Iris) for logging into their ABHA profile. The request body should include the scope, authentication methods, and biometric data. &lt;br&gt; &lt;br&gt; For Login via Biometric using face &lt;br&gt; &lt;strong&gt;scope: &lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt; aadhaar-face-verify &lt;/code&gt;   &lt;br&gt;&lt;br&gt; For Login via Biometric using fingerprint &lt;br&gt; &lt;strong&gt;scope: &lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt; aadhaar-bio-verify &lt;/code&gt; &lt;br&gt;&lt;br&gt;For Login via Biometric using Iris &lt;br&gt; &lt;strong&gt;scope: &lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt; aadhaar-iris-verify &lt;/code&gt;   &lt;br&gt;&lt;br&gt;Example 7:&lt;br&gt;  **Find ABHA  - Verify OTP:** It is used to verify the OTP to Fetch Complete ABHA Details along with JWT Tokens. &lt;br&gt;&lt;br&gt;&lt;strong&gt;Note : &lt;/strong&gt; OTP will be valid for 10 minute only &lt;br&gt;&lt;br&gt;Example 8:&lt;br&gt;  **Find ABHA  - Verify via Biometric:** It is used to find the ABHA details using Biometric(Fingerprint, Face, Iris) data in the form of PID.
+     * @param REQUEST_ID  (required)
+     * @param TIMESTAMP  (required)
+     * @param abhaApiV3ProfileLoginVerifyPostRequest &lt;b&gt;Below is the Request Body description:&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;!--&lt;div&gt; &lt;table&gt; &lt;thead&gt; &lt;tr&gt; &lt;th&gt;Attributes&lt;/th&gt; &lt;th&gt;Description&lt;/th&gt; &lt;/tr&gt; &lt;/thead&gt; &lt;tbody&gt; &lt;tr&gt; &lt;td&gt;scope &lt;sup&gt;* required&lt;/sup&gt;&lt;/td&gt; &lt;td&gt;Aadhaar/Abha/mobile&lt;/td&gt; &lt;/tr&gt; &lt;tr&gt; &lt;td&gt;loginHint &lt;sup&gt;* required&lt;/sup&gt;&lt;/td&gt; &lt;td&gt;Aadhaar,Abha And Mobile Number&lt;/td&gt; &lt;/tr&gt; &lt;tr&gt; &lt;td&gt;loginId &lt;sup&gt;* required&lt;/sup&gt;&lt;/td&gt; &lt;td&gt;encrypted mobile-number&lt;/td&gt; &lt;/tr&gt; &lt;tr&gt; &lt;td&gt;otpSystem &lt;sup&gt;* required&lt;/sup&gt;&lt;/td&gt; &lt;td&gt;abdm/aadhaar&lt;/td&gt; &lt;/tr&gt; &lt;/tbody&gt; &lt;/table&gt; &lt;/div&gt; &lt;hr&gt; --&gt; &lt;b&gt;Note:&lt;/b&gt; Mandatory fields can&#39;t be null.&lt;ol&gt; &lt;li&gt; &lt;p&gt;&lt;strong&gt;scope&lt;/strong&gt; (required):&lt;/p&gt; &lt;ul&gt; &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; Specifies the scope of the OTP verification.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;[\&quot;abha-login\&quot;, \&quot;aadhaar-verify\&quot;]&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Possible Values:&lt;/strong&gt; &lt;code&gt;abha-login&lt;/code&gt;, &lt;code&gt;aadhaar-verify&lt;/code&gt;, &lt;code&gt;mobile-verify&lt;/code&gt;, &lt;code&gt;re-activate&lt;/code&gt;, &lt;code&gt;retrieval&lt;/code&gt;, &lt;code&gt;de-activate&lt;/code&gt;, &lt;code&gt;delete&lt;/code&gt;, &lt;code&gt;aadhaar-face-verify&lt;/code&gt;, &lt;code&gt;aadhaar-bio-verify&lt;/code&gt; ,&lt;code&gt;aadhaar-iris-verify&lt;/code&gt;, &lt;code&gt;re-kyc&lt;/code&gt;, etc.&lt;/li&gt; &lt;/ul&gt; &lt;/li&gt; &lt;li&gt; &lt;p&gt;&lt;strong&gt;auth methods&lt;/strong&gt; (required):&lt;/p&gt; &lt;ul&gt; &lt;li&gt;&lt;strong&gt;Description:&lt;/strong&gt; Indicates the type of auth method being used for the OTP verification.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Example:&lt;/strong&gt; &lt;code&gt;otp&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Possible Values:&lt;/strong&gt; &lt;code&gt;otp&lt;/code&gt;, &lt;code&gt;bio&lt;/code&gt;, &lt;code&gt;face&lt;/code&gt;, &lt;code&gt;demo&lt;/code&gt;&lt;/li&gt; &lt;/ul&gt; &lt;/li&gt; &lt;/ol&gt; (optional)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> The 200 response code indicates a successful request. In this context, it refers to the successful generation and delivery of an OTP (One-Time Password) for various services.&lt;br&gt;&lt;br&gt; &lt;strong&gt;Types of OTP Responses:&lt;/strong&gt; &lt;ol&gt; &lt;li&gt;&lt;strong&gt;Login via ABHA Number - Using Aadhaar OTP (Positive Flow) :&lt;/strong&gt; This endpoint handles the login process via ABHA number using an Aadhaar OTP. If the OTP entered by the user matches the OTP sent by Aadhaar, the system will authenticate the user and display the user&#39;s profile along with a JWT token and profile details.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via ABHA Number - Using ABHA OTP  (Positive Flow) :  &lt;/strong&gt;This endpoint handles the login process via ABHA number using an ABHA OTP. If the OTP entered by the user matches the OTP sent by Aadhaar, the system will authenticate the user and display the user&#39;s profile along with a JWT token and profile details.&lt;/li&gt; &lt;li&gt;&lt;strong&gt;Login via Mobile Number - (Positive Flow) :  &lt;/strong&gt;This endpoint handles the login process via mobile number using an mobile OTP. If the OTP entered by the user matches the OTP sent by Aadhaar, the system will authenticate the user and display the user&#39;s profile along with a JWT token and profile details.&lt;/li&gt;  &lt;li&gt;&lt;strong&gt;Login via Password -  (Positive Flow) : &lt;/strong&gt;This endpoint handles the login process via Password using password. If the password(encrypted) entered by the user matches the password already set by user, then the system will authenticate the user and display the user&#39;s profile along with a JWT token and profile details.&lt;/li&gt;   &lt;li&gt;&lt;strong&gt;Login via Biometric - FingerPrint/Face/Iris -  (Positive Flow) : &lt;/strong&gt;This endpoint handles the login process via encrypted PID. If the pid(encrypted) entered by the user matches the details of the user, then the system will authenticate the user and display the user&#39;s profile along with a JWT token and profile details.&lt;/li&gt;   &lt;li&gt;&lt;strong&gt;Retrieval of Enrolment - Positive Flow:&lt;/strong&gt; This scenario describes the successful retrieval of enrolment details using a mobile OTP. The user provides their mobile number and the correct OTP received on their registered mobile number. Upon successful verification, the enrolment details are retrieved.&lt;/li&gt;    &lt;li&gt;&lt;strong&gt;Forgot ABHA via Aadhaar OTP - Positive Flow:&lt;/strong&gt; This scenario describes the process of recovering an ABHA number using an Aadhaar OTP. The user provides their Aadhaar number and the correct OTP received on their registered mobile number. Upon successful verification, the ABHA number is recovered.&lt;/li&gt;    &lt;li&gt;&lt;strong&gt;Forgot ABHA via Mobile OTP - Positive Flow:&lt;/strong&gt; This scenario describes the process of recovering an ABHA number using a Mobile OTP. The user provides their registered Mobile number and the correct OTP received on their mobile number. Upon successful verification, the ABHA number is recovered.&lt;/li&gt;   &lt;li&gt;&lt;strong&gt;Find ABHA via Biometric  - Positive Flow:&lt;/strong&gt; This scenario describes the process of Finding an ABHA details using a Biometric . The user provides correct Biometric data in the form pid. Upon successful verification, the ABHA number is recovered.&lt;/li&gt;  </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Indicates various errors encountered during the search process, such as invalid identifiers or missing parameters. </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized Access. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The requested resource was not found. This can occur if the profile does not exist. </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call abhaApiV3ProfileLoginVerifyPostAsync(String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginVerifyPostRequest abhaApiV3ProfileLoginVerifyPostRequest, final ApiCallback<AbhaApiV3ProfileLoginVerifyPost200Response> _callback) throws ApiException {
+        okhttp3.Call localVarCall = abhaApiV3ProfileLoginVerifyPostValidateBeforeCall(null, REQUEST_ID, TIMESTAMP, abhaApiV3ProfileLoginVerifyPostRequest, _callback);
+        Type localVarReturnType = new TypeToken<AbhaApiV3ProfileLoginVerifyPost200Response>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+
+    public CompletionStage<AbhaApiV3ProfileLoginVerifyPost200Response> abhaApiV3ProfileLoginVerifyPostAsyncCall(String token, String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginVerifyPostRequest abhaApiV3ProfileLoginVerifyPostRequest) throws ApiException {
+        FutureApiCallBack<AbhaApiV3ProfileLoginVerifyPost200Response> callback = FutureApiCallBack.newCallback();
+        okhttp3.Call localVarCall = abhaApiV3ProfileLoginVerifyPostValidateBeforeCall(token, REQUEST_ID, TIMESTAMP, abhaApiV3ProfileLoginVerifyPostRequest, callback);
+        Type localVarReturnType = new TypeToken<AbhaApiV3ProfileLoginVerifyPost200Response>() {
+        }.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, callback);
+        return callback.getFuture();
+    }
+    /**
+     * Build call for abhaApiV3ProfileLoginVerifyUserPost
+     * @param tToken  (required)
+     * @param REQUEST_ID  (required)
+     * @param TIMESTAMP  (required)
+     * @param abhaApiV3ProfileLoginVerifyUserPostRequest  (optional)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> The 200 response code indicates a successful request.&lt;br&gt;&lt;br&gt; &lt;p&gt;&lt;strong&gt; </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> The 400 response code indicates a bad request. In this context, it refers to various errors encountered during the OTP (One-Time Password) verification process due to invalid inputs or parameters. &lt;p&gt;&lt;br&gt;&lt;strong&gt;Types of OTP Verification Errors:&lt;/strong&gt;&lt;/p&gt; &lt;ol&gt; &lt;li&gt; &lt;p&gt;&lt;strong&gt;Invakid T-Token:&lt;/strong&gt; This error occurs when the T -token.&lt;/p&gt; &lt;/li&gt; &lt;/ol&gt; &lt;ol start&#x3D;\&quot;2\&quot;&gt; &lt;li&gt; &lt;p&gt;&lt;strong&gt;Verify OTP - Invalid Abha Number:&lt;/strong&gt; This error occurs when the authentication methods provided for invalid abha number are invalid.&lt;/p&gt; &lt;/li&gt; &lt;/ol&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td>  &lt;strong&gt;Unauthorized:&lt;/strong&gt;&lt;br&gt; Indicates that the request requires user authentication. The server returns a 401 status code when the client has not provided valid authentication credentials. </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> &lt;b&gt;Internal Server Error&lt;/b&gt;&lt;br&gt;&lt;br&gt;  An Internal Server Error (500) indicates that the server encountered an unexpected condition that prevented it from fulfilling the request. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call abhaApiV3ProfileLoginVerifyUserPostCall(String token, String tToken, String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginVerifyUserPostRequest abhaApiV3ProfileLoginVerifyUserPostRequest, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = abhaApiV3ProfileLoginVerifyUserPostRequest;
+
+        // create path and map variables
+        String localVarPath = "/abha/api/v3/profile/login/verify/user";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        if (tToken != null) {
+            localVarHeaderParams.put("T-token", localVarApiClient.parameterToString(tToken));
+            localVarHeaderParams.put("Authorization", "Bearer " + localVarApiClient.parameterToString(token));
+        }
+
+        if (REQUEST_ID != null) {
+            localVarHeaderParams.put("REQUEST-ID", localVarApiClient.parameterToString(REQUEST_ID));
+        }
+
+
+        if (TIMESTAMP != null) {
+            localVarHeaderParams.put("TIMESTAMP", localVarApiClient.parameterToString(TIMESTAMP));
+        }
+
+
+        String[] localVarAuthNames = new String[] { "bearerAuth" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call abhaApiV3ProfileLoginVerifyUserPostValidateBeforeCall(String token, String tToken, String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginVerifyUserPostRequest abhaApiV3ProfileLoginVerifyUserPostRequest, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'tToken' is set
+        if (tToken == null) {
+            throw new ApiException("Missing the required parameter 'tToken' when calling abhaApiV3ProfileLoginVerifyUserPost(Async)");
+        }
+
+        // verify the required parameter 'REQUEST_ID' is set
+        if (REQUEST_ID == null) {
+            throw new ApiException("Missing the required parameter 'REQUEST_ID' when calling abhaApiV3ProfileLoginVerifyUserPost(Async)");
+        }
+
+        // verify the required parameter 'TIMESTAMP' is set
+        if (TIMESTAMP == null) {
+            throw new ApiException("Missing the required parameter 'TIMESTAMP' when calling abhaApiV3ProfileLoginVerifyUserPost(Async)");
+        }
+
+        return abhaApiV3ProfileLoginVerifyUserPostCall(token, tToken, REQUEST_ID, TIMESTAMP, abhaApiV3ProfileLoginVerifyUserPostRequest, _callback);
+
+    }
+
+    /**
+     * Use Case: Verify the OTP sent to the user’s registered mobile number or email address for the purpose of logging into their ABHA Profile
+     * This API endpoint is used to verify the OTP sent to the user’s registered mobile number or email address for the purpose of logging into their ABHA (Ayushman Bharat Health Account) profile. The OTP is essential for verifying the user’s identity and ensuring secure access to their profile. &lt;br&gt;&lt;br&gt;**Example of OTP Request**&lt;br&gt; &lt;br&gt;Example1:&lt;br&gt; **Login via Mobile Number:** When the  users log in to their ABHA (Ayushman Bharat Health Account) profile using their mobile number. An OTP (One-Time Password) is sent to the registered mobile number to verify the user’s identity. This ensures secure access to the user’s ABHA profile.&lt;br&gt; &lt;br&gt;&lt;b&gt;Note:&lt;/b&gt;&lt;br&gt; **1.** OTP will be valid for 10 minute only &lt;br&gt;&lt;br&gt;
+     * @param tToken  (required)
+     * @param REQUEST_ID  (required)
+     * @param TIMESTAMP  (required)
+     * @param abhaApiV3ProfileLoginVerifyUserPostRequest  (optional)
+     * @return AbhaApiV3ProfileLoginVerifyUserPost200Response
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> The 200 response code indicates a successful request.&lt;br&gt;&lt;br&gt; &lt;p&gt;&lt;strong&gt; </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> The 400 response code indicates a bad request. In this context, it refers to various errors encountered during the OTP (One-Time Password) verification process due to invalid inputs or parameters. &lt;p&gt;&lt;br&gt;&lt;strong&gt;Types of OTP Verification Errors:&lt;/strong&gt;&lt;/p&gt; &lt;ol&gt; &lt;li&gt; &lt;p&gt;&lt;strong&gt;Invakid T-Token:&lt;/strong&gt; This error occurs when the T -token.&lt;/p&gt; &lt;/li&gt; &lt;/ol&gt; &lt;ol start&#x3D;\&quot;2\&quot;&gt; &lt;li&gt; &lt;p&gt;&lt;strong&gt;Verify OTP - Invalid Abha Number:&lt;/strong&gt; This error occurs when the authentication methods provided for invalid abha number are invalid.&lt;/p&gt; &lt;/li&gt; &lt;/ol&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td>  &lt;strong&gt;Unauthorized:&lt;/strong&gt;&lt;br&gt; Indicates that the request requires user authentication. The server returns a 401 status code when the client has not provided valid authentication credentials. </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> &lt;b&gt;Internal Server Error&lt;/b&gt;&lt;br&gt;&lt;br&gt;  An Internal Server Error (500) indicates that the server encountered an unexpected condition that prevented it from fulfilling the request. </td><td>  -  </td></tr>
+     </table>
+     */
+    public AbhaApiV3ProfileLoginVerifyUserPost200Response abhaApiV3ProfileLoginVerifyUserPost(String tToken, String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginVerifyUserPostRequest abhaApiV3ProfileLoginVerifyUserPostRequest) throws ApiException {
+        ApiResponse<AbhaApiV3ProfileLoginVerifyUserPost200Response> localVarResp = abhaApiV3ProfileLoginVerifyUserPostWithHttpInfo(tToken, REQUEST_ID, TIMESTAMP, abhaApiV3ProfileLoginVerifyUserPostRequest);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Use Case: Verify the OTP sent to the user’s registered mobile number or email address for the purpose of logging into their ABHA Profile
+     * This API endpoint is used to verify the OTP sent to the user’s registered mobile number or email address for the purpose of logging into their ABHA (Ayushman Bharat Health Account) profile. The OTP is essential for verifying the user’s identity and ensuring secure access to their profile. &lt;br&gt;&lt;br&gt;**Example of OTP Request**&lt;br&gt; &lt;br&gt;Example1:&lt;br&gt; **Login via Mobile Number:** When the  users log in to their ABHA (Ayushman Bharat Health Account) profile using their mobile number. An OTP (One-Time Password) is sent to the registered mobile number to verify the user’s identity. This ensures secure access to the user’s ABHA profile.&lt;br&gt; &lt;br&gt;&lt;b&gt;Note:&lt;/b&gt;&lt;br&gt; **1.** OTP will be valid for 10 minute only &lt;br&gt;&lt;br&gt;
+     * @param tToken  (required)
+     * @param REQUEST_ID  (required)
+     * @param TIMESTAMP  (required)
+     * @param abhaApiV3ProfileLoginVerifyUserPostRequest  (optional)
+     * @return ApiResponse&lt;AbhaApiV3ProfileLoginVerifyUserPost200Response&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> The 200 response code indicates a successful request.&lt;br&gt;&lt;br&gt; &lt;p&gt;&lt;strong&gt; </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> The 400 response code indicates a bad request. In this context, it refers to various errors encountered during the OTP (One-Time Password) verification process due to invalid inputs or parameters. &lt;p&gt;&lt;br&gt;&lt;strong&gt;Types of OTP Verification Errors:&lt;/strong&gt;&lt;/p&gt; &lt;ol&gt; &lt;li&gt; &lt;p&gt;&lt;strong&gt;Invakid T-Token:&lt;/strong&gt; This error occurs when the T -token.&lt;/p&gt; &lt;/li&gt; &lt;/ol&gt; &lt;ol start&#x3D;\&quot;2\&quot;&gt; &lt;li&gt; &lt;p&gt;&lt;strong&gt;Verify OTP - Invalid Abha Number:&lt;/strong&gt; This error occurs when the authentication methods provided for invalid abha number are invalid.&lt;/p&gt; &lt;/li&gt; &lt;/ol&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td>  &lt;strong&gt;Unauthorized:&lt;/strong&gt;&lt;br&gt; Indicates that the request requires user authentication. The server returns a 401 status code when the client has not provided valid authentication credentials. </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> &lt;b&gt;Internal Server Error&lt;/b&gt;&lt;br&gt;&lt;br&gt;  An Internal Server Error (500) indicates that the server encountered an unexpected condition that prevented it from fulfilling the request. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<AbhaApiV3ProfileLoginVerifyUserPost200Response> abhaApiV3ProfileLoginVerifyUserPostWithHttpInfo(String tToken, String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginVerifyUserPostRequest abhaApiV3ProfileLoginVerifyUserPostRequest) throws ApiException {
+        okhttp3.Call localVarCall = abhaApiV3ProfileLoginVerifyUserPostValidateBeforeCall(null, tToken, REQUEST_ID, TIMESTAMP, abhaApiV3ProfileLoginVerifyUserPostRequest, null);
+        Type localVarReturnType = new TypeToken<AbhaApiV3ProfileLoginVerifyUserPost200Response>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Use Case: Verify the OTP sent to the user’s registered mobile number or email address for the purpose of logging into their ABHA Profile (asynchronously)
+     * This API endpoint is used to verify the OTP sent to the user’s registered mobile number or email address for the purpose of logging into their ABHA (Ayushman Bharat Health Account) profile. The OTP is essential for verifying the user’s identity and ensuring secure access to their profile. &lt;br&gt;&lt;br&gt;**Example of OTP Request**&lt;br&gt; &lt;br&gt;Example1:&lt;br&gt; **Login via Mobile Number:** When the  users log in to their ABHA (Ayushman Bharat Health Account) profile using their mobile number. An OTP (One-Time Password) is sent to the registered mobile number to verify the user’s identity. This ensures secure access to the user’s ABHA profile.&lt;br&gt; &lt;br&gt;&lt;b&gt;Note:&lt;/b&gt;&lt;br&gt; **1.** OTP will be valid for 10 minute only &lt;br&gt;&lt;br&gt;
+     * @param tToken  (required)
+     * @param REQUEST_ID  (required)
+     * @param TIMESTAMP  (required)
+     * @param abhaApiV3ProfileLoginVerifyUserPostRequest  (optional)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> The 200 response code indicates a successful request.&lt;br&gt;&lt;br&gt; &lt;p&gt;&lt;strong&gt; </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> The 400 response code indicates a bad request. In this context, it refers to various errors encountered during the OTP (One-Time Password) verification process due to invalid inputs or parameters. &lt;p&gt;&lt;br&gt;&lt;strong&gt;Types of OTP Verification Errors:&lt;/strong&gt;&lt;/p&gt; &lt;ol&gt; &lt;li&gt; &lt;p&gt;&lt;strong&gt;Invakid T-Token:&lt;/strong&gt; This error occurs when the T -token.&lt;/p&gt; &lt;/li&gt; &lt;/ol&gt; &lt;ol start&#x3D;\&quot;2\&quot;&gt; &lt;li&gt; &lt;p&gt;&lt;strong&gt;Verify OTP - Invalid Abha Number:&lt;/strong&gt; This error occurs when the authentication methods provided for invalid abha number are invalid.&lt;/p&gt; &lt;/li&gt; &lt;/ol&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td>  &lt;strong&gt;Unauthorized:&lt;/strong&gt;&lt;br&gt; Indicates that the request requires user authentication. The server returns a 401 status code when the client has not provided valid authentication credentials. </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> &lt;b&gt;Internal Server Error&lt;/b&gt;&lt;br&gt;&lt;br&gt;  An Internal Server Error (500) indicates that the server encountered an unexpected condition that prevented it from fulfilling the request. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call abhaApiV3ProfileLoginVerifyUserPostAsync(String tToken, String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginVerifyUserPostRequest abhaApiV3ProfileLoginVerifyUserPostRequest, final ApiCallback<AbhaApiV3ProfileLoginVerifyUserPost200Response> _callback) throws ApiException {
+        okhttp3.Call localVarCall = abhaApiV3ProfileLoginVerifyUserPostValidateBeforeCall(null, tToken, REQUEST_ID, TIMESTAMP, abhaApiV3ProfileLoginVerifyUserPostRequest, _callback);
+        Type localVarReturnType = new TypeToken<AbhaApiV3ProfileLoginVerifyUserPost200Response>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+
+    public CompletionStage<AbhaApiV3ProfileLoginVerifyUserPost200Response> abhaApiV3ProfileLoginVerifyUserPostAsyncCall(String token, String tToken, String REQUEST_ID, String TIMESTAMP, AbhaApiV3ProfileLoginVerifyUserPostRequest abhaApiV3ProfileLoginVerifyUserPostRequest) throws ApiException {
+        try {
+            FutureApiCallBack<AbhaApiV3ProfileLoginVerifyUserPost200Response> callback = FutureApiCallBack.newCallback();
+            okhttp3.Call localVarCall = abhaApiV3ProfileLoginVerifyUserPostValidateBeforeCall(token, tToken, REQUEST_ID, TIMESTAMP, abhaApiV3ProfileLoginVerifyUserPostRequest, callback);
+            Type localVarReturnType = new com.google.gson.reflect.TypeToken<AbhaApiV3ProfileLoginVerifyUserPost200Response>() {
+            }.getType();
+            localVarApiClient.executeAsync(localVarCall, localVarReturnType, callback);
+            return callback.getFuture();
+        } catch (Exception e) {
+            throw new CompletionException(e);
+        }
+    }
+}
