@@ -5,3 +5,4 @@
 /abha-rest-client/target/
 /.idea/
 /keycloak-admin-client/target/
+*.class
