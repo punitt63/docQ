@@ -44,7 +44,7 @@ public class AppointmentService {
                         .thenCompose(opds -> appointmentDao.list(startOpdDate, endOpdDate, opds.stream().map(OPD::getId).toList(), patientId, states, limit));
     }
 
-    private CompletionStage<Appointment> get(LocalDate opdDate, String opdID, Integer id) {
+    public CompletionStage<Appointment> get(LocalDate opdDate, String opdID, Integer id) {
         return opdService.get(opdDate, opdID)
                 .thenCompose(ignore -> appointmentDao.get(opdDate, opdID, id));
     }
