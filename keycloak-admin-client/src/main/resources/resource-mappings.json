@@ -11,6 +11,10 @@
     {
       "name" : "appointment",
       "scopes" : ["create", "start", "complete", "cancel" ,"no-show", "no-show-to-waiting", "read"]
+    },
+    {
+      "name" : "prescription",
+      "scopes" : ["create", "read", "update"]
     }
   ],
   "role-resource-mappings" : [
@@ -28,6 +32,10 @@
         {
           "name" : "appointment",
           "scopes" : ["create", "start", "complete", "cancel" ,"no-show", "no-show-to-waiting", "read"]
+        },
+        {
+          "name" : "prescription",
+          "scopes" : ["create", "read", "update"]
         }
       ]
     },
@@ -62,6 +70,10 @@
         {
           "name" : "appointment",
           "scopes" : ["read"]
+        },
+        {
+          "name" : "prescription",
+          "scopes" : ["create", "read", "update"]
         }
       ]
     }
