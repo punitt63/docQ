@@ -1,0 +1,78 @@
+management:
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true
+      percentiles:
+        http:
+          server:
+            requests: 0.5,0.95,0.99,0.999
+  endpoints:
+    prometheus:
+      enabled: true
+    web:
+      base-path: /
+      exposure:
+        include: health,prometheus
+      path-mapping:
+        health: '/health'
+
+spring:
+  application:
+    name: patient-service
+  profiles:
+    active: ${environmentName:local}
+  jmx:
+    enabled: false
+  main:
+    allow-bean-definition-overriding: true
+  mvc:
+    converters:
+      preferred-json-mapper: gson
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+
+  output:
+    ansi:
+      enabled: ALWAYS
+  servlet:
+    session:
+      cookie:
+        http-only: true
+    context-path: /
+
+abha:
+  client:
+    id: SBXID_009458
+    secret: c6d412fd-0eae-427a-8707-80d6327cf242
+  base:
+    url: https://dev.abdm.gov.in
+
+keycloak:
+  realm: patient
+  jwks:
+    cert: /realms/patient/protocol/openid-connect/certs
+  base:
+    url: http://localhost:8080
+  backend:
+    client:
+      id: patient-backend-app
+      secret: bUKD3e6IZDFsAITkiR5ihIoYnIgSEfxU
+  desktop:
+    client:
+      id: patient-mobile-app
+      secret: 8pF6j0OppwY532hE5hIe3PwNfqCSO3VE
+  http:
+    max:
+      idle:
+        connections: 20
+    keep:
+      alive:
+        duration:
+          minutes: 60
+    timeout:
+      seconds: 20
+server:
+  port: 9098

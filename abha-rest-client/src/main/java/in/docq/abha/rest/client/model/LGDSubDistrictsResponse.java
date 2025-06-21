@@ -18,7 +18,7 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import in.docq.abha.rest.client.JSON;;
+import in.docq.abha.rest.client.JSON;
 
 import java.io.IOException;
 import java.util.HashSet;
