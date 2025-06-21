@@ -9,9 +9,7 @@ import in.docq.abha.rest.client.api.*;
 import in.docq.abha.rest.client.model.*;
 
 import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
@@ -178,11 +176,8 @@ public class AbhaRestClient {
     }
 
     public CompletionStage<AbhaApiV3EnrollmentEnrolSuggestionGet200Response> getAbhaAddressSuggestions(String txnId) {
-        String timestamp = ZonedDateTime.now(ZoneOffset.UTC)
-                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"));
-
         return getAccessToken()
-                .thenCompose(token -> abhaEnrollmentViaAadhaarApi.abhaApiV3EnrollmentEnrolSuggestionGetAsyncCall(token, txnId, UUID.randomUUID().toString(), timestamp));
+                .thenCompose(token -> abhaEnrollmentViaAadhaarApi.abhaApiV3EnrollmentEnrolSuggestionGetAsyncCall(token, txnId, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString()));
     }
 
     public CompletionStage<AbhaApiV3EnrollmentEnrolAbhaAddressPost200Response> enrolAbhaAddress(String txnId, String abhaAddress, String preferred) {
@@ -251,7 +246,7 @@ public class AbhaRestClient {
         return getAccessToken()
                 .thenCompose(token -> {
                     try {
-                        return abhaAddressVerificationApi.abhaApiV3PhrWebLoginAbhaSearchPostAsyncCall(token, UUID.randomUUID().toString(), Instant.now().toString(),
+                        return abhaAddressVerificationApi.abhaApiV3PhrWebLoginAbhaSearchPostAsyncCall(token, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
                                 new AbhaApiV3PhrWebLoginAbhaSearchPostRequest()
                                         .abhaAddress(abhaAddress));
                     } catch (ApiException e) {
@@ -264,7 +259,7 @@ public class AbhaRestClient {
         return getAccessToken()
                 .thenCompose(token -> {
                     try {
-                        return abhaAddressVerificationApi.abhaApiV3PhrWebLoginAbhaRequestOtpPostAsyncCall(token, UUID.randomUUID().toString(), Instant.now().toString(),
+                        return abhaAddressVerificationApi.abhaApiV3PhrWebLoginAbhaRequestOtpPostAsyncCall(token, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
                                 new AbhaApiV3PhrWebLoginAbhaRequestOtpPostRequest()
                                         .scope(scopes)
                                         .loginHint(loginHint)
@@ -278,14 +273,14 @@ public class AbhaRestClient {
 
     public CompletionStage<AbhaApiV3PhrWebLoginAbhaVerifyPost200Response> abhaAddressLoginVerifyOtp(List<String> scopes, List<String> authMethods, String txnId, String otp) {
         AbhaApiV3PhrWebLoginAbhaVerifyPostRequestAuthData abhaApiV3PhrWebLoginAbhaVerifyPostRequestAuthData = new AbhaApiV3PhrWebLoginAbhaVerifyPostRequestAuthData();
-        abhaApiV3PhrWebLoginAbhaVerifyPostRequestAuthData.setActualInstance(new AbhaApiV3PhrWebLoginAbhaVerifyPostRequestAuthDataAnyOfInner()
+        abhaApiV3PhrWebLoginAbhaVerifyPostRequestAuthData.setActualInstance(List.of(new AbhaApiV3PhrWebLoginAbhaVerifyPostRequestAuthDataAnyOfInner()
                 .otp(new AbhaApiV3PhrWebLoginAbhaVerifyPostRequestAuthDataAnyOfInnerOtp()
                         .otpValue(otp)
-                        .txnId(txnId)));
+                        .txnId(txnId))));
         return getAccessToken()
                 .thenCompose(token -> {
                     try {
-                        return abhaAddressVerificationApi.abhaApiV3PhrWebLoginAbhaVerifyPostAsyncCall(token, UUID.randomUUID().toString(), Instant.now().toString(),
+                        return abhaAddressVerificationApi.abhaApiV3PhrWebLoginAbhaVerifyPostAsyncCall(token, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
                                 new AbhaApiV3PhrWebLoginAbhaVerifyPostRequest()
                                         .scope(scopes)
                                         .authData(abhaApiV3PhrWebLoginAbhaVerifyPostRequestAuthData));
