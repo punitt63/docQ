@@ -36,7 +36,7 @@ public class PatientLoginService {
                 .thenApply(response -> PatientLoginController.VerifyOtpResponseBody.builder()
                         .authResult(response.getAuthResult())
                         .message(response.getMessage())
-                        .tokens(Tokens.toTokens(response.getToken(), Integer.valueOf(Objects.requireNonNull(response.getExpiresIn())), response.getRefreshToken(), Integer.valueOf(Objects.requireNonNull(response.getRefreshExpiresIn()))))
+                        .tokens(Tokens.toTokens(response.getToken(), response.getExpiresIn(), response.getRefreshToken(), response.getRefreshExpiresIn()))
                         .accounts(AbhaAccount.toAccounts(Objects.requireNonNull(response.getAccounts())))
                         .build());
     }

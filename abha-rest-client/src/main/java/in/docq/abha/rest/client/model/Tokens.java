@@ -12,6 +12,15 @@ public class Tokens {
     String refreshToken;
     Integer refreshExpiresIn;
 
+    public static Tokens toTokens(String token, String expiresIn, String refreshToken, String refreshExpiresIn) {
+        return Tokens.builder()
+                .token(token)
+                .expiresIn(expiresIn != null ? Integer.valueOf(expiresIn) : null)
+                .refreshToken(refreshToken)
+                .refreshExpiresIn(refreshExpiresIn != null ? Integer.valueOf(refreshExpiresIn) : null)
+                .build();
+    }
+
     public static Tokens toTokens(String token, Integer expiresIn, String refreshToken, Integer refreshExpiresIn) {
         return Tokens.builder()
                 .token(token)
