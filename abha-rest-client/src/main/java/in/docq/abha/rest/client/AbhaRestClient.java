@@ -8,12 +8,11 @@ import com.google.common.cache.CacheBuilder;
 import in.docq.abha.rest.client.api.GatewaySessionApi;
 import in.docq.abha.rest.client.api.HealthFacilitySearchApi;
 import in.docq.abha.rest.client.api.HealthProfessionalSearchApi;
-import in.docq.abha.rest.client.model.ApiHiecmGatewayV3SessionsPostRequest;
-import in.docq.abha.rest.client.model.SearchByHprIdRequest;
-import in.docq.abha.rest.client.model.SearchFacilitiesData;
-import in.docq.abha.rest.client.model.SearchForFacilitiesRequest;
+import in.docq.abha.rest.client.api.MultipleHrpApiApi;
+import in.docq.abha.rest.client.model.*;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 
@@ -31,6 +30,7 @@ public class AbhaRestClient {
     private static final String refreshTokenCacheKey = "clientRefreshToken";
     private final HealthFacilitySearchApi healthFacilitySearchApi;
     private final HealthProfessionalSearchApi healthProfessionalSearchApi;
+    private final MultipleHrpApiApi multipleHrpApiApi;
     private final Cache<String, String> tokenCache;
     private final GatewaySessionApi gatewaySessionApi;
 
@@ -39,6 +39,7 @@ public class AbhaRestClient {
         this.healthFacilitySearchApi = new HealthFacilitySearchApi(apiClient);
         this.healthProfessionalSearchApi = new HealthProfessionalSearchApi(apiClient);
         this.gatewaySessionApi = new GatewaySessionApi(apiClient);
+        this.multipleHrpApiApi = new MultipleHrpApiApi(apiClient);
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.tokenCache = CacheBuilder.newBuilder()
@@ -131,6 +132,25 @@ public class AbhaRestClient {
                     if(verdict.equals(Boolean.FALSE)) {
                         throw new ApiException(404, "Health Professional ID " + healthProfessionalID + " Doesn't Exist");
                     }
+                });
+    }
+
+    public CompletionStage<Void> registerHFRToBridge(String facilityId, String facilityName) {
+        return getAccessToken()
+                .thenCompose(token -> multipleHrpApiApi.v1MutipleHRPAddUpdateServicesUsingPOSTAsync(token,
+                        new BridgeAddUpdate()
+                                .facilityId(facilityId)
+                                .facilityName(facilityName)
+                                .HRP(List.of(new MultipleHRPRequest().active(true)
+                                        .bridgeId(clientId)
+                                        .hipName(facilityName)
+                                        .type("HFR")
+                                ))))
+                .thenApply(response -> {
+                    if(response.getError() != null) {
+                        throw new ApiException(500, "Failed to register HFR to bridge");
+                    }
+                    return null;
                 });
     }
 }
