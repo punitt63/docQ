@@ -315,7 +315,7 @@ public class AbhaAddressVerificationApi {
         }
 
 
-        String[] localVarAuthNames = new String[] { "basicAuth" };
+        String[] localVarAuthNames = new String[] { "bearerAuth" };
         return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -491,6 +491,9 @@ public class AbhaAddressVerificationApi {
             localVarHeaderParams.put("TIMESTAMP", localVarApiClient.parameterToString(TIMESTAMP));
         }
 
+        if (token != null) {
+            localVarHeaderParams.put("Authorization", "Bearer " + localVarApiClient.parameterToString(token));
+        }
 
         String[] localVarAuthNames = new String[] { "bearerAuth" };
         return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);

@@ -23,8 +23,8 @@ public class AbhaAddressVerificationController {
         this.abhaAddressVerificationService = abhaAddressVerificationService;
     }
 
-    @PostMapping("/search")
-    public CompletionStage<ResponseEntity<AbhaAddressSearchResponseBody>> searchAbhaAddress(@RequestBody String abhaAddress) {
+    @GetMapping("/search/{abha-address}")
+    public CompletionStage<ResponseEntity<AbhaAddressSearchResponseBody>> searchAbhaAddress(@PathVariable("abha-address") String abhaAddress) {
         return abhaAddressVerificationService.searchAbhaAddress(abhaAddress)
                 .thenApply(ResponseEntity::ok);
     }
