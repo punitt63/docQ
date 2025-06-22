@@ -32,7 +32,7 @@ public class TestAbhaClientConfiguration {
         }
 
         @Override
-        public CompletionStage<AbhaApiV3EnrollmentRequestOtpPost200Response> abhaEnrollmentRequestOtp(String encryptedAadharNumber) {
+        public CompletionStage<AbhaApiV3EnrollmentRequestOtpPost200Response> abhaEnrollmentRequestOtp(String aadharNumber) {
             return completedFuture(new AbhaApiV3EnrollmentRequestOtpPost200Response()
                     .message("OTP sent to Aadhaar registered mobile number ending with ******9568")
                     .txnId("6f0eeab7-1309-411c-bf02-4c83320ada67"));

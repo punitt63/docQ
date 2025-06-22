@@ -7,6 +7,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import in.docq.abha.rest.client.api.*;
 import in.docq.abha.rest.client.model.*;
+import in.docq.abha.rest.client.utils.RSAEncrypter;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -146,13 +147,13 @@ public class AbhaRestClient {
                 });
     }
 
-    public CompletionStage<AbhaApiV3EnrollmentRequestOtpPost200Response> abhaEnrollmentRequestOtp(String encryptedAadharNumber) {
+    public CompletionStage<AbhaApiV3EnrollmentRequestOtpPost200Response> abhaEnrollmentRequestOtp(String aadharNumber) {
         return getAccessToken()
                 .thenCompose(token -> abhaEnrollmentViaAadhaarApi.abhaApiV3EnrollmentRequestOtpPostAsync(token, UUID.randomUUID().toString(), Instant.now().toString(),
                         new AbhaApiV3EnrollmentRequestOtpPostRequest()
                                 .scope(List.of("abha-enrol"))
                                 .loginHint("aadhaar")
-                                .loginId(encryptedAadharNumber)
+                                .loginId(RSAEncrypter.encrypt(aadharNumber))
                                 .otpSystem("aadhaar")));
     }
 
@@ -160,7 +161,7 @@ public class AbhaRestClient {
         AbhaApiV3EnrollmentEnrolByAadhaarPostRequestAuthData abhaApiV3EnrollmentEnrolByAadhaarPostRequestAuthData = new AbhaApiV3EnrollmentEnrolByAadhaarPostRequestAuthData();
         abhaApiV3EnrollmentEnrolByAadhaarPostRequestAuthData.setActualInstance(new AbhaApiV3EnrollmentEnrolByAadhaarPostRequestAuthDataAnyOf()
                 .otp(new AbhaApiV3EnrollmentEnrolByAadhaarPostRequestAuthDataAnyOfOtp()
-                        .otpValue(otpValue)
+                        .otpValue(RSAEncrypter.encrypt(otpValue))
                         .mobile(mobile)
                         .txnId(txnId)));
         return getAccessToken().thenCompose(token -> {
@@ -202,7 +203,7 @@ public class AbhaRestClient {
                                 new AbhaApiV3ProfileLoginRequestOtpPostRequest()
                                         .scope(scopes)
                                         .loginHint(loginHint)
-                                        .loginId(loginId)
+                                        .loginId(RSAEncrypter.encrypt(loginId))
                                         .otpSystem(otpSystem));
                     } catch (ApiException e) {
                         throw new RuntimeException(e);
@@ -220,7 +221,7 @@ public class AbhaRestClient {
                                         .authData(new AbhaApiV3ProfileLoginVerifyPostRequestAuthData()
                                                 .authMethods(authMethods)
                                                 .otp(new AbhaApiV3ProfileLoginVerifyPostRequestAuthDataOtp()
-                                                        .otpValue(otp)
+                                                        .otpValue(RSAEncrypter.encrypt(otp))
                                                         .txnId(txnId))));
                     } catch (ApiException e) {
                         throw new RuntimeException(e);
@@ -263,7 +264,7 @@ public class AbhaRestClient {
                                 new AbhaApiV3PhrWebLoginAbhaRequestOtpPostRequest()
                                         .scope(scopes)
                                         .loginHint(loginHint)
-                                        .loginId(loginId)
+                                        .loginId(RSAEncrypter.encrypt(loginId))
                                         .otpSystem(otpSystem));
                     } catch (ApiException e) {
                         throw new RuntimeException(e);
@@ -275,7 +276,7 @@ public class AbhaRestClient {
         AbhaApiV3PhrWebLoginAbhaVerifyPostRequestAuthData abhaApiV3PhrWebLoginAbhaVerifyPostRequestAuthData = new AbhaApiV3PhrWebLoginAbhaVerifyPostRequestAuthData();
         abhaApiV3PhrWebLoginAbhaVerifyPostRequestAuthData.setActualInstance(List.of(new AbhaApiV3PhrWebLoginAbhaVerifyPostRequestAuthDataAnyOfInner()
                 .otp(new AbhaApiV3PhrWebLoginAbhaVerifyPostRequestAuthDataAnyOfInnerOtp()
-                        .otpValue(otp)
+                        .otpValue(RSAEncrypter.encrypt(otp))
                         .txnId(txnId))));
         return getAccessToken()
                 .thenCompose(token -> {
@@ -306,7 +307,7 @@ public class AbhaRestClient {
                         new AbhaApiV3ProfileAccountRequestOtpPostRequest()
                                 .scope(scopes)
                                 .loginHint(loginHint)
-                                .loginId(loginId)
+                                .loginId(RSAEncrypter.encrypt(loginId))
                                 .otpSystem(otpSystem)));
     }
 
@@ -318,7 +319,7 @@ public class AbhaRestClient {
                                 .authData(new AbhaApiV3ProfileAccountVerifyPostRequestAuthData()
                                         .authMethods(authMethods)
                                         .otp(new AbhaApiV3ProfileAccountVerifyPostRequestAuthDataOtp()
-                                                .otpValue(otp)
+                                                .otpValue(RSAEncrypter.encrypt(otp))
                                                 .txnId(txnId)))
                                 .reasons(reasons)));
     }

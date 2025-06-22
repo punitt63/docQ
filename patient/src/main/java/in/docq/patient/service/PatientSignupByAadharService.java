@@ -21,8 +21,8 @@ public class PatientSignupByAadharService {
         this.abhaRestClient = abhaRestClient;
     }
 
-    public CompletionStage<PatientSignupByAadharController.RequestOtpResponseBody> requestOtp(String encryptedAadharNumber) {
-        return abhaRestClient.abhaEnrollmentRequestOtp(encryptedAadharNumber)
+    public CompletionStage<PatientSignupByAadharController.RequestOtpResponseBody> requestOtp(String aadharNumber) {
+        return abhaRestClient.abhaEnrollmentRequestOtp(aadharNumber)
                 .thenApply(response -> PatientSignupByAadharController.RequestOtpResponseBody.builder()
                         .txnId(response.getTxnId())
                         .message(response.getMessage())

@@ -63,10 +63,10 @@ spring:
 
 abha:
   client:
-    id: test-abha-client-id
-    secret: test-secret
+    id: SBXID_009458
+    secret: c6d412fd-0eae-427a-8707-80d6327cf242
   base:
-    url: http://localhost:8080/api/
+    url: https://dev.abdm.gov.in
 
 keycloak:
   realm: health-facility
@@ -94,3 +94,7 @@ keycloak:
       seconds: 20
 server:
   port: 9097
+
+encryption:
+  aes:
+    key: vHEyVZcMpQZx+7O2bQ0eUwqTY1AvXg8Whq2mDJK6ClU=

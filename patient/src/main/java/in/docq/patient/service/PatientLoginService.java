@@ -4,7 +4,6 @@ import in.docq.abha.rest.client.AbhaRestClient;
 import in.docq.patient.controller.PatientLoginController;
 import in.docq.abha.rest.client.model.AbhaAccount;
 import in.docq.abha.rest.client.model.Tokens;
-import in.docq.patient.utils.RSAEncrypter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -21,18 +20,16 @@ public class PatientLoginService {
         this.abhaRestClient = abhaRestClient;
     }
 
-    public CompletionStage<PatientLoginController.RequestOtpResponseBody> requestOtp(PatientLoginController.RequestOtpRequestBody requestOtpRequestBody) throws Exception {
-        String encryptedLoginId = RSAEncrypter.encrypt(requestOtpRequestBody.getLoginId());
-        return abhaRestClient.abhaLoginRequestOtp(requestOtpRequestBody.getScopes(), requestOtpRequestBody.getLoginHint(), encryptedLoginId , requestOtpRequestBody.getOtpSystem())
+    public CompletionStage<PatientLoginController.RequestOtpResponseBody> requestOtp(PatientLoginController.RequestOtpRequestBody requestOtpRequestBody) {
+        return abhaRestClient.abhaLoginRequestOtp(requestOtpRequestBody.getScopes(), requestOtpRequestBody.getLoginHint(), requestOtpRequestBody.getLoginId() , requestOtpRequestBody.getOtpSystem())
                 .thenApply(response -> PatientLoginController.RequestOtpResponseBody.builder()
                         .txnId(response.getTxnId())
                         .message(response.getMessage())
                         .build());
     }
 
-    public CompletionStage<PatientLoginController.VerifyOtpResponseBody> verifyOtp(PatientLoginController.VerifyOtpRequestBody verifyOtpRequestBody) throws Exception {
-        String encryptedOtpValue = RSAEncrypter.encrypt(verifyOtpRequestBody.getOtpValue());
-        return abhaRestClient.abhaLoginVerifyOtp(verifyOtpRequestBody.getScopes(), verifyOtpRequestBody.getAuthMethods(), verifyOtpRequestBody.getTxnId(), encryptedOtpValue)
+    public CompletionStage<PatientLoginController.VerifyOtpResponseBody> verifyOtp(PatientLoginController.VerifyOtpRequestBody verifyOtpRequestBody) {
+        return abhaRestClient.abhaLoginVerifyOtp(verifyOtpRequestBody.getScopes(), verifyOtpRequestBody.getAuthMethods(), verifyOtpRequestBody.getTxnId(), verifyOtpRequestBody.getOtpValue())
                 .thenApply(response -> PatientLoginController.VerifyOtpResponseBody.builder()
                         .authResult(response.getAuthResult())
                         .message(response.getMessage())
