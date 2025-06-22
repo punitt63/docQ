@@ -91,3 +91,6 @@ keycloak:
     timeout:
       seconds: 20
 
+encryption:
+  aes:
+    key: vHEyVZcMpQZx+7O2bQ0eUwqTY1AvXg8Whq2mDJK6ClU=

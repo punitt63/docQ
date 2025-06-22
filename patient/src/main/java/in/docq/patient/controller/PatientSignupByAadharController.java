@@ -3,7 +3,6 @@ package in.docq.patient.controller;
 import in.docq.abha.rest.client.model.AbhaProfile;
 import in.docq.abha.rest.client.model.Tokens;
 import in.docq.patient.service.PatientSignupByAadharService;
-import in.docq.patient.utils.RSAEncrypter;
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,15 +24,13 @@ public class PatientSignupByAadharController {
 
     @PostMapping("/aadhar")
     public CompletionStage<ResponseEntity<RequestOtpResponseBody>> requestOtp(@RequestBody RequestOtpRequestBody requestOtpRequestBody) throws Exception {
-        String encryptedAadharNumber = RSAEncrypter.encrypt(requestOtpRequestBody.getAadharNumber());
-        return patientSignupByAadharService.requestOtp(encryptedAadharNumber)
+        return patientSignupByAadharService.requestOtp(requestOtpRequestBody.getAadharNumber())
                 .thenApply(ResponseEntity::ok);
     }
 
     @PostMapping("/aadhar/verify")
     public CompletionStage<ResponseEntity<EnrolByAadharResponseBody>> enrolByAadhaar(@RequestBody EnrolByAadharRequestBody enrolByAadharRequestBody) throws Exception {
-        String encryptedOtpValue = RSAEncrypter.encrypt(enrolByAadharRequestBody.getOtpValue());
-        return patientSignupByAadharService.enrolByAadhaar(enrolByAadharRequestBody.getAuthMethods(), enrolByAadharRequestBody.getTxnId(), encryptedOtpValue, enrolByAadharRequestBody.getMobile())
+        return patientSignupByAadharService.enrolByAadhaar(enrolByAadharRequestBody.getAuthMethods(), enrolByAadharRequestBody.getTxnId(), enrolByAadharRequestBody.getOtpValue(), enrolByAadharRequestBody.getMobile())
                 .thenApply(ResponseEntity::ok);
     }
 

@@ -4,7 +4,6 @@ import in.docq.abha.rest.client.AbhaRestClient;
 import in.docq.patient.controller.AbhaAddressVerificationController;
 import in.docq.abha.rest.client.model.AbhaUser;
 import in.docq.abha.rest.client.model.Tokens;
-import in.docq.patient.utils.RSAEncrypter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -36,8 +35,7 @@ public class AbhaAddressVerificationService {
     }
 
     public CompletionStage<AbhaAddressVerificationController.RequestOtpResponseBody> abhaAddressLoginRequestOtp(AbhaAddressVerificationController.RequestOtpRequestBody requestOtpRequestBody) throws Exception {
-        String encryptedLoginId = RSAEncrypter.encrypt(requestOtpRequestBody.getLoginId());
-        return abhaRestClient.abhaAddressLoginRequestOtp(requestOtpRequestBody.getScopes(), requestOtpRequestBody.getLoginHint(), encryptedLoginId, requestOtpRequestBody.getOtpSystem())
+        return abhaRestClient.abhaAddressLoginRequestOtp(requestOtpRequestBody.getScopes(), requestOtpRequestBody.getLoginHint(), requestOtpRequestBody.getLoginId(), requestOtpRequestBody.getOtpSystem())
                 .thenApply(response ->
                     AbhaAddressVerificationController.RequestOtpResponseBody
                             .builder()
@@ -48,8 +46,7 @@ public class AbhaAddressVerificationService {
     }
 
     public CompletionStage<AbhaAddressVerificationController.VerifyOtpResponseBody> abhaAddressLoginVerifyOtp(AbhaAddressVerificationController.VerifyOtpRequestBody verifyOtpRequestBody) throws Exception {
-        String encryptedOtpValue = RSAEncrypter.encrypt(verifyOtpRequestBody.getOtpValue());
-        return abhaRestClient.abhaAddressLoginVerifyOtp(verifyOtpRequestBody.getScopes(), verifyOtpRequestBody.getAuthMethods(), verifyOtpRequestBody.getTxnId(), encryptedOtpValue)
+        return abhaRestClient.abhaAddressLoginVerifyOtp(verifyOtpRequestBody.getScopes(), verifyOtpRequestBody.getAuthMethods(), verifyOtpRequestBody.getTxnId(), verifyOtpRequestBody.getOtpValue())
                 .thenApply(response -> AbhaAddressVerificationController.VerifyOtpResponseBody
                         .builder()
                         .users(AbhaUser.toUsers(Objects.requireNonNull(response.getUsers())))
