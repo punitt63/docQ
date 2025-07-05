@@ -5,6 +5,7 @@ import in.docq.health.facility.exception.HealthProfessionalNotFound;
 import in.docq.health.facility.model.HealthProfessional;
 import in.docq.health.facility.model.HealthProfessionalType;
 import in.docq.health.facility.service.HealthProfessionalService;
+import in.docq.keycloak.rest.client.model.GetAccessToken200Response;
 import in.docq.keycloak.rest.client.model.Permission;
 import lombok.Builder;
 import lombok.Getter;
@@ -30,6 +31,12 @@ public class HealthProfessionalController {
                                                                            @PathVariable("health-facility-professional-id") String healthFacilityProfessionalID,
                                                                            @RequestBody LoginHealthProfessionalRequestBody loginHealthProfessionalRequestBody) {
         return healthProfessionalService.login(healthFacilityID, healthFacilityProfessionalID, loginHealthProfessionalRequestBody.getPassword())
+                .thenApply(ResponseEntity::ok);
+    }
+
+    @GetMapping("/refresh-token")
+    public CompletionStage<ResponseEntity<GetAccessToken200Response>> refreshUserAccessToken(@RequestHeader("Refresh-Token") String refreshToken) {
+        return healthProfessionalService.refreshUserAccessToken(refreshToken)
                 .thenApply(ResponseEntity::ok);
     }
 
