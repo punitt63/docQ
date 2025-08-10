@@ -139,8 +139,7 @@ public class GatewaySessionApi {
             localVarHeaderParams.put("X-CM-ID", localVarApiClient.parameterToString(X_CM_ID));
         }
 
-
-        String[] localVarAuthNames = new String[] { "bearerAuth" };
+        String[] localVarAuthNames = new String[]{};
         return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
