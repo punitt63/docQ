@@ -15,6 +15,7 @@ import in.docq.abha.rest.client.api.MultipleHrpApiApi;
 import in.docq.abha.rest.client.model.*;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.List;
@@ -38,6 +39,7 @@ public class AbhaRestClient {
     private final AbhaEnrollmentViaAadhaarApi abhaEnrollmentViaAadhaarApi;
     private final AbhaAddressVerificationApi abhaAddressVerificationApi;
     private final AbhaProfileApi abhaProfileApi;
+    private final HIPInitiatedLinkingApi hipInitiatedLinkingApi;
 
     private final HealthFacilitySearchApi healthFacilitySearchApi;
     private final HealthProfessionalSearchApi healthProfessionalSearchApi;
@@ -60,6 +62,7 @@ public class AbhaRestClient {
         this.healthProfessionalSearchApi = new HealthProfessionalSearchApi(apiClient);
         this.gatewaySessionApi = new GatewaySessionApi(apiClient);
         this.multipleHrpApiApi = new MultipleHrpApiApi(apiClient);
+        this.hipInitiatedLinkingApi = new HIPInitiatedLinkingApi(apiClient);
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.tokenCache = CacheBuilder.newBuilder()
@@ -349,5 +352,15 @@ public class AbhaRestClient {
                     }
                     return null;
                 });
+    }
+
+    public CompletionStage<Void> generateLinkingToken(String requestId, OffsetDateTime timestamp, String xHipId, String xCmId, HIPInitiatedGenerateTokenRequest hipInitiatedGenerateTokenRequest) {
+        return getAccessToken()
+                .thenCompose(token ->  hipInitiatedLinkingApi.generateTokenAsync(token, requestId, timestamp, xHipId, xCmId, hipInitiatedGenerateTokenRequest));
+    }
+
+    public  CompletionStage<Void> sendDeepLinkNotification(UUID requestId, OffsetDateTime timestamp, String xCmId, SendSmsNotificationRequest sendSmsNotificationRequest) {
+        return getAccessToken()
+                .thenCompose(token -> hipInitiatedLinkingApi.sendSmsNotificationAsync(token, requestId, timestamp, xCmId, sendSmsNotificationRequest));
     }
 }

@@ -23,6 +23,7 @@ public class PatientDao {
     private final String table = "patient";
     private final String insertPatientQuery;
     private final String getPatientQuery;
+    private final String getPatientByIdQuery;
     private final String updatePatientQuery;
     private final String getPatientsByMobileQuery;
     private final PostgresDAO postgresDAO;
@@ -44,11 +45,14 @@ public class PatientDao {
                 " WHERE " + Column.MOBILE_NO.getColumnName() + " = ?" +
                 " AND " + Column.NAME.getColumnName() + " = ?" +
                 " AND " + Column.DOB.getColumnName() + " = ?";
+        this.getPatientByIdQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table +
+                " WHERE " + Column.ID.getColumnName() + " = ?";
     }
 
     public CompletionStage<Void> insert(Patient patient) {
         Patient encryptedPatient = patient.encrypt(aesEncryptionKey);
         return postgresDAO.update(dbMetricsGroupName, "insert", insertPatientQuery,
+                        encryptedPatient.getId(),
                         encryptedPatient.getAbhaNo(),
                         encryptedPatient.getAbhaAddress(),
                         encryptedPatient.getName(),
@@ -61,6 +65,7 @@ public class PatientDao {
     public CompletionStage<Void> update(String mobileNo, String name, LocalDate dob, Patient newpatient) {
         Patient encryptedPatient = newpatient.encrypt(aesEncryptionKey);
         return postgresDAO.update(dbMetricsGroupName, "update", updatePatientQuery,
+                        encryptedPatient.getId(),
                         encryptedPatient.getAbhaNo(),
                         encryptedPatient.getAbhaAddress(),
                         encryptedPatient.getName(),
@@ -82,6 +87,7 @@ public class PatientDao {
                         .mobileNo(rs.getString(Column.MOBILE_NO.getColumnName()))
                         .dob(rs.getDate(Column.DOB.getColumnName()).toLocalDate())
                         .gender(rs.getString(Column.GENDER.getColumnName()))
+                        .lastHipLinkTokenRequestId(rs.getString(Column.LAST_HIP_LINK_TOKEN_REQUEST_ID.getColumnName()))
                         .build(),
                 mobileNo);
     }
@@ -100,17 +106,34 @@ public class PatientDao {
                 mobileNo, name, Date.valueOf(dob));
     }
 
+    public CompletionStage<Patient> get(String id) {
+        return postgresDAO.queryForObject(dbMetricsGroupName, "get", getPatientByIdQuery,
+                (rs, rowNum) -> Patient.builder()
+                        .abhaNo(rs.getString(Column.ABHA_NO.getColumnName()))
+                        .abhaAddress(rs.getString(Column.ABHA_ADDRESS.getColumnName()))
+                        .name(rs.getString(Column.NAME.getColumnName()))
+                        .mobileNo(rs.getString(Column.MOBILE_NO.getColumnName()))
+                        .dob(rs.getDate(Column.DOB.getColumnName()).toLocalDate())
+                        .gender(rs.getString(Column.GENDER.getColumnName()))
+                        .lastHipLinkTokenRequestId(rs.getString(Column.LAST_HIP_LINK_TOKEN_REQUEST_ID.getColumnName()))
+                        .build()
+                        .decrypt(aesEncryptionKey),
+                id);
+    }
+
     public CompletionStage<Integer> truncate() {
         return postgresDAO.update(dbMetricsGroupName, "truncate", "DELETE FROM " + table);
     }
 
     public enum Column {
+        ID("id", true),
         ABHA_NO("abha_no", true),
         ABHA_ADDRESS("abha_address", true),
         NAME("name", true),
         MOBILE_NO("mobile_no", true),
         DOB("dob", true),
-        GENDER("gender", true);
+        GENDER("gender", true),
+        LAST_HIP_LINK_TOKEN_REQUEST_ID("last_hip_link_token_request_id", true);
 
         @Getter
         private final String columnName;

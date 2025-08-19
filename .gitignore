@@ -3,6 +3,7 @@
 /keycloak-rest-client/target/
 /health-facility/target/
 /abha-rest-client/target/
+/patient/target/
 /.idea/
 /keycloak-admin-client/target/
 *.class

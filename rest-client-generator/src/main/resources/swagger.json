@@ -1,83 +1,110 @@
 {
-  "openapi": "3.0.0",
+  "openapi": "3.0.3",
   "info": {
-    "title": "Health Facility Token API",
-    "description": "API to obtain access tokens using client credentials flow",
+    "title": "ABDM HIP SMS Notify2 API",
     "version": "1.0.0"
   },
   "servers": [
     {
-      "url": "http://localhost:8080",
-      "description": "Local development server"
+      "url": "https://dev.abdm.gov.in"
     }
   ],
   "paths": {
-    "/realms/health-facility/protocol/openid-connect/token": {
+    "/api/hiecm/hip/v3/link/patient/links/sms/notify2": {
       "post": {
-        "summary": "Obtain access token",
-        "description": "Get an access token using client credentials grant type",
-        "operationId": "getAccessToken",
-        "tags": [
-          "Authentication"
+        "summary": "Send SMS notification for patient link",
+        "operationId": "sendSmsNotification",
+        "tags": ["HIP Linking"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "REQUEST-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Unique request ID for idempotency"
+          },
+          {
+            "name": "TIMESTAMP",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "ISO 8601 timestamp of request"
+          },
+          {
+            "name": "X-CM-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Consent Manager ID"
+          }
         ],
         "requestBody": {
           "required": true,
           "content": {
-            "application/x-www-form-urlencoded": {
+            "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "grant_type",
-                  "client_id",
-                  "client_secret"
-                ],
                 "properties": {
-                  "grant_type": {
+                  "requestId": {
                     "type": "string",
-                    "enum": [
-                      "client_credentials"
-                    ],
-                    "description": "The grant type for the token request"
+                    "format": "uuid"
                   },
-                  "client_id": {
+                  "timestamp": {
                     "type": "string",
-                    "description": "The client identifier",
-                    "example": "health-facility-backend-app"
+                    "format": "date-time"
                   },
-                  "client_secret": {
-                    "type": "string",
-                    "description": "The client secret",
-                    "format": "password",
-                    "example": "nQusYBu6a7ygw3sZMOmiY4wPKdUPsurw"
+                  "notification": {
+                    "type": "object",
+                    "properties": {
+                      "phoneNo": {
+                        "type": "string",
+                        "example": "+91XXXXXXXXXX"
+                      },
+                      "hip": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "example": "ABC Hospital"
+                          },
+                          "id": {
+                            "type": "string",
+                            "example": "HIP_12345"
+                          }
+                        }
+                      }
+                    }
                   }
-                }
+                },
+                "required": ["requestId", "timestamp", "notification"]
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Successful token response",
+            "description": "Notification accepted successfully",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "access_token": {
+                    "status": {
                       "type": "string",
-                      "description": "The access token"
-                    },
-                    "expires_in": {
-                      "type": "integer",
-                      "description": "Token expiration time in seconds"
-                    },
-                    "token_type": {
-                      "type": "string",
-                      "description": "Type of token (usually \"Bearer\")"
-                    },
-                    "scope": {
-                      "type": "string",
-                      "description": "Granted scopes"
+                      "example": "ACKNOWLEDGED"
                     }
                   }
                 }
@@ -85,46 +112,24 @@
             }
           },
           "400": {
-            "description": "Bad request - invalid parameters",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string",
-                      "description": "Error code"
-                    },
-                    "error_description": {
-                      "type": "string",
-                      "description": "Detailed error message"
-                    }
-                  }
-                }
-              }
-            }
+            "description": "Bad Request"
           },
           "401": {
-            "description": "Unauthorized - invalid credentials",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string",
-                      "description": "Error code"
-                    },
-                    "error_description": {
-                      "type": "string",
-                      "description": "Detailed error message"
-                    }
-                  }
-                }
-              }
-            }
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
           }
         }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
       }
     }
   }

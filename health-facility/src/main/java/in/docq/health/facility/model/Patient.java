@@ -1,5 +1,6 @@
 package in.docq.health.facility.model;
 
+import com.auth0.jwt.JWT;
 import in.docq.health.facility.controller.PatientController;
 import lombok.*;
 
@@ -9,9 +10,11 @@ import javax.crypto.spec.GCMParameterSpec;
 import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.util.Base64;
+import java.util.Date;
+import java.util.Objects;
 import java.util.Optional;
 
-@Builder
+@Builder(toBuilder = true)
 @Getter
 public class Patient {
     private final String abhaNo;
@@ -20,6 +23,8 @@ public class Patient {
     private final String mobileNo;
     private final LocalDate dob;
     private final String gender;
+    private final String lastHipLinkTokenRequestId;
+    private final String lastHipToken;
 
     private static final String AES_ALGORITHM = "AES/GCM/NoPadding";
     private static final int GCM_TAG_LENGTH = 128;
@@ -27,6 +32,10 @@ public class Patient {
 
     public String getId() {
         return Optional.ofNullable(abhaAddress).orElse(mobileNo + "-" + name + "-" + dob);
+    }
+
+    public boolean isAbhaOnboarded() {
+        return Objects.nonNull(abhaAddress);
     }
 
     public static Patient fromRequestBody(PatientController.CreatePatientRequestBody requestBody) {
@@ -103,6 +112,14 @@ public class Patient {
         } catch (Exception e) {
             throw new RuntimeException("Decryption failed", e);
         }
+    }
+
+    public boolean isHipLinkTokenExpired() {
+        return Optional.ofNullable(lastHipToken).map(token -> JWT.decode(token).getExpiresAt().before(new Date())).orElse(true);
+    }
+
+    public int getYearOfBirth() {
+        return dob.getYear();
     }
 
     public static Patient fromRequestBody(PatientController.ReplacePatientRequestBody requestBody) {

@@ -30,6 +30,10 @@ public class PatientService {
         return patientDao.searchByMobile(mobileNo);
     }
 
+    public CompletionStage<Patient> getPatient(String patientId) {
+        return patientDao.get(patientId);
+    }
+
     public CompletionStage<Void> createPatient(Patient patient) {
         return patientDao.insert(patient);
     }
@@ -37,6 +41,11 @@ public class PatientService {
     public CompletionStage<Void> replacePatient(String mobileNo, String oldName, LocalDate oldDob, Patient newPatient) {
         return patientDao.search(mobileNo, oldName, oldDob)
                 .thenCompose(ignore -> patientDao.update(mobileNo, oldName, oldDob, newPatient));
+    }
+
+    public CompletionStage<Void> replacePatient(String id, Patient newPatient) {
+        return patientDao.get(id)
+                .thenCompose(oldPatient -> patientDao.update(oldPatient.getMobileNo(), oldPatient.getName(), oldPatient.getDob(), newPatient));
     }
 
     public CompletionStage<PatientController.RequestOtpResponseBody> requestAbhaLoginOtp(PatientController.RequestAbhaLoginOtpRequestBody requestAbhaLoginOtpRequestBody) {
