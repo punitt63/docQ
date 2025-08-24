@@ -33,9 +33,6 @@ public class PatientController {
     public CompletionStage<ResponseEntity<List<Patient>>> searchPatients(@PathVariable("health-facility-id") String healthFacilityID,
                                                                          @RequestParam("mobile-no") String mobileNo) {
         return patientService.searchPatients(mobileNo)
-                .thenApply(patients -> patients.stream()
-                        .map(patient -> patient.decrypt(aesEncryptionKey))
-                        .toList())
                 .thenApply(ResponseEntity::ok);
     }
 
@@ -90,6 +87,8 @@ public class PatientController {
         private String mobileNo;
         private LocalDate dob;
         private String gender;
+        private String abhaNo;
+        private String abhaAddress;
     }
 
     @Builder

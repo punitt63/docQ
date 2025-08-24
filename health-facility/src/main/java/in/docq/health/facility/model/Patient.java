@@ -31,7 +31,7 @@ public class Patient {
     private static final int AES_KEY_SIZE = 256;
 
     public String getId() {
-        return Optional.ofNullable(abhaAddress).orElse(mobileNo + "-" + name + "-" + dob);
+        return Optional.ofNullable(abhaAddress).orElse(mobileNo + "_" + name + "_" + dob);
     }
 
     public boolean isAbhaOnboarded() {
@@ -44,6 +44,8 @@ public class Patient {
                 .mobileNo(requestBody.getMobileNo())
                 .dob(requestBody.getDob())
                 .gender(requestBody.getGender())
+                .abhaAddress(requestBody.getAbhaAddress())
+                .abhaNo(requestBody.getAbhaNo())
                 .build();
     }
 

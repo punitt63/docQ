@@ -16,11 +16,11 @@ public class SendSmsNotificationRequest {
     public static final String SERIALIZED_NAME_REQUEST_ID = "requestId";
     @SerializedName("requestId")
     @Nonnull
-    private UUID requestId;
+    private String requestId;
     public static final String SERIALIZED_NAME_TIMESTAMP = "timestamp";
     @SerializedName("timestamp")
     @Nonnull
-    private OffsetDateTime timestamp;
+    private String timestamp;
     public static final String SERIALIZED_NAME_NOTIFICATION = "notification";
     @SerializedName("notification")
     @Nonnull
@@ -31,31 +31,31 @@ public class SendSmsNotificationRequest {
     public SendSmsNotificationRequest() {
     }
 
-    public SendSmsNotificationRequest requestId(@Nonnull UUID requestId) {
+    public SendSmsNotificationRequest requestId(@Nonnull String requestId) {
         this.requestId = requestId;
         return this;
     }
 
     @Nonnull
-    public UUID getRequestId() {
+    public String getRequestId() {
         return this.requestId;
     }
 
-    public void setRequestId(@Nonnull UUID requestId) {
+    public void setRequestId(@Nonnull String requestId) {
         this.requestId = requestId;
     }
 
-    public SendSmsNotificationRequest timestamp(@Nonnull OffsetDateTime timestamp) {
+    public SendSmsNotificationRequest timestamp(@Nonnull String timestamp) {
         this.timestamp = timestamp;
         return this;
     }
 
     @Nonnull
-    public OffsetDateTime getTimestamp() {
+    public String getTimestamp() {
         return this.timestamp;
     }
 
-    public void setTimestamp(@Nonnull OffsetDateTime timestamp) {
+    public void setTimestamp(@Nonnull String timestamp) {
         this.timestamp = timestamp;
     }
 

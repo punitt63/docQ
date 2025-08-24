@@ -4,20 +4,16 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import configuration.TestAbhaClientConfiguration;
+import in.docq.abha.rest.client.AbhaRestClient;
 import in.docq.abha.rest.client.JSON;
 import in.docq.health.facility.HealthFacilityApplication;
 import in.docq.health.facility.auth.DesktopKeycloakRestClient;
-import in.docq.health.facility.controller.AppointmentController;
-import in.docq.health.facility.controller.HealthProfessionalController;
-import in.docq.health.facility.controller.OPDController;
-import in.docq.health.facility.controller.PrescriptionController;
+import in.docq.health.facility.controller.*;
 import in.docq.health.facility.dao.AppointmentDao;
 import in.docq.health.facility.dao.OPDDao;
+import in.docq.health.facility.dao.PatientDao;
 import in.docq.health.facility.dao.PrescriptionDAO;
-import in.docq.health.facility.model.Appointment;
-import in.docq.health.facility.model.HealthProfessionalType;
-import in.docq.health.facility.model.OPD;
-import in.docq.health.facility.model.Prescription;
+import in.docq.health.facility.model.*;
 import in.docq.health.facility.service.AppointmentService;
 import in.docq.health.facility.service.OPDService;
 import in.docq.keycloak.rest.client.model.GetAccessToken200Response;
@@ -40,8 +36,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static configuration.TestAbhaClientConfiguration.MockAbhaRestClient.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -71,6 +66,12 @@ public class PrescriptionControllerTest {
     @Autowired
     private DesktopKeycloakRestClient desktopKeycloakRestClient;
 
+    @Autowired
+    private TestAbhaClientConfiguration.MockAbhaRestClient abhaRestClient;
+
+    @Autowired
+    private PatientDao patientDao;
+
     private final String testPatientId = "test-patient-id";
 
     private static Gson gson = new GsonBuilder()
@@ -81,32 +82,93 @@ public class PrescriptionControllerTest {
         opdDao.truncate().toCompletableFuture().join();
         appointmentDao.truncate().toCompletableFuture().join();
         prescriptionDAO.truncate().toCompletableFuture().join();
+        patientDao.truncate().toCompletableFuture().join();
     }
 
     @Test
-    public void testCreateAndGetPrescription() throws Exception {
+    public void testCreateAndGetPrescriptionForNonAbhaPatient() throws Exception {
         OPD testOPD = createTestOPD(1);
         String facilityManagerToken = onboardFacilityManagerAndGetToken();
-        List<Appointment> appointments = createAppointments(testOPD, facilityManagerToken, 1);
+        Patient nonAbhaPatient = createNonAbhaPatient(facilityManagerToken);
+        Appointment appointment = createAppointment(testOPD, facilityManagerToken, nonAbhaPatient.getId());
         String doctorToken = onboardDoctorAndGetToken(facilityManagerToken);
-        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/opd-dates/" + testOPD.getDate().toString() + "/opds/" + testOPD.getId() + "/appointments/" + appointments.get(0).getId() + "/prescriptions")
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/opd-dates/" + testOPD.getDate().toString() + "/opds/" + testOPD.getId() + "/appointments/" + appointment.getId() + "/prescriptions")
                 .header("Authorization", "Bearer " + doctorToken)
                 .content(gson.toJson(PrescriptionController.CreateOrReplaceOPDPrescriptionRequestBody.builder().content("{}").build()))
                 .contentType(MediaType.APPLICATION_JSON)))
                 .andExpect(status().isOk());
-        Prescription prescription = gson.fromJson(handleAsyncProcessing(mockMvc.perform(get("/health-facilities/" + testHealthFacilityID + "/opd-dates/" + testOPD.getDate().toString() + "/opds/" + testOPD.getId() + "/appointments/" + appointments.get(0).getId() + "/prescriptions")
+        Prescription prescription = gson.fromJson(handleAsyncProcessing(mockMvc.perform(get("/health-facilities/" + testHealthFacilityID + "/opd-dates/" + testOPD.getDate().toString() + "/opds/" + testOPD.getId() + "/appointments/" + appointment.getId() + "/prescriptions")
                 .header("Authorization", "Bearer " + doctorToken)
                 .param("opd-date", testOPD.getDate().toString())
                 .param("opd-id", testOPD.getId())
-                .param("appointment-id", String.valueOf(appointments.get(0).getId()))
+                .param("appointment-id", String.valueOf(appointment.getId()))
                 .contentType(MediaType.APPLICATION_JSON)))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString(), new TypeToken<Prescription>(){}.getType());
         assertEquals(testOPD.getDate(), prescription.getDate());
-        assertEquals(appointments.get(0).getId(), prescription.getAppointmentID().intValue());
+        assertEquals(appointment.getId(), prescription.getAppointmentID().intValue());
         assertEquals("{}", prescription.getContent());
+        assertEquals(1, abhaRestClient.sendDeepLinkNotificationCount);
+    }
+
+    @Test
+    public void testCreateAndGetPrescriptionForAbhaPatientForFirstTime() throws Exception {
+        OPD testOPD = createTestOPD(1);
+        String facilityManagerToken = onboardFacilityManagerAndGetToken();
+        Patient abhaPatient = createAbhaPatient(facilityManagerToken);
+        Appointment appointment = createAppointment(testOPD, facilityManagerToken, abhaPatient.getId());
+        String doctorToken = onboardDoctorAndGetToken(facilityManagerToken);
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/opd-dates/" + testOPD.getDate().toString() + "/opds/" + testOPD.getId() + "/appointments/" + appointment.getId() + "/prescriptions")
+                .header("Authorization", "Bearer " + doctorToken)
+                .content(gson.toJson(PrescriptionController.CreateOrReplaceOPDPrescriptionRequestBody.builder().content("{}").build()))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+        Prescription prescription = gson.fromJson(handleAsyncProcessing(mockMvc.perform(get("/health-facilities/" + testHealthFacilityID + "/opd-dates/" + testOPD.getDate().toString() + "/opds/" + testOPD.getId() + "/appointments/" + appointment.getId() + "/prescriptions")
+                .header("Authorization", "Bearer " + doctorToken)
+                .param("opd-date", testOPD.getDate().toString())
+                .param("opd-id", testOPD.getId())
+                .param("appointment-id", String.valueOf(appointment.getId()))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(), new TypeToken<Prescription>(){}.getType());
+        Patient updatedPatient = getPatient(abhaPatient.getId());
+        assertEquals(testOPD.getDate(), prescription.getDate());
+        assertEquals(appointment.getId(), prescription.getAppointmentID().intValue());
+        assertEquals("{}", prescription.getContent());
+        assertEquals(1, abhaRestClient.generateLinkingTokenCount);
+        assertNotNull(updatedPatient.getLastHipLinkTokenRequestId());
+    }
+
+    @Test
+    public void testCreateAndGetPrescriptionForAbhaPatientWithLinkingTokenNotExpired() throws Exception {
+        OPD testOPD = createTestOPD(1);
+        String facilityManagerToken = onboardFacilityManagerAndGetToken();
+        Patient abhaPatient = createExistingAbhaPatient(facilityManagerToken);
+        Appointment appointment = createAppointment(testOPD, facilityManagerToken, abhaPatient.getId());
+        String doctorToken = onboardDoctorAndGetToken(facilityManagerToken);
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/opd-dates/" + testOPD.getDate().toString() + "/opds/" + testOPD.getId() + "/appointments/" + appointment.getId() + "/prescriptions")
+                .header("Authorization", "Bearer " + doctorToken)
+                .content(gson.toJson(PrescriptionController.CreateOrReplaceOPDPrescriptionRequestBody.builder().content("{}").build()))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+        Prescription prescription = gson.fromJson(handleAsyncProcessing(mockMvc.perform(get("/health-facilities/" + testHealthFacilityID + "/opd-dates/" + testOPD.getDate().toString() + "/opds/" + testOPD.getId() + "/appointments/" + appointment.getId() + "/prescriptions")
+                .header("Authorization", "Bearer " + doctorToken)
+                .param("opd-date", testOPD.getDate().toString())
+                .param("opd-id", testOPD.getId())
+                .param("appointment-id", String.valueOf(appointment.getId()))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(), new TypeToken<Prescription>(){}.getType());
+        assertEquals(testOPD.getDate(), prescription.getDate());
+        assertEquals(appointment.getId(), prescription.getAppointmentID().intValue());
+        assertEquals("{}", prescription.getContent());
+        assertEquals(1, abhaRestClient.linkCareContextCount);
     }
 
     @Test
@@ -181,6 +243,26 @@ public class PrescriptionControllerTest {
                 .getResponse()
                 .getContentAsString(), new TypeToken<List<Appointment>>(){}.getType());
         return appointments;
+    }
+
+    private Appointment createAppointment(OPD testOPD, String facilityManagerToken, String patientId) throws Exception {
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/opd-dates/" + testOPD.getDate().toString() + "/opds/" + testOPD.getId() + "/appointments")
+                .header("Authorization", "Bearer " + facilityManagerToken)
+                .content(gson.toJson(AppointmentController.CreateAppointmentRequestBody.builder().patientID(patientId).build()))
+                .contentType(MediaType.APPLICATION_JSON)));
+
+        List<Appointment> appointments = gson.fromJson(handleAsyncProcessing(mockMvc.perform(get("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/" + testDoctorID + "/appointments")
+                .header("Authorization", "Bearer " + facilityManagerToken)
+                .param("start-opd-date", testOPD.getDate().toString())
+                .param("end-opd-date", testOPD.getDate().toString())
+                .param("opd-id", testOPD.getId())
+                .param("patient-id", patientId)
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(), new TypeToken<List<Appointment>>(){}.getType());
+        return appointments.get(0);
     }
 
     private String onboardDoctorAndGetToken(String facilityManagerToken) throws Exception {
@@ -273,5 +355,81 @@ public class PrescriptionControllerTest {
         return opdService.list(testHealthFacilityID, testDoctorID, currDate.plusDays(1), currDate.plusDays(1).plusWeeks(1))
                 .toCompletableFuture().join()
                 .get(0);
+    }
+
+    private Patient createNonAbhaPatient(String facilityManagerToken) throws Exception {
+        PatientController.CreatePatientRequestBody createPatientRequestBody = PatientController.CreatePatientRequestBody.builder()
+                .name("NonAbhaTestPatient")
+                .mobileNo("9876543210")
+                .dob(LocalDate.of(1990, 1, 1))
+                .gender("M")
+                .build();
+
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/patients")
+                .header("Authorization", "Bearer " + facilityManagerToken)
+                .content(gson.toJson(createPatientRequestBody))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+
+        List<Patient> patients = gson.fromJson(
+                handleAsyncProcessing(mockMvc.perform(get("/health-facilities/" + testHealthFacilityID + "/patients")
+                        .header("Authorization", "Bearer " + facilityManagerToken)
+                        .param("mobile-no", "9876543210")
+                        .contentType(MediaType.APPLICATION_JSON)))
+                        .andExpect(status().isOk())
+                        .andReturn()
+                        .getResponse()
+                        .getContentAsString(),
+                new TypeToken<List<Patient>>(){}.getType());
+        return patients.get(0);
+    }
+
+    private Patient createAbhaPatient(String facilityManagerToken) throws Exception {
+        PatientController.CreatePatientRequestBody createPatientRequestBody = PatientController.CreatePatientRequestBody.builder()
+                .name("AbhaTestPatient")
+                .mobileNo("9876543210")
+                .dob(LocalDate.of(1990, 1, 1))
+                .gender("M")
+                .abhaAddress("test-abha@sbx")
+                .abhaNo("91536782361862")
+                .build();
+
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/patients")
+                .header("Authorization", "Bearer " + facilityManagerToken)
+                .content(gson.toJson(createPatientRequestBody))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+
+        List<Patient> patients = gson.fromJson(
+                handleAsyncProcessing(mockMvc.perform(get("/health-facilities/" + testHealthFacilityID + "/patients")
+                        .header("Authorization", "Bearer " + facilityManagerToken)
+                        .param("mobile-no", "9876543210")
+                        .contentType(MediaType.APPLICATION_JSON)))
+                        .andExpect(status().isOk())
+                        .andReturn()
+                        .getResponse()
+                        .getContentAsString(),
+                new TypeToken<List<Patient>>(){}.getType());
+        return patients.get(0);
+    }
+
+    private Patient createExistingAbhaPatient(String facilityManagerToken) throws Exception {
+        createAbhaPatient(facilityManagerToken);
+        patientDao.update("9876543210", "AbhaTestPatient", LocalDate.of(1990, 1, 1),
+                Patient.builder()
+                        .name("AbhaTestPatient")
+                        .mobileNo("9876543210")
+                        .gender("M")
+                        .abhaAddress("test-abha@sbx")
+                        .abhaNo("91536782361862")
+                        .dob(LocalDate.of(1990, 1, 1))
+                        .lastHipLinkTokenRequestId("test-link-token-req-id")
+                        .lastHipToken("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE3NTYwMDcyMzQsImV4cCI6NDk0MzIxNjgzNCwiYXVkIjoid3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpdmVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjpbIk1hbmFnZXIiLCJQcm9qZWN0IEFkbWluaXN0cmF0b3IiXX0.AAFSH9G5t9jbWrfc9PN6rhVs40BthdHR01xEtwMHqyeTPtmgHf4-MLyYubAh9JNuHIpxYXIs718Dc1j94mVhuQ")
+                        .build()).toCompletableFuture().join();
+        return getPatient("test-abha@sbx");
+    }
+
+    private Patient getPatient(String patientId) {
+        return patientDao.get(patientId).toCompletableFuture().join();
     }
 }

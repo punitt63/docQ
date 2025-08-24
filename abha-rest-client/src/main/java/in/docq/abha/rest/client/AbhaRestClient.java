@@ -354,13 +354,18 @@ public class AbhaRestClient {
                 });
     }
 
-    public CompletionStage<Void> generateLinkingToken(String requestId, OffsetDateTime timestamp, String xHipId, String xCmId, HIPInitiatedGenerateTokenRequest hipInitiatedGenerateTokenRequest) {
+    public CompletionStage<Void> generateLinkingToken(String requestId, String timestamp, String xHipId, String xCmId, HIPInitiatedGenerateTokenRequest hipInitiatedGenerateTokenRequest) {
         return getAccessToken()
                 .thenCompose(token ->  hipInitiatedLinkingApi.generateTokenAsync(token, requestId, timestamp, xHipId, xCmId, hipInitiatedGenerateTokenRequest));
     }
 
-    public  CompletionStage<Void> sendDeepLinkNotification(UUID requestId, OffsetDateTime timestamp, String xCmId, SendSmsNotificationRequest sendSmsNotificationRequest) {
+    public  CompletionStage<Void> sendDeepLinkNotification(String requestId, String timestamp, String xCmId, SendSmsNotificationRequest sendSmsNotificationRequest) {
         return getAccessToken()
                 .thenCompose(token -> hipInitiatedLinkingApi.sendSmsNotificationAsync(token, requestId, timestamp, xCmId, sendSmsNotificationRequest));
+    }
+
+    public CompletionStage<Void> linkHIPInitiatedCareContext(String requestId, String timestamp, String xCmId, String xHipId, String xLinkToken, AbdmHipInitiatedLinkingHip1Request abdmHipInitiatedLinkingHip1Request) {
+        return getAccessToken()
+                .thenCompose(token -> hipInitiatedLinkingApi.linkCareContextAsync(token, requestId, timestamp, xCmId, xHipId, xLinkToken, abdmHipInitiatedLinkingHip1Request));
     }
 }

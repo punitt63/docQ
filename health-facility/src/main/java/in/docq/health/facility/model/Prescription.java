@@ -12,4 +12,8 @@ public class Prescription {
     private final Integer appointmentID;
     private final LocalDate date;
     private final String content;
+
+    public String getId() {
+        return date.toString() + "_" + opdID + "_" + appointmentID;
+    }
 }

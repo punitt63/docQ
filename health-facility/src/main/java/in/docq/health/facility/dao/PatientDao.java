@@ -50,28 +50,30 @@ public class PatientDao {
     }
 
     public CompletionStage<Void> insert(Patient patient) {
-        Patient encryptedPatient = patient.encrypt(aesEncryptionKey);
         return postgresDAO.update(dbMetricsGroupName, "insert", insertPatientQuery,
-                        encryptedPatient.getId(),
-                        encryptedPatient.getAbhaNo(),
-                        encryptedPatient.getAbhaAddress(),
-                        encryptedPatient.getName(),
-                        encryptedPatient.getMobileNo(),
-                        Date.valueOf(encryptedPatient.getDob()),
-                        encryptedPatient.getGender())
+                        patient.getId(),
+                        patient.getAbhaNo(),
+                        patient.getAbhaAddress(),
+                        patient.getName(),
+                        patient.getMobileNo(),
+                        Date.valueOf(patient.getDob()),
+                        patient.getGender(),
+                        patient.getLastHipLinkTokenRequestId(),
+                        patient.getLastHipToken())
                 .thenAccept(ignore -> {});
     }
 
     public CompletionStage<Void> update(String mobileNo, String name, LocalDate dob, Patient newpatient) {
-        Patient encryptedPatient = newpatient.encrypt(aesEncryptionKey);
         return postgresDAO.update(dbMetricsGroupName, "update", updatePatientQuery,
-                        encryptedPatient.getId(),
-                        encryptedPatient.getAbhaNo(),
-                        encryptedPatient.getAbhaAddress(),
-                        encryptedPatient.getName(),
-                        encryptedPatient.getMobileNo(),
-                        Date.valueOf(encryptedPatient.getDob()),
-                        encryptedPatient.getGender(),
+                        newpatient.getId(),
+                        newpatient.getAbhaNo(),
+                        newpatient.getAbhaAddress(),
+                        newpatient.getName(),
+                        newpatient.getMobileNo(),
+                        Date.valueOf(newpatient.getDob()),
+                        newpatient.getGender(),
+                        newpatient.getLastHipLinkTokenRequestId(),
+                        newpatient.getLastHipToken(),
                         mobileNo,
                         name,
                         Date.valueOf(dob))
@@ -88,6 +90,7 @@ public class PatientDao {
                         .dob(rs.getDate(Column.DOB.getColumnName()).toLocalDate())
                         .gender(rs.getString(Column.GENDER.getColumnName()))
                         .lastHipLinkTokenRequestId(rs.getString(Column.LAST_HIP_LINK_TOKEN_REQUEST_ID.getColumnName()))
+                        .lastHipToken(rs.getString(Column.LAST_HIP_LINK_TOKEN.getColumnName()))
                         .build(),
                 mobileNo);
     }
@@ -101,8 +104,7 @@ public class PatientDao {
                         .mobileNo(rs.getString(Column.MOBILE_NO.getColumnName()))
                         .dob(rs.getDate(Column.DOB.getColumnName()).toLocalDate())
                         .gender(rs.getString(Column.GENDER.getColumnName()))
-                        .build()
-                        .decrypt(aesEncryptionKey),
+                        .build(),
                 mobileNo, name, Date.valueOf(dob));
     }
 
@@ -116,8 +118,8 @@ public class PatientDao {
                         .dob(rs.getDate(Column.DOB.getColumnName()).toLocalDate())
                         .gender(rs.getString(Column.GENDER.getColumnName()))
                         .lastHipLinkTokenRequestId(rs.getString(Column.LAST_HIP_LINK_TOKEN_REQUEST_ID.getColumnName()))
-                        .build()
-                        .decrypt(aesEncryptionKey),
+                        .lastHipToken(rs.getString(Column.LAST_HIP_LINK_TOKEN.getColumnName()))
+                        .build(),
                 id);
     }
 
@@ -133,7 +135,8 @@ public class PatientDao {
         MOBILE_NO("mobile_no", true),
         DOB("dob", true),
         GENDER("gender", true),
-        LAST_HIP_LINK_TOKEN_REQUEST_ID("last_hip_link_token_request_id", true);
+        LAST_HIP_LINK_TOKEN_REQUEST_ID("last_hip_link_token_request_id", true),
+        LAST_HIP_LINK_TOKEN("last_hip_link_token", true);
 
         @Getter
         private final String columnName;

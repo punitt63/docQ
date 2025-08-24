@@ -1,5 +1,5 @@
 CREATE TABLE patient (
-    id varchar(60),
+    id varchar(100),
     abha_no varchar(60),
     abha_address varchar(60),
     name text NOT NULL,
@@ -7,7 +7,7 @@ CREATE TABLE patient (
     dob date NOT NULL,
     gender varchar(1) NOT NULL,
     last_hip_link_token_request_id varchar(40),
-    last_hip_link_token varchar(200),
+    last_hip_link_token text,
     CONSTRAINT patient_pkey PRIMARY KEY (id),
-    UNIQUE CONSTRAINT patient_mob_name_dob_idx (mobile_no, name, dob);
+    CONSTRAINT patient_mob_name_dob_idx UNIQUE (mobile_no, name, dob)
 );

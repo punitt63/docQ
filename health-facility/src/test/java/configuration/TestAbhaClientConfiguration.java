@@ -2,12 +2,17 @@ package configuration;
 
 import in.docq.abha.rest.client.AbhaRestClient;
 import in.docq.abha.rest.client.ApiClient;
+import in.docq.abha.rest.client.model.AbdmHipInitiatedLinkingHip1Request;
+import in.docq.abha.rest.client.model.HIPInitiatedGenerateTokenRequest;
 import in.docq.abha.rest.client.model.SearchFacilitiesData;
+import in.docq.abha.rest.client.model.SendSmsNotificationRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
+import java.time.OffsetDateTime;
+import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -25,6 +30,9 @@ public class TestAbhaClientConfiguration {
         public static String testHealthFacilityID = "IN2310020040";
         public static String testHealthFacilityManagerID = "test-fm-id";
         public static String testDoctorID = "test-doctor-id";
+        public int sendDeepLinkNotificationCount;
+        public int generateLinkingTokenCount;
+        public int linkCareContextCount;
 
         public MockAbhaRestClient() {
             super(null, null, null);
@@ -41,6 +49,24 @@ public class TestAbhaClientConfiguration {
 
         @Override
         public CompletionStage<Void> getHealthProfessionalExists(String healthProfessionalID) {
+            return completedFuture(null);
+        }
+
+        @Override
+        public CompletionStage<Void> sendDeepLinkNotification(String requestId, String timestamp, String xCmId, SendSmsNotificationRequest sendSmsNotificationRequest) {
+            sendDeepLinkNotificationCount++;
+            return completedFuture(null);
+        }
+
+        @Override
+        public CompletionStage<Void> generateLinkingToken(String requestId, String timestamp, String xHipId, String xCmId, HIPInitiatedGenerateTokenRequest hipInitiatedGenerateTokenRequest) {
+            generateLinkingTokenCount++;
+            return completedFuture(null);
+        }
+
+        @Override
+        public CompletionStage<Void> linkHIPInitiatedCareContext(String requestId, String timestamp, String xCmId, String xHipId, String xLinkToken, AbdmHipInitiatedLinkingHip1Request abdmHipInitiatedLinkingHip1Request) {
+            linkCareContextCount++;
             return completedFuture(null);
         }
     }
