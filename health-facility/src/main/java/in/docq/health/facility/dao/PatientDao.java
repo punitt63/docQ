@@ -57,9 +57,7 @@ public class PatientDao {
                         patient.getName(),
                         patient.getMobileNo(),
                         Date.valueOf(patient.getDob()),
-                        patient.getGender(),
-                        patient.getLastHipLinkTokenRequestId(),
-                        patient.getLastHipToken())
+                        patient.getGender())
                 .thenAccept(ignore -> {});
     }
 
@@ -72,8 +70,6 @@ public class PatientDao {
                         newpatient.getMobileNo(),
                         Date.valueOf(newpatient.getDob()),
                         newpatient.getGender(),
-                        newpatient.getLastHipLinkTokenRequestId(),
-                        newpatient.getLastHipToken(),
                         mobileNo,
                         name,
                         Date.valueOf(dob))
@@ -89,8 +85,6 @@ public class PatientDao {
                         .mobileNo(rs.getString(Column.MOBILE_NO.getColumnName()))
                         .dob(rs.getDate(Column.DOB.getColumnName()).toLocalDate())
                         .gender(rs.getString(Column.GENDER.getColumnName()))
-                        .lastHipLinkTokenRequestId(rs.getString(Column.LAST_HIP_LINK_TOKEN_REQUEST_ID.getColumnName()))
-                        .lastHipToken(rs.getString(Column.LAST_HIP_LINK_TOKEN.getColumnName()))
                         .build(),
                 mobileNo);
     }
@@ -117,8 +111,6 @@ public class PatientDao {
                         .mobileNo(rs.getString(Column.MOBILE_NO.getColumnName()))
                         .dob(rs.getDate(Column.DOB.getColumnName()).toLocalDate())
                         .gender(rs.getString(Column.GENDER.getColumnName()))
-                        .lastHipLinkTokenRequestId(rs.getString(Column.LAST_HIP_LINK_TOKEN_REQUEST_ID.getColumnName()))
-                        .lastHipToken(rs.getString(Column.LAST_HIP_LINK_TOKEN.getColumnName()))
                         .build(),
                 id);
     }
@@ -134,9 +126,7 @@ public class PatientDao {
         NAME("name", true),
         MOBILE_NO("mobile_no", true),
         DOB("dob", true),
-        GENDER("gender", true),
-        LAST_HIP_LINK_TOKEN_REQUEST_ID("last_hip_link_token_request_id", true),
-        LAST_HIP_LINK_TOKEN("last_hip_link_token", true);
+        GENDER("gender", true);
 
         @Getter
         private final String columnName;

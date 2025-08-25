@@ -28,7 +28,7 @@ public class PrescriptionService {
                 .build();
         return appointmentService.get(opdDate, opdID, appointmentID)
                 .thenCompose(appointment -> opdPrescriptionDao.insert(prescription)
-                        .thenCompose(ignore -> careContextService.linkCareContext(appointment, prescription)));
+                        .thenCompose(ignore -> careContextService.linkCareContext(appointment)));
     }
 
     public CompletionStage<Void> replace(LocalDate opdDate, String opdID, Integer appointmentID, String content) {

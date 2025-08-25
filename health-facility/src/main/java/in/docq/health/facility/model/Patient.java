@@ -23,8 +23,6 @@ public class Patient {
     private final String mobileNo;
     private final LocalDate dob;
     private final String gender;
-    private final String lastHipLinkTokenRequestId;
-    private final String lastHipToken;
 
     private static final String AES_ALGORITHM = "AES/GCM/NoPadding";
     private static final int GCM_TAG_LENGTH = 128;
@@ -114,10 +112,6 @@ public class Patient {
         } catch (Exception e) {
             throw new RuntimeException("Decryption failed", e);
         }
-    }
-
-    public boolean isHipLinkTokenExpired() {
-        return Optional.ofNullable(lastHipToken).map(token -> JWT.decode(token).getExpiresAt().before(new Date())).orElse(true);
     }
 
     public int getYearOfBirth() {

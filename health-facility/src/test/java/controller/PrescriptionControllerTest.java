@@ -9,10 +9,7 @@ import in.docq.abha.rest.client.JSON;
 import in.docq.health.facility.HealthFacilityApplication;
 import in.docq.health.facility.auth.DesktopKeycloakRestClient;
 import in.docq.health.facility.controller.*;
-import in.docq.health.facility.dao.AppointmentDao;
-import in.docq.health.facility.dao.OPDDao;
-import in.docq.health.facility.dao.PatientDao;
-import in.docq.health.facility.dao.PrescriptionDAO;
+import in.docq.health.facility.dao.*;
 import in.docq.health.facility.model.*;
 import in.docq.health.facility.service.AppointmentService;
 import in.docq.health.facility.service.OPDService;
@@ -71,6 +68,9 @@ public class PrescriptionControllerTest {
 
     @Autowired
     private PatientDao patientDao;
+
+    @Autowired
+    private HIPLinkingTokenDao hipLinkingTokenDao;
 
     private final String testPatientId = "test-patient-id";
 
@@ -135,12 +135,12 @@ public class PrescriptionControllerTest {
                 .andReturn()
                 .getResponse()
                 .getContentAsString(), new TypeToken<Prescription>(){}.getType());
-        Patient updatedPatient = getPatient(abhaPatient.getId());
+        Optional<HIPLinkingToken> hipLinkingToken = getHIPLinkingToken(testHealthFacilityID, abhaPatient.getId());
         assertEquals(testOPD.getDate(), prescription.getDate());
         assertEquals(appointment.getId(), prescription.getAppointmentID().intValue());
         assertEquals("{}", prescription.getContent());
         assertEquals(1, abhaRestClient.generateLinkingTokenCount);
-        assertNotNull(updatedPatient.getLastHipLinkTokenRequestId());
+        assertTrue(hipLinkingToken.isPresent());
     }
 
     @Test
@@ -148,6 +148,13 @@ public class PrescriptionControllerTest {
         OPD testOPD = createTestOPD(1);
         String facilityManagerToken = onboardFacilityManagerAndGetToken();
         Patient abhaPatient = createExistingAbhaPatient(facilityManagerToken);
+        createHIPLinkingToken(HIPLinkingToken.builder()
+                .healthFacilityId(testHealthFacilityID)
+                .patientId(abhaPatient.getId())
+                .lastTokenRequestAppointmentId("test-appointment-id")
+                .lastTokenRequestId("test-link-token-req-id")
+                .lastToken("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE3NTYwMDcyMzQsImV4cCI6NDk0MzIxNjgzNCwiYXVkIjoid3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpdmVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjpbIk1hbmFnZXIiLCJQcm9qZWN0IEFkbWluaXN0cmF0b3IiXX0.AAFSH9G5t9jbWrfc9PN6rhVs40BthdHR01xEtwMHqyeTPtmgHf4-MLyYubAh9JNuHIpxYXIs718Dc1j94mVhuQ")
+                .build());
         Appointment appointment = createAppointment(testOPD, facilityManagerToken, abhaPatient.getId());
         String doctorToken = onboardDoctorAndGetToken(facilityManagerToken);
         handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/opd-dates/" + testOPD.getDate().toString() + "/opds/" + testOPD.getId() + "/appointments/" + appointment.getId() + "/prescriptions")
@@ -423,13 +430,20 @@ public class PrescriptionControllerTest {
                         .abhaAddress("test-abha@sbx")
                         .abhaNo("91536782361862")
                         .dob(LocalDate.of(1990, 1, 1))
-                        .lastHipLinkTokenRequestId("test-link-token-req-id")
-                        .lastHipToken("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE3NTYwMDcyMzQsImV4cCI6NDk0MzIxNjgzNCwiYXVkIjoid3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpdmVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjpbIk1hbmFnZXIiLCJQcm9qZWN0IEFkbWluaXN0cmF0b3IiXX0.AAFSH9G5t9jbWrfc9PN6rhVs40BthdHR01xEtwMHqyeTPtmgHf4-MLyYubAh9JNuHIpxYXIs718Dc1j94mVhuQ")
                         .build()).toCompletableFuture().join();
         return getPatient("test-abha@sbx");
     }
 
     private Patient getPatient(String patientId) {
         return patientDao.get(patientId).toCompletableFuture().join();
+    }
+
+    private Optional<HIPLinkingToken> getHIPLinkingToken(String healthFacilityId, String patientId) {
+        return hipLinkingTokenDao.get(healthFacilityId, patientId).toCompletableFuture().join();
+    }
+
+    private HIPLinkingToken createHIPLinkingToken(HIPLinkingToken hipLinkingToken) {
+        hipLinkingTokenDao.upsert(hipLinkingToken).toCompletableFuture().join();
+        return hipLinkingToken;
     }
 }

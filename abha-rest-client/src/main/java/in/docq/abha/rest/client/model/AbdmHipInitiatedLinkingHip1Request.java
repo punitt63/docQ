@@ -25,7 +25,7 @@ public class AbdmHipInitiatedLinkingHip1Request {
     public static final String SERIALIZED_NAME_PATIENT = "patient";
     @SerializedName("patient")
     @Nonnull
-    private List<AbdmHipInitiatedLinkingHip1RequestPatientInner> careContexts = new ArrayList();
+    private List<AbdmHipInitiatedLinkingHip1RequestPatientInner> patients = new ArrayList();
     public static HashSet<String> openapiFields = new HashSet();
     public static HashSet<String> openapiRequiredFields;
 
@@ -60,27 +60,27 @@ public class AbdmHipInitiatedLinkingHip1Request {
         this.abhaAddress = abhaAddress;
     }
 
-    public AbdmHipInitiatedLinkingHip1Request careContexts(@Nonnull List<AbdmHipInitiatedLinkingHip1RequestPatientInner> patient) {
-        this.careContexts = patient;
+    public AbdmHipInitiatedLinkingHip1Request patients(@Nonnull List<AbdmHipInitiatedLinkingHip1RequestPatientInner> patient) {
+        this.patients = patient;
         return this;
     }
 
     public AbdmHipInitiatedLinkingHip1Request addPatientItem(AbdmHipInitiatedLinkingHip1RequestPatientInner patientItem) {
-        if (this.careContexts == null) {
-            this.careContexts = new ArrayList();
+        if (this.patients == null) {
+            this.patients = new ArrayList();
         }
 
-        this.careContexts.add(patientItem);
+        this.patients.add(patientItem);
         return this;
     }
 
     @Nonnull
-    public List<AbdmHipInitiatedLinkingHip1RequestPatientInner> getCareContexts() {
-        return this.careContexts;
+    public List<AbdmHipInitiatedLinkingHip1RequestPatientInner> getPatients() {
+        return this.patients;
     }
 
-    public void setCareContexts(@Nonnull List<AbdmHipInitiatedLinkingHip1RequestPatientInner> careContexts) {
-        this.careContexts = careContexts;
+    public void setPatients(@Nonnull List<AbdmHipInitiatedLinkingHip1RequestPatientInner> patients) {
+        this.patients = patients;
     }
 
     public boolean equals(Object o) {
@@ -88,14 +88,14 @@ public class AbdmHipInitiatedLinkingHip1Request {
             return true;
         } else if (o != null && this.getClass() == o.getClass()) {
             AbdmHipInitiatedLinkingHip1Request abdmHipInitiatedLinkingHip1Request = (AbdmHipInitiatedLinkingHip1Request)o;
-            return Objects.equals(this.abhaNumber, abdmHipInitiatedLinkingHip1Request.abhaNumber) && Objects.equals(this.abhaAddress, abdmHipInitiatedLinkingHip1Request.abhaAddress) && Objects.equals(this.careContexts, abdmHipInitiatedLinkingHip1Request.careContexts);
+            return Objects.equals(this.abhaNumber, abdmHipInitiatedLinkingHip1Request.abhaNumber) && Objects.equals(this.abhaAddress, abdmHipInitiatedLinkingHip1Request.abhaAddress) && Objects.equals(this.patients, abdmHipInitiatedLinkingHip1Request.patients);
         } else {
             return false;
         }
     }
 
     public int hashCode() {
-        return Objects.hash(new Object[]{this.abhaNumber, this.abhaAddress, this.careContexts});
+        return Objects.hash(new Object[]{this.abhaNumber, this.abhaAddress, this.patients});
     }
 
     public String toString() {
@@ -103,7 +103,7 @@ public class AbdmHipInitiatedLinkingHip1Request {
         sb.append("class AbdmHipInitiatedLinkingHip1Request {\n");
         sb.append("    abhaNumber: ").append(this.toIndentedString(this.abhaNumber)).append("\n");
         sb.append("    abhaAddress: ").append(this.toIndentedString(this.abhaAddress)).append("\n");
-        sb.append("    patient: ").append(this.toIndentedString(this.careContexts)).append("\n");
+        sb.append("    patient: ").append(this.toIndentedString(this.patients)).append("\n");
         sb.append("}");
         return sb.toString();
     }
