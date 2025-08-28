@@ -59,7 +59,7 @@ public class HIPLinkingTokenDao {
                 .thenAccept(ignore -> {});
     }
 
-    public CompletionStage<Void> update(String patientId, String lastTokenRequestId, String newToken) {
+    public CompletionStage<Void> update(String newToken, String patientId, String lastTokenRequestId) {
         return postgresDAO.update(dbMetricsGroupName, "update", updateTokenQuery,
                         newToken,
                         patientId,
@@ -80,7 +80,7 @@ public class HIPLinkingTokenDao {
     }
 
     public CompletionStage<HIPLinkingToken> getByRequestId(String patientId, String lastTokenRequestId) {
-        return postgresDAO.queryForObject(dbMetricsGroupName, "get", getTokenQuery,
+        return postgresDAO.queryForObject(dbMetricsGroupName, "get", getByRequestIdQuery,
                 (rs, rowNum) -> HIPLinkingToken.builder()
                         .healthFacilityId(rs.getString(Column.HEALTH_FACILITY_ID.getColumnName()))
                         .patientId(rs.getString(Column.PATIENT_ID.getColumnName()))

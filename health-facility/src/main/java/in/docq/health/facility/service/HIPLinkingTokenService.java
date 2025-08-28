@@ -25,8 +25,8 @@ public class HIPLinkingTokenService {
         return hipLinkingTokenDao.upsert(hipLinkingToken);
     }
 
-    public CompletionStage<Void> updateToken(String patientId, String lastTokenRequestId, String newToken) {
-        return hipLinkingTokenDao.update(patientId, lastTokenRequestId, newToken)
+    public CompletionStage<Void> updateToken(String newToken, String patientId, String lastTokenRequestId) {
+        return hipLinkingTokenDao.update(newToken, patientId, lastTokenRequestId)
                 .whenComplete((result, throwable) -> {
                     if (throwable != null) {
                         logger.error("Failed to update HIP linking token for patient: {}", patientId, throwable);

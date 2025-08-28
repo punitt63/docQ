@@ -7,5 +7,6 @@ CREATE TABLE patient (
     dob date NOT NULL,
     gender varchar(1) NOT NULL,
     CONSTRAINT patient_pkey PRIMARY KEY (id),
-    CONSTRAINT patient_mob_name_dob_idx UNIQUE (mobile_no, name, dob)
+    CONSTRAINT patient_mob_name_dob_idx UNIQUE (mobile_no, name, dob),
+    CONSTRAINT abha_address_idx UNIQUE (abha_address)
 );

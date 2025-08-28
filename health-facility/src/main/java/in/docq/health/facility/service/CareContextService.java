@@ -5,7 +5,8 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import in.docq.abha.rest.client.AbhaRestClient;
 import in.docq.abha.rest.client.model.*;
-import in.docq.health.facility.controller.HipGenerateTokenWebhookController;
+import in.docq.health.facility.controller.HipWebhookController;
+import in.docq.health.facility.dao.CareContextDao;
 import in.docq.health.facility.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,9 +15,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 
@@ -24,6 +23,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 
 @Service
 public class CareContextService {
+    private final CareContextDao careContextDao;
     private final OPDService opdService;
     private final HealthFacilityService healthFacilityService;
     private final PatientService patientService;
@@ -35,9 +35,10 @@ public class CareContextService {
             .build();
 
     @Autowired
-    public CareContextService(OPDService opdService, HealthFacilityService healthFacilityService, PatientService patientService, HIPLinkingTokenService hipLinkingTokenService,
+    public CareContextService(CareContextDao careContextDao, OPDService opdService, HealthFacilityService healthFacilityService, PatientService patientService, HIPLinkingTokenService hipLinkingTokenService,
                               AbhaRestClient abhaRestClient,
                               @Value("${x.cm.id}") String xCmId) {
+        this.careContextDao = careContextDao;
         this.opdService = opdService;
         this.healthFacilityService = healthFacilityService;
         this.patientService = patientService;
@@ -46,26 +47,43 @@ public class CareContextService {
         this.xCmId = xCmId;
     }
 
-    public CompletionStage<Void> linkCareContext(HipGenerateTokenWebhookController.OnGenerateTokenRequest request) {
-        return hipLinkingTokenService.getByRequestId(request.getAbhaAddress(), request.getResponse().getRequestId())
-                .thenCompose(hipLinkingToken -> patientService.getPatient(hipLinkingToken.getPatientId())
-                        .thenCompose(patient -> linkCareContextToAbha(hipLinkingToken.getHealthFacilityId(), hipLinkingToken.getLastTokenRequestAppointmentId(), patient, hipLinkingToken.getLastToken())));
+    public CompletionStage<Void> onGenerateLinkingToken(String healthFacilityId,  HipWebhookController.OnGenerateTokenRequest request) {
+        return patientService.getPatientByAbhaAddress(request.getAbhaAddress())
+                .thenCompose(patient -> hipLinkingTokenService.getByRequestId(patient.getId(), request.getResponse().getRequestId())
+                        .thenCompose(hipLinkingToken -> linkCareContextToAbha(healthFacilityId, hipLinkingToken.getLastTokenRequestAppointmentId(), patient, request.getLinkToken()))
+                        .thenCompose(ignore -> hipLinkingTokenService.updateToken(request.getLinkToken(), patient.getId(), request.getResponse().getRequestId())));
     }
 
     public CompletionStage<Void> linkCareContext(Appointment appointment) {
-        return getOPD(appointment.getOpdDate(), appointment.getOpdId())
-                .thenCompose(opd -> hipLinkingTokenService.getToken(opd.getHealthFacilityID(), appointment.getPatientId())
-                        .thenCompose(linkingToken -> patientService.getPatient(appointment.getPatientId())
-                                .thenCompose(patient -> {
+        return getOrCreateCareContext(appointment)
+                .thenCompose(careContext -> patientService.getPatient(appointment.getPatientId())
+                        .thenCompose(patient -> hipLinkingTokenService.getToken(careContext.getHealthFacilityId(), appointment.getPatientId())
+                                .thenCompose(linkingToken -> {
+                                    if(careContext.isLinked()) {
+                                        return completedFuture(null);
+                                    }
                                     boolean isLinkingTokenExpired = linkingToken.map(HIPLinkingToken::isHipLinkTokenExpired).orElse(true);
                                     if(patient.isAbhaOnboarded()) {
                                         if(isLinkingTokenExpired) {
-                                            return generateLinkingToken(opd, appointment, patient);
+                                            return generateLinkingToken(careContext, patient);
                                         }
-                                        return linkCareContextToAbha(opd, appointment, patient, linkingToken.get().getLastToken());
+                                        return linkCareContextToAbha(careContext, patient, linkingToken.get().getLastToken());
                                     }
-                                    return sendDeepLinkNotification(opd, patient);
-                                })));
+                                    return sendPatientNotification(careContext, patient);
+                                }))
+                        .thenCompose(careContextDao::upsert));
+    }
+
+    public CompletionStage<CareContext> getOrCreateCareContext(Appointment appointment) {
+        return careContextDao.get(appointment.getUniqueId())
+                .thenCompose(careContextOpt -> {
+                    if(careContextOpt.isPresent()) {
+                        return completedFuture(careContextOpt.get());
+                    }
+                    return getOPD(appointment.getOpdDate(), appointment.getOpdId())
+                            .thenCompose(opd -> careContextDao.upsert(CareContext.from(opd, appointment))
+                            .thenApply(ignore -> CareContext.from(opd, appointment)));
+                });
     }
 
     private CompletionStage<OPD> getOPD(LocalDate opdDate, String opdId) {
@@ -80,28 +98,29 @@ public class CareContextService {
                 });
     }
 
-    private CompletionStage<Void> generateLinkingToken(OPD opd, Appointment appointment, Patient patient) {
+    private CompletionStage<CareContext> generateLinkingToken(CareContext careContext, Patient patient) {
         String requestId = UUID.randomUUID().toString();
         return hipLinkingTokenService.upsert(HIPLinkingToken.builder()
-                        .healthFacilityId(opd.getHealthFacilityID())
+                        .healthFacilityId(careContext.getHealthFacilityId())
                         .patientId(patient.getId())
-                        .lastTokenRequestAppointmentId(appointment.getUniqueId())
+                        .lastTokenRequestAppointmentId(careContext.getAppointmentID())
                         .lastTokenRequestId(requestId)
                         .lastToken(null)
                         .build())
-                .thenCompose(ignore -> abhaRestClient.generateLinkingToken(requestId, Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), opd.getHealthFacilityID(), xCmId,
+                .thenCompose(ignore -> abhaRestClient.generateLinkingToken(requestId, Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), careContext.getHealthFacilityId(), xCmId,
                         new HIPInitiatedGenerateTokenRequest()
                                 .abhaNumber(patient.getAbhaNo())
                                 .abhaAddress(patient.getAbhaAddress())
                                 .name(patient.getName())
                                 .gender(HIPInitiatedGenerateTokenRequest.GenderEnum.valueOf(patient.getGender()))
-                                .yearOfBirth(patient.getYearOfBirth())));
+                                .yearOfBirth(patient.getYearOfBirth())))
+                .thenApply(ignore -> careContext);
     }
 
-    private CompletionStage<Void> sendDeepLinkNotification(OPD opd, Patient patient) {
+    private CompletionStage<CareContext> sendPatientNotification(CareContext careContext, Patient patient) {
         String requestId = UUID.randomUUID().toString();
         String timestamp = Instant.now().truncatedTo(ChronoUnit.MILLIS).toString();
-        return healthFacilityService.getHealthFacility(opd.getHealthFacilityID())
+        return healthFacilityService.getHealthFacility(careContext.getHealthFacilityId())
                 .thenCompose(healthFacility -> abhaRestClient.sendDeepLinkNotification(requestId,
                         timestamp,
                         xCmId,
@@ -109,22 +128,24 @@ public class CareContextService {
                                 .requestId(requestId)
                                 .timestamp(timestamp)
                                 .notification(new SendSmsNotificationRequestNotification().phoneNo(patient.getMobileNo())
-                                        .hip(new SendSmsNotificationRequestNotificationHip().id(opd.getHealthFacilityID()).name(healthFacility.getFacilityName())))));
+                                        .hip(new SendSmsNotificationRequestNotificationHip().id(careContext.getHealthFacilityId()).name(healthFacility.getFacilityName())))))
+                .thenApply(ignore -> careContext);
     }
 
-    private CompletionStage<Void> linkCareContextToAbha(OPD opd, Appointment appointment, Patient patient, String linkingToken) {
+    private CompletionStage<CareContext> linkCareContextToAbha(CareContext careContext, Patient patient, String linkingToken) {
         String requestId = UUID.randomUUID().toString();
-        return healthFacilityService.getHealthFacility(opd.getHealthFacilityID())
-                .thenCompose(healthFacility -> abhaRestClient.linkHIPInitiatedCareContext(requestId, Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), opd.getHealthFacilityID(), xCmId, linkingToken,
+        return healthFacilityService.getHealthFacility(careContext.getHealthFacilityId())
+                .thenCompose(healthFacility -> abhaRestClient.linkHIPInitiatedCareContext(requestId, Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), careContext.getHealthFacilityId(), xCmId, linkingToken,
                 new AbdmHipInitiatedLinkingHip1Request()
                         .abhaNumber(new BigDecimal(patient.getAbhaNo()))
                         .abhaAddress(patient.getAbhaAddress())
                         .patients(ImmutableList.of(new AbdmHipInitiatedLinkingHip1RequestPatientInner()
-                                .referenceNumber(appointment.getUniqueId())
+                                .referenceNumber(careContext.getAppointmentID())
                                 .display("Prescription from " + healthFacility.getFacilityName())
                                 .hiTypes(AbdmHipInitiatedLinkingHip1RequestPatientInner.HiTypesEnum.PRESCRIPTION)
                                 .count(BigDecimal.ONE)
-                        ))));
+                        ))))
+                .thenApply(ignore -> careContext.toBuilder().requestId(requestId).build());
     }
 
     private CompletionStage<Void> linkCareContextToAbha(String healthFacilityId, String appointmentId, Patient patient, String linkingToken) {
@@ -139,6 +160,14 @@ public class CareContextService {
                                 .display("Prescription from " + healthFacility.getFacilityName())
                                 .hiTypes(AbdmHipInitiatedLinkingHip1RequestPatientInner.HiTypesEnum.PRESCRIPTION)
                                 .count(BigDecimal.ONE)
-                        ))));
+                        ))))
+                .thenCompose(ignore -> careContextDao.upsert(CareContext.builder()
+                        .appointmentID(appointmentId)
+                        .healthFacilityId(healthFacilityId)
+                        .patientId(patient.getId())
+                        .requestId(requestId)
+                        .isLinked(false)
+                        .isPatientNotified(false)
+                        .build()));
     }
 }

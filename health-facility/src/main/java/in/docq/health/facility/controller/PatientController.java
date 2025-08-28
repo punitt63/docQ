@@ -38,17 +38,19 @@ public class PatientController {
 
     @PostMapping("/health-facilities/{health-facility-id}/patients")
     @Authorized(resource = "patient", scope = "create")
-    public CompletionStage<ResponseEntity<Void>> createPatient(@PathVariable("health-facility-id") String healthFacilityID,
+    public CompletionStage<ResponseEntity<Patient>> createPatient(@PathVariable("health-facility-id") String healthFacilityID,
                                                                @RequestBody CreatePatientRequestBody createPatientRequestBody) {
         return patientService.createPatient(Patient.fromRequestBody(createPatientRequestBody))
-                .thenApply(ResponseEntity::ok);
+                .thenApply(patient -> ResponseEntity.ok()
+                        .body(patient));
     }
 
-    @PutMapping("/health-facilities/{health-facility-id}/patients")
+    @PutMapping("/health-facilities/{health-facility-id}/patients/{patient-id}")
     @Authorized(resource = "patient", scope = "create")
     public CompletionStage<ResponseEntity<Void>> replacePatient(@PathVariable("health-facility-id") String healthFacilityID,
+                                                               @PathVariable("patient-id") String patientId,
                                                                @RequestBody ReplacePatientRequestBody replacePatientRequestBody) {
-        return patientService.replacePatient(replacePatientRequestBody.getOldMobileNo(), replacePatientRequestBody.getOldName(), replacePatientRequestBody.getOldDob(), Patient.fromRequestBody(replacePatientRequestBody))
+        return patientService.replacePatient(patientId, Patient.fromRequestBody(replacePatientRequestBody))
                 .thenApply(ResponseEntity::ok);
     }
 
@@ -94,15 +96,12 @@ public class PatientController {
     @Builder
     @Getter
     public static class ReplacePatientRequestBody {
-        private String oldMobileNo;
-        private String newMobileNo;
-        private String oldName;
-        private String newName;
+        private String name;
+        private String mobileNo;
+        private LocalDate dob;
+        private String gender;
         private String abhaNo;
         private String abhaAddress;
-        private LocalDate newDob;
-        private LocalDate oldDob;
-        private String gender;
     }
 
     @Builder

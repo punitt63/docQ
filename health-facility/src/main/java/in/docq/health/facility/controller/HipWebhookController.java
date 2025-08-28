@@ -11,22 +11,19 @@ import org.springframework.web.bind.annotation.*;
 import java.util.concurrent.CompletionStage;
 
 @RestController
-@RequestMapping("/api/v3/hip/token")
-public class HipGenerateTokenWebhookController {
-
-    private final HIPLinkingTokenService hipLinkingTokenService;
+@RequestMapping("/api/v3")
+public class HipWebhookController {
     private final CareContextService careContextService;
 
     @Autowired
-    public HipGenerateTokenWebhookController(HIPLinkingTokenService hipLinkingTokenService, CareContextService careContextService) {
-        this.hipLinkingTokenService = hipLinkingTokenService;
+    public HipWebhookController(CareContextService careContextService) {
         this.careContextService = careContextService;
     }
 
-    @PostMapping("/on-generate-token")
-    public CompletionStage<ResponseEntity<Void>> onGenerateToken(@RequestBody OnGenerateTokenRequest request) {
-        return hipLinkingTokenService.updateToken(request.getAbhaAddress(), request.getResponse().getRequestId(), request.getLinkToken())
-                .thenCompose(ignore -> careContextService.linkCareContext(request))
+    @PostMapping("/hip/token/on-generate-token")
+    public CompletionStage<ResponseEntity<Void>> onGenerateToken(@RequestHeader("X-HIP-ID") String healthFacilityId,
+                                                                 @RequestBody OnGenerateTokenRequest request) {
+        return careContextService.onGenerateLinkingToken(healthFacilityId, request)
                 .thenApply(ignore -> ResponseEntity.ok().build());
     }
 

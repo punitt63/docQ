@@ -9,14 +9,12 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import java.security.SecureRandom;
 import java.time.LocalDate;
-import java.util.Base64;
-import java.util.Date;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 @Builder(toBuilder = true)
 @Getter
 public class Patient {
+    private final String id;
     private final String abhaNo;
     private final String abhaAddress;
     private final String name;
@@ -28,16 +26,13 @@ public class Patient {
     private static final int GCM_TAG_LENGTH = 128;
     private static final int AES_KEY_SIZE = 256;
 
-    public String getId() {
-        return Optional.ofNullable(abhaAddress).orElse(mobileNo + "_" + name + "_" + dob);
-    }
-
     public boolean isAbhaOnboarded() {
         return Objects.nonNull(abhaAddress);
     }
 
     public static Patient fromRequestBody(PatientController.CreatePatientRequestBody requestBody) {
         return Patient.builder()
+                .id(UUID.randomUUID().toString())
                 .name(requestBody.getName())
                 .mobileNo(requestBody.getMobileNo())
                 .dob(requestBody.getDob())
@@ -122,9 +117,9 @@ public class Patient {
         return Patient.builder()
                 .abhaNo(requestBody.getAbhaNo())
                 .abhaAddress(requestBody.getAbhaAddress())
-                .name(requestBody.getNewName())
-                .mobileNo(requestBody.getNewMobileNo())
-                .dob(requestBody.getNewDob())
+                .name(requestBody.getName())
+                .mobileNo(requestBody.getMobileNo())
+                .dob(requestBody.getDob())
                 .gender(requestBody.getGender())
                 .build();
     }
