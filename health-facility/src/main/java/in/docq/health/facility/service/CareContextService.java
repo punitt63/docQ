@@ -8,6 +8,8 @@ import in.docq.abha.rest.client.model.*;
 import in.docq.health.facility.controller.HipWebhookController;
 import in.docq.health.facility.dao.CareContextDao;
 import in.docq.health.facility.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -17,12 +19,14 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 @Service
 public class CareContextService {
+    private static final Logger logger = LoggerFactory.getLogger(CareContextService.class);
     private final CareContextDao careContextDao;
     private final OPDService opdService;
     private final HealthFacilityService healthFacilityService;
@@ -129,7 +133,7 @@ public class CareContextService {
                                 .timestamp(timestamp)
                                 .notification(new SendSmsNotificationRequestNotification().phoneNo(patient.getMobileNo())
                                         .hip(new SendSmsNotificationRequestNotificationHip().id(careContext.getHealthFacilityId()).name(healthFacility.getFacilityName())))))
-                .thenApply(ignore -> careContext);
+                .thenApply(ignore -> careContext.toBuilder().notifyRequestId(requestId).build());
     }
 
     private CompletionStage<CareContext> linkCareContextToAbha(CareContext careContext, Patient patient, String linkingToken) {
@@ -145,7 +149,7 @@ public class CareContextService {
                                 .hiTypes(AbdmHipInitiatedLinkingHip1RequestPatientInner.HiTypesEnum.PRESCRIPTION)
                                 .count(BigDecimal.ONE)
                         ))))
-                .thenApply(ignore -> careContext.toBuilder().requestId(requestId).build());
+                .thenApply(ignore -> careContext.toBuilder().linkRequestId(requestId).build());
     }
 
     private CompletionStage<Void> linkCareContextToAbha(String healthFacilityId, String appointmentId, Patient patient, String linkingToken) {
@@ -165,9 +169,81 @@ public class CareContextService {
                         .appointmentID(appointmentId)
                         .healthFacilityId(healthFacilityId)
                         .patientId(patient.getId())
-                        .requestId(requestId)
+                        .linkRequestId(requestId)
                         .isLinked(false)
                         .isPatientNotified(false)
                         .build()));
+    }
+
+    public CompletionStage<Void> onLinkCareContext(HipWebhookController.OnLinkCareContextRequest request) {
+        if (request.getError() != null) {
+            logger.error("Care context linking failed - Code: {}, Message: {}, ABHA Address: {}, Request ID: {}",
+                    request.getError().getCode(),
+                    request.getError().getMessage(),
+                    request.getAbhaAddress(),
+                    request.getResponse() != null ? request.getResponse().getRequestId() : "N/A");
+            return CompletableFuture.completedFuture(null);
+        }
+        return patientService.getPatientByAbhaAddress(request.getAbhaAddress())
+                .thenCompose(patient -> careContextDao.getByLinkRequestId(request.getResponse().getRequestId())
+                        .thenCompose(careContextOpt -> {
+                            if(careContextOpt.isEmpty()) {
+                                logger.warn("No care context found for request: {}", request.getResponse().getRequestId());
+                                return completedFuture(null);
+                            }
+                            boolean isLinked = "SUCCESS".equalsIgnoreCase(request.getStatus());
+                            CareContext careContext = careContextOpt.get().toBuilder()
+                                    .isLinked(isLinked)
+                                    .build();
+                            return sendPatientNotification(careContext, patient)
+                                    .thenCompose(careContextDao::upsert);
+                        }))
+                        .exceptionally(throwable -> {
+                            logger.error("Failed to update care context link status for request: {}",
+                                    request.getResponse().getRequestId(), throwable);
+                            return null;
+                        });
+    }
+
+    public CompletionStage<Void> onSmsNotify(HipWebhookController.OnSmsNotifyRequest request) {
+        // Log error if present
+        if (request.getError() != null) {
+            logger.error("SMS notification failed - Code: {}, Message: {}, Request ID: {}",
+                    request.getError().getCode(),
+                    request.getError().getMessage(),
+                    request.getResponse() != null ? request.getResponse().getRequestId() : "N/A");
+            return CompletableFuture.completedFuture(null);
+        }
+
+        // Only proceed if acknowledgement indicates success
+        if (request.getAcknowledgement() == null ||
+                !"SUCCESS".equalsIgnoreCase(request.getAcknowledgement().getStatus())) {
+            logger.warn("SMS notification not successful - Status: {}, Request ID: {}",
+                    request.getAcknowledgement() != null ? request.getAcknowledgement().getStatus() : "N/A",
+                    request.getResponse() != null ? request.getResponse().getRequestId() : "N/A");
+            return CompletableFuture.completedFuture(null);
+        }
+
+        if (request.getResponse() == null || request.getResponse().getRequestId() == null) {
+            logger.warn("SMS notification callback missing request ID");
+            return CompletableFuture.completedFuture(null);
+        }
+
+        return careContextDao.getByNotifyRequestId(request.getResponse().getRequestId())
+                .thenCompose(careContextOpt -> {
+                    if(careContextOpt.isEmpty()) {
+                        logger.warn("No care context found for SMS notify request: {}", request.getResponse().getRequestId());
+                        return completedFuture(null);
+                    }
+                    CareContext careContext = careContextOpt.get().toBuilder()
+                            .isPatientNotified(true)
+                            .build();
+                    return careContextDao.upsert(careContext);
+                })
+                .exceptionally(throwable -> {
+            logger.error("Failed to update patient notification status for request: {}",
+                    request.getResponse().getRequestId(), throwable);
+            return null;
+        });
     }
 }

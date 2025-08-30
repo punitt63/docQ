@@ -27,12 +27,73 @@ public class HipWebhookController {
                 .thenApply(ignore -> ResponseEntity.ok().build());
     }
 
+    @PostMapping("/link/on_carecontext")
+    public CompletionStage<ResponseEntity<Void>> onLinkCareContext(@RequestBody OnLinkCareContextRequest request) {
+        return careContextService.onLinkCareContext(request)
+                .thenApply(ignore -> ResponseEntity.ok().build());
+    }
+
+    @PostMapping("/patients/sms/on-notify")
+    public CompletionStage<ResponseEntity<Void>> onSmsNotify(@RequestBody OnSmsNotifyRequest request) {
+        return careContextService.onSmsNotify(request)
+                .thenApply(ignore -> ResponseEntity.ok().build());
+    }
+
     @Builder
     @Getter
     public static class OnGenerateTokenRequest {
         private final String abhaAddress;
         private final String linkToken;
         private final Response response;
+
+        @Builder
+        @Getter
+        public static class Response {
+            private final String requestId;
+        }
+    }
+
+    @Builder
+    @Getter
+    public static class OnLinkCareContextRequest {
+        private final String abhaAddress;
+        private final String status;
+        private final Response response;
+        private final Error error;
+
+        @Builder
+        @Getter
+        public static class Response {
+            private final String requestId;
+        }
+
+        @Builder
+        @Getter
+        public static class Error {
+            private final String code;
+            private final String message;
+        }
+    }
+
+    @Builder
+    @Getter
+    public static class OnSmsNotifyRequest {
+        private final Acknowledgement acknowledgement;
+        private final Error error;
+        private final Response response;
+
+        @Builder
+        @Getter
+        public static class Acknowledgement {
+            private final String status;
+        }
+
+        @Builder
+        @Getter
+        public static class Error {
+            private final String code;
+            private final String message;
+        }
 
         @Builder
         @Getter

@@ -9,10 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.sql.Date;
-import java.sql.Timestamp;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -25,7 +21,8 @@ public class CareContextDao {
     private final String table = "care_context";
     private final String upsertCareContextQuery;
     private final String getCareContextQuery;
-    private final String getCareContextByRequestIdQuery;
+    private final String getCareContextByLinkRequestIdQuery;
+    private final String getCareContextByNotifyRequestIdQuery;
     private final Gson gson = new Gson();
     private final PostgresDAO postgresDAO;
 
@@ -37,11 +34,13 @@ public class CareContextDao {
                 " ON CONFLICT (appointment_id) DO UPDATE SET " +
                 "health_facility_id = EXCLUDED.health_facility_id, " +
                 "patient_id = EXCLUDED.patient_id, " +
-                "request_id = EXCLUDED.request_id, " +
+                "link_request_id = EXCLUDED.link_request_id, " +
                 "is_linked = EXCLUDED.is_linked, " +
-                "is_patient_notified = EXCLUDED.is_patient_notified";
+                "is_patient_notified = EXCLUDED.is_patient_notified, " +
+                "notify_request_id = EXCLUDED.notify_request_id";
         this.getCareContextQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE appointment_id = ?";
-        this.getCareContextByRequestIdQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE patient_id = ? and request_id = ?";
+        this.getCareContextByLinkRequestIdQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE link_request_id = ?";
+        this.getCareContextByNotifyRequestIdQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE notify_request_id = ?";
     }
 
     public CompletionStage<Void> upsert(CareContext careContext) {
@@ -49,9 +48,10 @@ public class CareContextDao {
                         careContext.getAppointmentID(),
                         careContext.getHealthFacilityId(),
                         careContext.getPatientId(),
-                        careContext.getRequestId(),
+                        careContext.getLinkRequestId(),
                         careContext.isLinked(),
-                        careContext.isPatientNotified())
+                        careContext.isPatientNotified(),
+                        careContext.getNotifyRequestId())
                 .thenAccept(ignore -> {});
     }
 
@@ -60,21 +60,35 @@ public class CareContextDao {
                 .appointmentID(rs.getString(Column.APPOINTMENT_ID.getColumnName()))
                 .healthFacilityId(rs.getString(Column.HEALTH_FACILITY_ID.getColumnName()))
                 .patientId(rs.getString(Column.PATIENT_ID.getColumnName()))
-                .requestId(rs.getString(Column.REQUEST_ID.getColumnName()))
+                .linkRequestId(rs.getString(Column.LINK_REQUEST_ID.getColumnName()))
                 .isLinked(rs.getBoolean(Column.IS_LINKED.getColumnName()))
                 .isPatientNotified(rs.getBoolean(Column.IS_PATIENT_NOTIFIED.getColumnName()))
+                .notifyRequestId(rs.getString(Column.NOTIFY_REQUEST_ID.getColumnName()))
                 .build(), appointmentID);
     }
 
-    public CompletionStage<Optional<CareContext>> getByRequestId(String patientId, String requestId) {
-        return postgresDAO.queryForOptionalObject(dbMetricsGroupName, "get", getCareContextByRequestIdQuery, (rs, rowNum) -> CareContext.builder()
+    public CompletionStage<Optional<CareContext>> getByLinkRequestId(String requestId) {
+        return postgresDAO.queryForOptionalObject(dbMetricsGroupName, "get", getCareContextByLinkRequestIdQuery, (rs, rowNum) -> CareContext.builder()
                 .appointmentID(rs.getString(Column.APPOINTMENT_ID.getColumnName()))
                 .healthFacilityId(rs.getString(Column.HEALTH_FACILITY_ID.getColumnName()))
                 .patientId(rs.getString(Column.PATIENT_ID.getColumnName()))
-                .requestId(rs.getString(Column.REQUEST_ID.getColumnName()))
+                .linkRequestId(rs.getString(Column.LINK_REQUEST_ID.getColumnName()))
                 .isLinked(rs.getBoolean(Column.IS_LINKED.getColumnName()))
                 .isPatientNotified(rs.getBoolean(Column.IS_PATIENT_NOTIFIED.getColumnName()))
-                .build(), patientId, requestId);
+                .notifyRequestId(rs.getString(Column.NOTIFY_REQUEST_ID.getColumnName()))
+                .build(), requestId);
+    }
+
+    public CompletionStage<Optional<CareContext>> getByNotifyRequestId(String requestId) {
+        return postgresDAO.queryForOptionalObject(dbMetricsGroupName, "get", getCareContextByNotifyRequestIdQuery, (rs, rowNum) -> CareContext.builder()
+                .appointmentID(rs.getString(Column.APPOINTMENT_ID.getColumnName()))
+                .healthFacilityId(rs.getString(Column.HEALTH_FACILITY_ID.getColumnName()))
+                .patientId(rs.getString(Column.PATIENT_ID.getColumnName()))
+                .linkRequestId(rs.getString(Column.LINK_REQUEST_ID.getColumnName()))
+                .isLinked(rs.getBoolean(Column.IS_LINKED.getColumnName()))
+                .isPatientNotified(rs.getBoolean(Column.IS_PATIENT_NOTIFIED.getColumnName()))
+                .notifyRequestId(rs.getString(Column.NOTIFY_REQUEST_ID.getColumnName()))
+                .build(), requestId);
     }
 
     public CompletionStage<Integer> truncate() {
@@ -85,9 +99,10 @@ public class CareContextDao {
         APPOINTMENT_ID("appointment_id", false),
         HEALTH_FACILITY_ID("health_facility_id", false),
         PATIENT_ID("patient_id", false),
-        REQUEST_ID("request_id", true),
+        LINK_REQUEST_ID("link_request_id", true),
         IS_LINKED("is_linked", true),
-        IS_PATIENT_NOTIFIED("is_patient_notified", true);
+        IS_PATIENT_NOTIFIED("is_patient_notified", true),
+        NOTIFY_REQUEST_ID("notify_request_id", true);
 
         @Getter
         private final String columnName;

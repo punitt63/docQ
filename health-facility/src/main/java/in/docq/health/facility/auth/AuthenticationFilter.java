@@ -83,6 +83,6 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
-        return path.endsWith("/health") || path.endsWith("/prometheus") || path.endsWith("/login") || path.endsWith("/on-generate-token");
+        return path.endsWith("/health") || path.endsWith("/prometheus") || path.endsWith("/login") || path.endsWith("/on-generate-token") || path.endsWith("/on_carecontext") || path.endsWith("/on-notify");
     }
 }

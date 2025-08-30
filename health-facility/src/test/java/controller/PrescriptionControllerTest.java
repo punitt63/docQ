@@ -121,7 +121,7 @@ public class PrescriptionControllerTest {
         assertEquals(1, abhaRestClient.sendDeepLinkNotificationCount);
         assertTrue(careContext.isPresent());
         assertEquals(nonAbhaPatient.getId(), careContext.get().getPatientId());
-        assertNull(careContext.get().getRequestId());
+        assertNull(careContext.get().getLinkRequestId());
         assertFalse(careContext.get().isLinked());
         assertFalse(careContext.get().isPatientNotified());
     }
@@ -157,7 +157,7 @@ public class PrescriptionControllerTest {
         assertTrue(hipLinkingToken.isPresent());
         assertTrue(careContext.isPresent());
         assertEquals(abhaPatient.getId(), careContext.get().getPatientId());
-        assertNull(careContext.get().getRequestId());
+        assertNull(careContext.get().getLinkRequestId());
         assertFalse(careContext.get().isLinked());
         assertFalse(careContext.get().isPatientNotified());
     }
@@ -197,7 +197,7 @@ public class PrescriptionControllerTest {
         assertEquals("{}", prescription.getContent());
         assertEquals(1, abhaRestClient.linkCareContextCount);
         assertTrue(careContext.isPresent());
-        assertNotNull(careContext.get().getRequestId());
+        assertNotNull(careContext.get().getLinkRequestId());
         assertEquals(abhaPatient.getId(), careContext.get().getPatientId());
         assertFalse(careContext.get().isLinked());
         assertFalse(careContext.get().isPatientNotified());

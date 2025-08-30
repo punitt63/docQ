@@ -126,10 +126,189 @@ public class HipWebhookControllerTest {
         // Verify care context linking was attempted
         assertEquals(1, abhaRestClient.linkCareContextCount);
         assertTrue(careContext.isPresent());
-        assertNotNull(careContext.get().getRequestId());
+        assertNotNull(careContext.get().getLinkRequestId());
         assertEquals(TEST_PATIENT_ID, careContext.get().getPatientId());
         assertFalse(careContext.get().isLinked());
         assertFalse(careContext.get().isPatientNotified());
+    }
+
+    @Test
+    public void testOnLinkCareContextSuccess() throws Exception {
+        // Create ABHA patient
+        Patient patient = Patient.builder()
+                .id(TEST_PATIENT_ID)
+                .name("Test Patient")
+                .mobileNo("9876543210")
+                .gender("M")
+                .dob(LocalDate.of(1990, 1, 1))
+                .abhaAddress(TEST_ABHA_ADDRESS)
+                .abhaNo("91536782361862")
+                .build();
+        patientDao.insert(patient).toCompletableFuture().join();
+
+        // Create care context
+        CareContext careContext = CareContext.builder()
+                .appointmentID("123")
+                .healthFacilityId(testHealthFacilityID)
+                .patientId(TEST_PATIENT_ID)
+                .linkRequestId(TEST_REQUEST_ID)
+                .isLinked(false)
+                .isPatientNotified(false)
+                .build();
+        careContextDao.upsert(careContext).toCompletableFuture().join();
+
+        // Create request
+        HipWebhookController.OnLinkCareContextRequest request =
+                HipWebhookController.OnLinkCareContextRequest.builder()
+                        .abhaAddress(TEST_ABHA_ADDRESS)
+                        .status("SUCCESS")
+                        .response(HipWebhookController.OnLinkCareContextRequest.Response.builder()
+                                .requestId(TEST_REQUEST_ID)
+                                .build())
+                        .build();
+
+        // Execute request
+        handleAsyncProcessing(mockMvc.perform(post("/api/v3/link/on_carecontext")
+                .content(gson.toJson(request))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+
+        // Verify care context was marked as linked
+        Optional<CareContext> updatedCareContext = careContextDao.getByLinkRequestId(TEST_REQUEST_ID)
+                .toCompletableFuture().join();
+        assertTrue(updatedCareContext.isPresent());
+        assertTrue(updatedCareContext.get().isLinked());
+        assertEquals(1, abhaRestClient.sendDeepLinkNotificationCount);
+    }
+
+    @Test
+    public void testOnLinkCareContextFailure() throws Exception {
+        // Create ABHA patient
+        Patient patient = Patient.builder()
+                .id(TEST_PATIENT_ID)
+                .name("Test Patient")
+                .mobileNo("9876543210")
+                .gender("M")
+                .dob(LocalDate.of(1990, 1, 1))
+                .abhaAddress(TEST_ABHA_ADDRESS)
+                .abhaNo("91536782361862")
+                .build();
+        patientDao.insert(patient).toCompletableFuture().join();
+
+        // Create care context
+        CareContext careContext = CareContext.builder()
+                .appointmentID("123")
+                .healthFacilityId(testHealthFacilityID)
+                .patientId(TEST_PATIENT_ID)
+                .linkRequestId(TEST_REQUEST_ID)
+                .isLinked(false)
+                .isPatientNotified(false)
+                .build();
+        careContextDao.upsert(careContext).toCompletableFuture().join();
+
+        // Create request with error
+        HipWebhookController.OnLinkCareContextRequest request =
+                HipWebhookController.OnLinkCareContextRequest.builder()
+                        .abhaAddress(TEST_ABHA_ADDRESS)
+                        .status("FAILED")
+                        .response(HipWebhookController.OnLinkCareContextRequest.Response.builder()
+                                .requestId(TEST_REQUEST_ID)
+                                .build())
+                        .error(HipWebhookController.OnLinkCareContextRequest.Error.builder()
+                                .code("ABDM-1038")
+                                .message("ABHA address and Link token mismatch")
+                                .build())
+                        .build();
+
+        // Execute request
+        handleAsyncProcessing(mockMvc.perform(post("/api/v3/link/on_carecontext")
+                .content(gson.toJson(request))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+
+        // Verify care context remains unlinked (error should be logged but not processed)
+        Optional<CareContext> updatedCareContext = careContextDao.getByLinkRequestId(TEST_REQUEST_ID)
+                .toCompletableFuture().join();
+        assertTrue(updatedCareContext.isPresent());
+        assertFalse(updatedCareContext.get().isLinked());
+        assertEquals(0, abhaRestClient.sendDeepLinkNotificationCount);
+    }
+
+    @Test
+    public void testOnSmsNotifySuccess() throws Exception {
+        // Create care context with notify request ID
+        CareContext careContext = CareContext.builder()
+                .appointmentID(TEST_APPOINTMENT_ID)
+                .healthFacilityId(testHealthFacilityID)
+                .patientId(TEST_PATIENT_ID)
+                .linkRequestId(TEST_REQUEST_ID)
+                .isLinked(true)
+                .isPatientNotified(false)
+                .notifyRequestId("notify-request-123")
+                .build();
+        careContextDao.upsert(careContext).toCompletableFuture().join();
+
+        // Create request
+        HipWebhookController.OnSmsNotifyRequest request =
+                HipWebhookController.OnSmsNotifyRequest.builder()
+                        .acknowledgement(HipWebhookController.OnSmsNotifyRequest.Acknowledgement.builder()
+                                .status("SUCCESS")
+                                .build())
+                        .response(HipWebhookController.OnSmsNotifyRequest.Response.builder()
+                                .requestId("notify-request-123")
+                                .build())
+                        .build();
+
+        // Execute request
+        handleAsyncProcessing(mockMvc.perform(post("/api/v3/patients/sms/on-notify")
+                .content(gson.toJson(request))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+
+        // Verify patient notification status was updated
+        Optional<CareContext> updatedCareContext = careContextDao.getByNotifyRequestId("notify-request-123")
+                .toCompletableFuture().join();
+        assertTrue(updatedCareContext.isPresent());
+        assertTrue(updatedCareContext.get().isPatientNotified());
+    }
+
+    @Test
+    public void testOnSmsNotifyFailure() throws Exception {
+        // Create care context with notify request ID
+        CareContext careContext = CareContext.builder()
+                .appointmentID(TEST_APPOINTMENT_ID)
+                .healthFacilityId(testHealthFacilityID)
+                .patientId(TEST_PATIENT_ID)
+                .linkRequestId(TEST_REQUEST_ID)
+                .isLinked(true)
+                .isPatientNotified(false)
+                .notifyRequestId("notify-request-456")
+                .build();
+        careContextDao.upsert(careContext).toCompletableFuture().join();
+
+        // Create request with error
+        HipWebhookController.OnSmsNotifyRequest request =
+                HipWebhookController.OnSmsNotifyRequest.builder()
+                        .error(HipWebhookController.OnSmsNotifyRequest.Error.builder()
+                                .code("ABDM-1024")
+                                .message("Dependent service unavailable")
+                                .build())
+                        .response(HipWebhookController.OnSmsNotifyRequest.Response.builder()
+                                .requestId("notify-request-456")
+                                .build())
+                        .build();
+
+        // Execute request
+        handleAsyncProcessing(mockMvc.perform(post("/api/v3/patients/sms/on-notify")
+                .content(gson.toJson(request))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+
+        // Verify patient notification status remains unchanged
+        Optional<CareContext> updatedCareContext = careContextDao.getByNotifyRequestId("notify-request-456")
+                .toCompletableFuture().join();
+        assertTrue(updatedCareContext.isPresent());
+        assertFalse(updatedCareContext.get().isPatientNotified());
     }
 
     protected ResultActions handleAsyncProcessing(ResultActions resultActions) throws Exception {
