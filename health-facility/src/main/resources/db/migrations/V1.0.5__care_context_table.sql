@@ -13,4 +13,8 @@ CREATE TABLE care_context (
     CONSTRAINT notify_request_unique UNIQUE (notify_request_id)
 );
 
+CREATE TRIGGER update_care_context_timestamp
+BEFORE UPDATE ON care_context
+FOR EACH ROW EXECUTE FUNCTION update_modified_column();
+
 CREATE INDEX care_context_linked_idx ON care_context (health_facility_id, patient_id, is_linked);

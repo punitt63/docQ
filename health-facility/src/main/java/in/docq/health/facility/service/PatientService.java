@@ -10,9 +10,9 @@ import in.docq.health.facility.model.Patient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 @Service
@@ -26,8 +26,8 @@ public class PatientService {
         this.patientDao = patientDao;
     }
 
-    public CompletionStage<List<Patient>> searchPatients(String mobileNo) {
-        return patientDao.searchByMobile(mobileNo);
+    public CompletionStage<List<Patient>> list(String abhaAddress, String mobileNo, java.time.LocalDate dob, String gender) {
+        return patientDao.list(abhaAddress, mobileNo, dob, gender);
     }
 
     public CompletionStage<Patient> getPatient(String patientId) {
@@ -36,6 +36,10 @@ public class PatientService {
 
     public CompletionStage<Patient> getPatientByAbhaAddress(String abhaAddress) {
         return patientDao.getByAbhaAddress(abhaAddress);
+    }
+
+    public CompletionStage<Optional<Patient>> getPatientByAbhaAddressOptional(String abhaAddress) {
+        return patientDao.getByAbhaAddressOptional(abhaAddress);
     }
 
     public CompletionStage<Patient> createPatient(Patient patient) {

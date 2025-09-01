@@ -40,7 +40,7 @@ public class AbhaRestClient {
     private final AbhaAddressVerificationApi abhaAddressVerificationApi;
     private final AbhaProfileApi abhaProfileApi;
     private final HIPInitiatedLinkingApi hipInitiatedLinkingApi;
-
+    private final UserInitiatedLinkingHipApi userInitiatedLinkingHipApi;
     private final HealthFacilitySearchApi healthFacilitySearchApi;
     private final HealthProfessionalSearchApi healthProfessionalSearchApi;
     private final MultipleHrpApiApi multipleHrpApiApi;
@@ -63,6 +63,7 @@ public class AbhaRestClient {
         this.gatewaySessionApi = new GatewaySessionApi(apiClient);
         this.multipleHrpApiApi = new MultipleHrpApiApi(apiClient);
         this.hipInitiatedLinkingApi = new HIPInitiatedLinkingApi(apiClient);
+        this.userInitiatedLinkingHipApi = new UserInitiatedLinkingHipApi(apiClient);
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.tokenCache = CacheBuilder.newBuilder()
@@ -367,5 +368,15 @@ public class AbhaRestClient {
     public CompletionStage<Void> linkHIPInitiatedCareContext(String requestId, String timestamp, String xCmId, String xHipId, String xLinkToken, AbdmHipInitiatedLinkingHip1Request abdmHipInitiatedLinkingHip1Request) {
         return getAccessToken()
                 .thenCompose(token -> hipInitiatedLinkingApi.linkCareContextAsync(token, requestId, timestamp, xCmId, xHipId, xLinkToken, abdmHipInitiatedLinkingHip1Request));
+    }
+
+    public CompletionStage<Void> linkUserInitiatedCareContext(String requestId, String timestamp, String xCmId, String xHiuId, AbdmUserInitiatedLinking2Request abdmUserInitiatedLinking2Request) {
+        return getAccessToken()
+                .thenCompose(token -> userInitiatedLinkingHipApi.userInitiatedLinkingAsync(token, requestId, timestamp, xCmId, xHiuId, abdmUserInitiatedLinking2Request));
+    }
+
+    public CompletionStage<Void> initiateUserLinking(String requestId, String timestamp, String xCmId, String xHiuId, AbdmUserInitiatedLinking4Request abdmUserInitiatedLinking4Request) {
+        return getAccessToken()
+                .thenCompose(token -> userInitiatedLinkingHipApi.abdmUserInitiatedLinking4Async(token, requestId, timestamp, xCmId, abdmUserInitiatedLinking4Request));
     }
 }

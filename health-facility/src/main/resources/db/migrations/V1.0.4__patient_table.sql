@@ -9,4 +9,10 @@ CREATE TABLE patient (
     CONSTRAINT patient_pkey PRIMARY KEY (id),
     CONSTRAINT patient_mob_name_dob_idx UNIQUE (mobile_no, name, dob),
     CONSTRAINT abha_address_idx UNIQUE (abha_address)
+    created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TRIGGER update_patient_timestamp
+BEFORE UPDATE ON patient
+FOR EACH ROW EXECUTE FUNCTION update_modified_column();

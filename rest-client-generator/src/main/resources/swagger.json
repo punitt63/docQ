@@ -1,8 +1,8 @@
 {
   "openapi": "3.0.2",
   "info": {
-    "title": "HIP Initiated Linking Service",
-    "version": "1.0.2"
+    "title": "User Initiated Linking Service",
+    "version": "3.0"
   },
   "servers": [
     {
@@ -35,14 +35,294 @@
     }
   },
   "paths": {
-    "/api/hiecm/hip/v3/link/carecontext": {
+    "<callback_url>/api/v3/hip/patient/care-context/discover": {
       "post": {
         "tags": [
-          "abdm-hip-initiated-linking-hip"
+          "abdm-user-initiated-linking-hip"
         ],
-        "operationId": "abdm-hip-initiated-linking-hip 1",
-        "summary": "This API will be used to perform HIP initiated linking.",
-        "description": " <p><b>Note: </b>While generating the link-token the user/patient is providing both abha_number and abha_address, then at the time of linking both must be mandatory. If not one should be mandatory either 'abha_number' or 'abha_address'.</p><br><p> This API endpoint is utilized by the Ayushman Bharat Digital Mission (ABDM) system to store care context or health record references. Upon successful validation of the ABHA (Ayushman Bharat Health Account) address and the associated link token, the system securely records the relevant care context information. This process ensures that health records are accurately linked and accessible, facilitating efficient and seamless health information exchange across the network. The API plays a critical role in maintaining the integrity and continuity of patient health records, thereby supporting comprehensive and coordinated care.",
+        "operationId": "abdm-user-initiated-linking 1",
+        "summary": "This API endpoint is used to discover care contexts associated with a patient. It allows healthcare information providers (HIPs) to retrieve and manage patient care context information.",
+        "description": "The discover API endpoint facilitates the discovery of care contexts linked to a specific patient. When a request is made to this endpoint, it returns detailed information about the patient, including verified and unverified identifiers, ensuring accurate patient identification and continuity of care.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "REQUEST-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "18235d89-cb13-479d-ad71-7a57d5f669a8",
+            "description": "Unique UUID for track the end to end request transaction"
+          },
+          {
+            "name": "TIMESTAMP",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "2022-10-06T15:10:00.587Z",
+            "description": "Actual time of the request was initiated, ISO 8601 represents date and time by starting with the year, followed by the month, the day, the hour, the minutes, seconds and milliseconds."
+          },
+          {
+            "name": "X-HIP-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "IN2810014366",
+            "description": "Identifier of the health information provider to which the request was intended"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "transactionId",
+                  "patient"
+                ],
+                "properties": {
+                  "transactionId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true,
+                    "example": "f901b782-bfdf-4224-9f8d-da2cadc20c0d",
+                    "description": "UUID"
+                  },
+                  "patient": {
+                    "type": "object",
+                    "nullable": false,
+                    "required": [
+                      "id",
+                      "verifiedIdentifiers",
+                      "name",
+                      "gender",
+                      "yearOfBirth"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "nullable": false,
+                        "example": "abc@abdm",
+                        "description": "A patient identifier with which patient is registered in the facility/hospital"
+                      },
+                      "verifiedIdentifiers": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "type",
+                            "value"
+                          ],
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "MR",
+                                "MOBILE",
+                                "ABHA_NUMBER",
+                                "ABHA_ADDRESS",
+                                "EMAIL"
+                              ],
+                              "nullable": false,
+                              "example": "MR"
+                            },
+                            "value": {
+                              "type": "string",
+                              "nullable": false,
+                              "example": "+919876543210",
+                              "description": "Allows alphanumeric characters and special characters like \"^(\\\\+)?[a-zA-Z0-9_\\\\-@,. ]{0,255}$\"."
+                            }
+                          }
+                        }
+                      },
+                      "unverifiedIdentifiers": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "type",
+                            "value"
+                          ],
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "MR",
+                                "MOBILE",
+                                "ABHA_NUMBER",
+                                "ABHA_ADDRESS",
+                                "EMAIL"
+                              ],
+                              "nullable": false,
+                              "example": "MOBILE"
+                            },
+                            "value": {
+                              "type": "string",
+                              "nullable": false,
+                              "example": "+9198765*****",
+                              "description": "Allows alphanumeric characters and special characters like \"^(\\\\+)?[a-zA-Z0-9_\\\\-@,. ]{0,255}$\"."
+                            }
+                          }
+                        }
+                      },
+                      "name": {
+                        "type": "string",
+                        "nullable": false,
+                        "example": "Abdul Kalam"
+                      },
+                      "gender": {
+                        "type": "string",
+                        "enum": [
+                          "M",
+                          "F",
+                          "O",
+                          "D",
+                          "T",
+                          "U"
+                        ],
+                        "nullable": false,
+                        "example": "M"
+                      },
+                      "yearOfBirth": {
+                        "type": "number",
+                        "nullable": false,
+                        "example": 9999
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "example": "ABDM-1103: "
+                        },
+                        "message": {
+                          "type": "string",
+                          "example": "Duplicate Discovery request"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "example": "900901"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid Credentials"
+                    },
+                    "description": {
+                      "type": "string",
+                      "example": "Invalid Credentials. Make sure you have provided the correct security credentials"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Access Denied"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error -> It is just one example, for every api the path will be changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "timestamp",
+                    "path",
+                    "status",
+                    "error",
+                    "requestId"
+                  ],
+                  "properties": {
+                    "timestamp": {
+                      "type": "number",
+                      "example": 1731557446506
+                    },
+                    "path": {
+                      "type": "string",
+                      "example": "/api/v3/hiecm/user-initiated-linking/patient/care-context/discover"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 500
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": " Internal Server Error"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "example": "d20b575b-2659"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hiecm/user-initiated-linking/v3/patient/care-context/on-discover": {
+      "post": {
+        "tags": [
+          "abdm-user-initiated-linking-hip"
+        ],
+        "operationId": "abdm-user-initiated-linking 2",
+        "summary": "HMIS/LIMS/HIP has to ensure that only unlinked records of the patient has to be shared through this API.",
+        "description": "This API endpoint is invoked by the Hospital Management Information System (HMIS) or Laboratory Information Management System (LIMS) or HIP application to share the response of the /api/hiecm/user-initiated-linking/v3/patient/care-context/on-discover API. It facilitates the communication of discovered health records back to the patient or user. By using this API, the HMIS/LIMS application ensures that the patient’s health information is accurately and promptly shared, supporting efficient and transparent health information exchange. This process is crucial for maintaining the integrity and continuity of patient care, enabling patients to have comprehensive access to their health records.",
         "security": [
           {
             "bearerAuth": []
@@ -80,24 +360,14 @@
             "description": "Suffix of the consent manager to which the request was intended"
           },
           {
-            "name": "X-HIP-ID",
+            "name": "X-HIU-ID",
             "in": "header",
             "required": true,
             "schema": {
               "type": "string"
             },
             "example": "IN2810014366",
-            "description": "Identifier of the health information provider to which the request was intended"
-          },
-          {
-            "name": "X-LINK-TOKEN",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "example": "eyJhbGciOiJSUzUxMiJ9.eyJzdWIiOiJ2YXNhbnRoYWt1bWFyLmtlc2F2"
-            },
-            "description": "JWT Authentication token which was issued by ABDM after successful validation of username and password"
+            "description": "Identifier of the health information user to which the request was intended"
           }
         ],
         "requestBody": {
@@ -106,22 +376,20 @@
             "application/json": {
               "schema": {
                 "type": "object",
+                "description": "In the request body, either ‘patient’ or ‘error’ must be included.<br> <ol type='a'><br/> <li>Incase of success scenario, patient is mandatory and error is optional</li> <li>In case of failure scenario, error is mandatory and patient is optional</li> <li>response is mandatory object in both the cases</li> </ol> ",
                 "required": [
-                  "abhaAddress",
-                  "patient"
+                  "transactionId",
+                  "patient",
+                  "matchedBy",
+                  "response"
                 ],
                 "properties": {
-                  "abhaNumber": {
-                    "type": "number",
-                    "nullable": true,
-                    "example": 12345678901234,
-                    "description": "The abha number of the patient. Should be only 14 digit and it allows numeric character like ^\\\\d{14}$"
-                  },
-                  "abhaAddress": {
+                  "transactionId": {
                     "type": "string",
+                    "format": "uuid",
                     "nullable": false,
-                    "example": "abc@abdm",
-                    "description": "The abha address of the patient. Should start with Alphanumeric . and  _  in the middle and must be ending with @abdm or @sbx also allows alpha numeric character and special characters like ^[a-zA-Z0-9][a-zA-Z0-9_.]+[a-zA-Z0-9]@(abdm|sbx)$"
+                    "example": "f901b782-bfdf-4224-9f8d-da2cadc20c0d",
+                    "description": "UUID from discover request callback to track the entire user link flow"
                   },
                   "patient": {
                     "type": "array",
@@ -132,25 +400,24 @@
                         "referenceNumber",
                         "display",
                         "careContexts",
-                        "hiTypes",
+                        "hiType",
                         "count"
                       ],
                       "properties": {
                         "referenceNumber": {
                           "type": "string",
                           "nullable": false,
-                          "example": "TMH-PUID-001",
-                          "description": "Patient identifier with which patient is registered in the facility/hospital or patient can also pass his abha_address in the reference number. Allows alpha numeric character and special characters like ^[a-zA-Z0-9_\\-@,. \"':|()/]{0,255}$"
+                          "example": "abc123@sbx",
+                          "description": "A patient identifier with which patient is registered in the facility/hospital.Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. ()/:\\\\\\\\]{0,255}$\""
                         },
                         "display": {
                           "type": "string",
                           "nullable": false,
-                          "example": "String",
-                          "description": "The display text for patient reference(regex:^[a-zA-Z0-9_\\-@,. \"':|()/]{0,255}$)"
+                          "example": 12345,
+                          "description": "Display text for patient reference. Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\""
                         },
                         "careContexts": {
                           "type": "array",
-                          "nullable": false,
                           "items": {
                             "type": "object",
                             "required": [
@@ -161,20 +428,21 @@
                               "referenceNumber": {
                                 "type": "string",
                                 "nullable": false,
-                                "example": "TMH-PUID-001",
-                                "description": "An identifier of patient's care context created in HIP. A care context is a group of patient's health data (Not the actual health data) and it should be unique for each care-context.Allows alpha numeric character and special characters like ^[a-zA-Z0-9_\\-@,. ()/:\\\\]{0,255}$"
+                                "example": "abc123",
+                                "description": "An identifier of patient's care context created in HIP. A care context is a group of patient's health data (Not the actual health data).Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. ()/:\\\\\\\\]{0,255}$\""
                               },
                               "display": {
                                 "type": "string",
-                                "nullable": false,
-                                "example": "display 1",
-                                "description": "The display text for care context reference(regex:^[a-zA-Z0-9_\\-@,. \"':|()/]{0,255}$)"
+                                "nullable": true,
+                                "example": 12345,
+                                "description": "Display text for care context reference. Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\""
                               }
                             }
                           }
                         },
-                        "hiTypes": {
+                        "hiType": {
                           "type": "string",
+                          "nullable": false,
                           "enum": [
                             "Prescription",
                             "DiagnosticReport",
@@ -185,17 +453,73 @@
                             "WellnessRecord",
                             "Invoice"
                           ],
-                          "nullable": false,
-                          "example": "DiagnosticReport"
+                          "example": "Prescription",
+                          "description": "The health information type"
                         },
                         "count": {
-                          "type": "number",
+                          "type": "integer",
                           "nullable": false,
                           "example": 1,
-                          "description": "The count should match with the number of care contexts"
+                          "description": "The count should match the number of care contexts in the payload"
                         }
                       }
                     }
+                  },
+                  "matchedBy": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "MR",
+                        "MOBILE",
+                        "ABHA_NUMBER",
+                        "ABHA_ADDRESS"
+                      ],
+                      "nullable": false,
+                      "example": "MR",
+                      "description": "Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\""
+                    }
+                  },
+                  "error": {
+                    "type": "object",
+                    "nullable": false,
+                    "required": [
+                      "code",
+                      "message"
+                    ],
+                    "properties": {
+                      "code": {
+                        "type": "string",
+                        "nullable": false,
+                        "example": "ABDM-9999",
+                        "description": "The ABDM error code. Allows alpha numeric character and special characters like ^[a-zA-Z0-9_\\-@,. \":]{0,255}$"
+                      },
+                      "message": {
+                        "type": "string",
+                        "nullable": false,
+                        "example": "error message",
+                        "description": "The appropriate error message. Allows alpha numeric character and special characters like ^[a-zA-Z0-9_\\-@,. \":]{0,255}$"
+                      }
+                    }
+                  },
+                  "response": {
+                    "type": "object",
+                    "nullable": false,
+                    "required": [
+                      "requestId"
+                    ],
+                    "properties": {
+                      "requestId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": false,
+                        "minimum": 36,
+                        "maximum": 50,
+                        "example": "f29f0e59-8388-4698-9fe6-05db67aeac46",
+                        "description": "The request id that was passed"
+                      }
+                    },
+                    "description": "The request id is from the /discover callback. Allows alpha numeric characters and special characters like \"^[0-9a-fA-F]{8}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{12}\""
                   }
                 }
               }
@@ -221,12 +545,12 @@
                       ],
                       "properties": {
                         "code": {
-                          "type": "string",
-                          "example": "ABDM-1006: "
+                          "type": "integer",
+                          "example": "ABDM-1106: "
                         },
                         "message": {
                           "type": "string",
-                          "example": "Bad Request, invalid request Body"
+                          "example": "Duplicate On discovery request"
                         }
                       }
                     }
@@ -244,15 +568,15 @@
                   "properties": {
                     "code": {
                       "type": "string",
-                      "example": "900902"
+                      "example": "900901"
                     },
                     "message": {
                       "type": "string",
-                      "example": "Unauthorized"
+                      "example": "Invalid Credentials"
                     },
                     "description": {
                       "type": "string",
-                      "example": "Invalid Credentials. Make sure your API invocation call has a header: 'Authorization : Bearer ACCESS_TOKEN' or 'Authorization : Basic ACCESS_TOKEN' or 'apikey: API_KEY'"
+                      "example": "Invalid Credentials. Make sure you have provided the correct security credentials"
                     }
                   }
                 }
@@ -270,49 +594,40 @@
               }
             }
           },
-          "404": {
-            "description": "server cannot find the requested resource",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": [
-                        "code",
-                        "message"
-                      ],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "example": "ABDM-1001: "
-                        },
-                        "message": {
-                          "type": "string",
-                          "example": "No data found"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "500": {
-            "description": "Internal Server Error",
+            "description": "Internal Server Error -> It is just one example, for every api the path will be changed.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "timestamp",
+                    "path",
+                    "status",
+                    "error",
+                    "requestId"
+                  ],
                   "properties": {
-                    "code": {
-                      "type": "string",
-                      "example": "ABDM-9999: "
+                    "timestamp": {
+                      "type": "number",
+                      "example": 1731557446506
                     },
-                    "message": {
+                    "path": {
                       "type": "string",
-                      "example": "Unknown exception"
+                      "example": "/api/v3/hiecm/user-initiated-linking/patient/care-context/discover"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 500
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": " Internal Server Error"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "example": "d20b575b-2659",
+                      "description": "The request id from discover call back .Allows alpha numeric characters and special characters like \"^[0-9a-fA-F]{8}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{12}\""
                     }
                   }
                 }
@@ -322,14 +637,14 @@
         }
       }
     },
-    "<callback_url>/api/v3/link/on_carecontext": {
+    "<callback_url>/api/v3/hip/link/care-context/init": {
       "post": {
         "tags": [
-          "abdm-hip-initiated-linking-hip"
+          "abdm-user-initiated-linking-hip"
         ],
-        "operationId": "hip-initiated-linking 2",
-        "summary": "This API endpoint is a callback API that will be called by HIE-CM. The response will be received after it is triggered on the HIP side at /api/hiecm/hip/v3/link/carecontext.",
-        "description": "This API endpoint serves as a callback for the /api/hiecm/hip/v3/link/carecontext API. It is used to communicate the outcome of the care context linking process. The response will vary based on the success or failure of the linking operation: <br><br/> <ol> <li>If the linking is successful, pass the successful message </li> <li>If the linking is unsuccessful, pass the error message with the error code and message </li> </ol>",
+        "operationId": "abdm-user-initiated-linking 3",
+        "summary": "This API endpoint is used to initiate the linking of care contexts for a patient. It allows healthcare information providers (HIPs) to link patient care contexts with their ABHA (Ayushman Bharat Health Account) address.",
+        "description": "The init API endpoint facilitates the initial linking of care contexts to a patient’s ABHA address. When a request is made to this endpoint, it returns a response containing the transaction ID, ABHA address, patient details, and any errors encountered. This ensures that patient care contexts are accurately linked and managed within the healthcare system.<br> <ol type='a'><b>Note:</b><br><il>Incase of success, HIP will get the patient details in the callback.</il><br><il>In case of failure, HIP will get the error response in the callback.</il></ol>",
         "security": [
           {
             "bearerAuth": []
@@ -355,368 +670,6 @@
             },
             "example": "2022-10-06T15:10:00.587Z",
             "description": "Actual time of the request was initiated, ISO 8601 represents date and time by starting with the year, followed by the month, the day, the hour, the minutes, seconds and milliseconds"
-          },
-          {
-            "name": "X-HIP-ID",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "example": "IN2810014366",
-            "description": "Identifier of the health information provider to which the request was intended"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "required": [
-                      "abhaAddress",
-                      "status",
-                      "response"
-                    ],
-                    "properties": {
-                      "abhaAddress": {
-                        "type": "string",
-                        "nullable": false,
-                        "example": "abc@abdm"
-                      },
-                      "status": {
-                        "type": "string",
-                        "enum": [
-                          "Successfully Linked care context",
-                          "Failed to link care context",
-                          "invalid   [invalid request]"
-                        ],
-                        "nullable": false,
-                        "example": "Successfully Linked care context"
-                      },
-                      "response": {
-                        "type": "object",
-                        "nullable": false,
-                        "required": [
-                          "requestId"
-                        ],
-                        "properties": {
-                          "requestId": {
-                            "type": "string",
-                            "format": "uuid",
-                            "nullable": false,
-                            "example": "6f0b4665-a915-4c92-aa36-65afb4a2cd71",
-                            "description": "The requestId that was passed"
-                          }
-                        }
-                      }
-                    }
-                  },
-                  {
-                    "type": "object",
-                    "required": [
-                      "error",
-                      "message"
-                    ],
-                    "properties": {
-                      "error": {
-                        "type": "object",
-                        "nullable": false,
-                        "required": [
-                          "code",
-                          "message"
-                        ],
-                        "properties": {
-                          "code": {
-                            "type": "string",
-                            "nullable": false,
-                            "example": "ABDM-1038"
-                          },
-                          "message": {
-                            "type": "string",
-                            "nullable": false,
-                            "example": "ABHA address and Link token mismatch"
-                          }
-                        }
-                      },
-                      "response": {
-                        "type": "object",
-                        "nullable": false,
-                        "required": [
-                          "requestId"
-                        ],
-                        "properties": {
-                          "requestId": {
-                            "type": "string",
-                            "format": "uuid",
-                            "nullable": false,
-                            "example": "6f0b4665-a915-4c92-aa36-65afb4a2cd71",
-                            "description": "The requestId that was passed"
-                          }
-                        }
-                      }
-                    }
-                  },
-                  {
-                    "type": "object",
-                    "required": [
-                      "error",
-                      "message"
-                    ],
-                    "properties": {
-                      "error": {
-                        "type": "object",
-                        "nullable": false,
-                        "required": [
-                          "code",
-                          "message"
-                        ],
-                        "properties": {
-                          "code": {
-                            "type": "string",
-                            "nullable": false,
-                            "example": "ABDM-1037"
-                          },
-                          "message": {
-                            "type": "string",
-                            "nullable": false,
-                            "example": "Counter and Care context count mismatch"
-                          }
-                        }
-                      },
-                      "response": {
-                        "type": "object",
-                        "nullable": false,
-                        "required": [
-                          "requestId"
-                        ],
-                        "properties": {
-                          "requestId": {
-                            "type": "string",
-                            "format": "uuid",
-                            "nullable": false,
-                            "example": "6f0b4665-a915-4c92-aa36-65afb4a2cd71",
-                            "description": "The requestId that was passed"
-                          }
-                        }
-                      }
-                    }
-                  },
-                  {
-                    "type": "object",
-                    "required": [
-                      "error",
-                      "message"
-                    ],
-                    "properties": {
-                      "error": {
-                        "type": "object",
-                        "nullable": false,
-                        "required": [
-                          "code",
-                          "message"
-                        ],
-                        "properties": {
-                          "code": {
-                            "type": "string",
-                            "nullable": false,
-                            "example": "ABDM-1024"
-                          },
-                          "message": {
-                            "type": "string",
-                            "nullable": false,
-                            "example": "Dependent service unavailable"
-                          }
-                        }
-                      },
-                      "response": {
-                        "type": "object",
-                        "nullable": false,
-                        "required": [
-                          "requestId"
-                        ],
-                        "properties": {
-                          "requestId": {
-                            "type": "string",
-                            "format": "uuid",
-                            "nullable": false,
-                            "example": "6f0b4665-a915-4c92-aa36-65afb4a2cd71",
-                            "description": "The requestId that was passed"
-                          }
-                        }
-                      }
-                    }
-                  }
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": [
-                        "code",
-                        "message"
-                      ],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "example": "ABDM-1006: "
-                        },
-                        "message": {
-                          "type": "string",
-                          "example": "Bad Request, invalid request Body"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string",
-                      "example": "900902"
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    },
-                    "description": {
-                      "type": "string",
-                      "example": "Invalid Credentials. Make sure your API invocation call has a header: 'Authorization : Bearer ACCESS_TOKEN' or 'Authorization : Basic ACCESS_TOKEN' or 'apikey: API_KEY'"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string",
-                  "example": "Access Denied"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "server cannot find the requested resource",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": [
-                        "code",
-                        "message"
-                      ],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "example": "ABDM-1001: "
-                        },
-                        "message": {
-                          "type": "string",
-                          "example": "No data found"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string",
-                      "example": "ABDM-9999: "
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Unknown exception"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/hiecm/hip/v3/link/context/notify": {
-      "post": {
-        "tags": [
-          "abdm-hip-initiated-linking-hip"
-        ],
-        "operationId": "abdm-hip-initiated-linking-hip 3",
-        "summary": "This API will be used to notify CM about any update on the already linked care context for a patient.",
-        "description": "This API endpoint is used to notify the Consent Management (CM) system about any updates HiTypes of the  already linked care context for a patient. By invoking this API, Health Information Providers (HIPs) can inform the CM system of changes or updates to the patient’s care context, ensuring that the most current and accurate health information is maintained. This process is crucial for the integrity and synchronization of patient health records across the network, supporting seamless and efficient health information exchange.",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "REQUEST-ID",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "example": "18235d89-cb13-479d-ad71-7a57d5f669a8",
-            "description": "Unique UUID for track the end to end request transaction"
-          },
-          {
-            "name": "TIMESTAMP",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "example": "2022-10-06T15:10:00.587Z",
-            "description": "Actual time of the request was initiated, ISO 8601 represents date and time by starting with the year, followed by the month, the day, the hour, the minutes, seconds and milliseconds"
-          },
-          {
-            "name": "X-CM-ID",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "example": "sbx",
-            "description": "Suffix of the consent manager to which the request was intended"
           },
           {
             "name": "X-HIP-ID",
@@ -735,60 +688,75 @@
             "application/json": {
               "schema": {
                 "type": "object",
+                "description": "In the request body, either ‘patient’ or ‘error’ must be included.<br> <ol type='a'><br/> <li>Incase of success scenario,patient is mandatory and error is optional</li> <li>Incase of failure scenario,error is mandatory and patient is optional</li></ol> ",
                 "required": [
-                  "notification"
+                  "transactionId",
+                  "abhaAddress",
+                  "patient"
                 ],
                 "properties": {
-                  "notification": {
-                    "type": "object",
-                    "required": [
-                      "patient",
-                      "careContext",
-                      "hiTypes",
-                      "hip",
-                      "date"
-                    ],
-                    "properties": {
-                      "patient": {
-                        "type": "object",
-                        "required": [
-                          "id"
-                        ],
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "nullable": false,
-                            "example": "sample@sbx",
-                            "description": "The abha address of the patient"
-                          }
-                        }
-                      },
-                      "careContext": {
-                        "type": "object",
-                        "required": [
-                          "patientReference",
-                          "careContextReference"
-                        ],
-                        "properties": {
-                          "patientReference": {
-                            "type": "string",
-                            "nullable": false,
-                            "example": "sample@sbx",
-                            "description": "\"A patient identifier with which patient is registered in the facility/hospital\""
-                          },
-                          "careContextReference": {
-                            "type": "string",
-                            "nullable": false,
-                            "example": "b009a970-8b04-4779-abd1-b50f113245bf",
-                            "description": "An identifier of patient's care context created in HIP. A care context is a group of patient's health data (Not the actual health data)"
-                          }
-                        }
-                      },
-                      "hiTypes": {
-                        "type": "array",
-                        "description": "Type of health data that created in the care context",
-                        "items": {
+                  "transactionId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": false,
+                    "example": "f901b782-bfdf-4224-9f8d-da2cadc20c0d"
+                  },
+                  "abhaAddress": {
+                    "type": "string",
+                    "nullable": false,
+                    "example": "sample@sbx",
+                    "description": "A patient identifier with which patient is registered in the facility/hospital.Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\-@,. ()/:\\\\]{0,255}$\""
+                  },
+                  "patient": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "referenceNumber",
+                        "display",
+                        "careContexts",
+                        "hiType"
+                      ],
+                      "properties": {
+                        "referenceNumber": {
                           "type": "string",
+                          "nullable": false,
+                          "example": "abc123",
+                          "description": "A patient identifier with which patient is registered in the facility/hospital. Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\-@,. ()/:\\\\]{0,255}$\""
+                        },
+                        "display": {
+                          "type": "string",
+                          "nullable": false,
+                          "example": "Test",
+                          "description": "The display text of patient.Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\""
+                        },
+                        "careContexts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "referenceNumber",
+                              "display"
+                            ],
+                            "properties": {
+                              "referenceNumber": {
+                                "type": "string",
+                                "nullable": false,
+                                "example": "abc123",
+                                "description": "An identifier of patient's care context created in HIP. A care context is a group of patient's health data (Not the actual health data).Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\-@,. ()/:\\\\]{0,255}$\""
+                              },
+                              "display": {
+                                "type": "string",
+                                "nuallable": false,
+                                "example": "Blood Test",
+                                "description": "The display of care context.Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\""
+                              }
+                            }
+                          }
+                        },
+                        "hiType": {
+                          "type": "string",
+                          "nullable": false,
                           "enum": [
                             "Prescription",
                             "DiagnosticReport",
@@ -799,231 +767,15 @@
                             "WellnessRecord",
                             "Invoice"
                           ],
+                          "example": "Prescription",
+                          "description": "The health information type"
+                        },
+                        "count": {
+                          "type": "integer",
                           "nullable": false,
-                          "example": "DiagnosticReport"
+                          "example": 1,
+                          "description": "The count should match the number of care contexts in the payload"
                         }
-                      },
-                      "date": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": false,
-                        "example": "2024-05-09T10:34:00.387Z",
-                        "description": "This should be a UTC Date & Time in ISO format"
-                      },
-                      "hip": {
-                        "type": "object",
-                        "required": [
-                          "id",
-                          "name",
-                          "type"
-                        ],
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "nullable": false,
-                            "example": "ABDM_HIP",
-                            "description": "The service ID of the health information provider"
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "202": {
-            "description": "Accepted"
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": [
-                        "code",
-                        "message"
-                      ],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "example": "ABDM-1006: "
-                        },
-                        "message": {
-                          "type": "string",
-                          "example": "Bad Request, invalid request Body"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string",
-                      "example": "900902"
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    },
-                    "description": {
-                      "type": "string",
-                      "example": "Invalid Credentials. Make sure your API invocation call has a header: 'Authorization : Bearer ACCESS_TOKEN' or 'Authorization : Basic ACCESS_TOKEN' or 'apikey: API_KEY'"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string",
-                  "example": "Access Denied"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "server cannot find the requested resource",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": [
-                        "code",
-                        "message"
-                      ],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "example": "ABDM-1001: "
-                        },
-                        "message": {
-                          "type": "string",
-                          "example": "No data found"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string",
-                      "example": "ABDM-9999: "
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Unknown exception"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "<callback_url>/api/v3/links/context/on-notify": {
-      "post": {
-        "tags": [
-          "abdm-hip-initiated-linking-hip"
-        ],
-        "operationId": "hip-initiated-linking 3",
-        "summary": "This API endpoint is a call back API for /api/hiecm/hip/v3/link/context/notify used to notify the HIP.",
-        "description": "This API endpoint is a call back API for /api/hiecm/hip/v3/link/context/notify <br><br/> <ol> <li>If the notification to CM is successful, pass the successful message </li> <li>If the notification to CMis unsuccessful, pass the error message with the error code and message </li> </ol>",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "REQUEST-ID",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "example": "18235d89-cb13-479d-ad71-7a57d5f669a8",
-            "description": "Unique UUID for track the end to end request transaction"
-          },
-          {
-            "name": "TIMESTAMP",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "example": "2022-10-06T15:10:00.587Z",
-            "description": "Actual time of the request was initiated, ISO 8601 represents date and time by starting with the year, followed by the month, the day, the hour, the minutes, seconds and milliseconds"
-          },
-          {
-            "name": "X-HIP-ID",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "example": "IN2810014366",
-            "description": "Identifier of the health information provider to which the request was intended"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "description": "In the request body, either ‘acknowledgement’ or ‘error’ must be included.<br> <ol type='a'><br/> <li>Incase of success scenario,acknowledgement is mandatory and error is optional </li> <li>Incase of failure scenario,error is mandatory and acknowledgment is optional</li> <li>response is mandatory object in both the cases</li> </ol>",
-                "required": [
-                  "acknowledgement",
-                  "response"
-                ],
-                "properties": {
-                  "acknowledgement": {
-                    "type": "object",
-                    "required": [
-                      "status"
-                    ],
-                    "properties": {
-                      "status": {
-                        "type": "string",
-                        "nullable": false,
-                        "enum": [
-                          "SUCCESS",
-                          "ERRORED"
-                        ],
-                        "example": "SUCCESS"
                       }
                     }
                   },
@@ -1038,28 +790,14 @@
                       "code": {
                         "type": "string",
                         "nullable": false,
-                        "example": "ABDM-1006: "
+                        "example": "ABDM-1001",
+                        "description": "The ABDM error code"
                       },
                       "message": {
                         "type": "string",
                         "nullable": false,
-                        "example": "No links found for the patient in the given HIP"
-                      }
-                    }
-                  },
-                  "response": {
-                    "type": "object",
-                    "nullable": false,
-                    "required": [
-                      "requestId"
-                    ],
-                    "properties": {
-                      "requestId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "nullable": false,
-                        "example": "6f0b4665-a915-4c92-aa36-65afb4a2cd71",
-                        "description": "The requestId that was passed"
+                        "example": "error message",
+                        "description": "The appropriate error message"
                       }
                     }
                   }
@@ -1070,214 +808,360 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request",
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": [
-                        "code",
-                        "message"
-                      ],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "example": "ABDM-1006: "
-                        },
-                        "message": {
-                          "type": "string",
-                          "example": "Bad Request, invalid request Body"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
+                    "transactionId": {
                       "type": "string",
-                      "example": "900902"
+                      "example": "992242c9-6628-412e-b323-681e612e188c"
                     },
-                    "message": {
+                    "abhaAddress": {
                       "type": "string",
-                      "example": "Unauthorized"
+                      "example": "nithishjanithi@sbx"
                     },
-                    "description": {
-                      "type": "string",
-                      "example": "Invalid Credentials. Make sure your API invocation call has a header: 'Authorization : Bearer ACCESS_TOKEN' or 'Authorization : Basic ACCESS_TOKEN' or 'apikey: API_KEY'"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string",
-                  "example": "Access Denied"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "server cannot find the requested resource",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": [
-                        "code",
-                        "message"
-                      ],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "example": "ABDM-1001: "
-                        },
-                        "message": {
-                          "type": "string",
-                          "example": "No data found"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string",
-                      "example": "ABDM-9999: "
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Unknown exception"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/hiecm/hip/v3/link/patient/links/sms/notify2": {
-      "post": {
-        "tags": [
-          "abdm-hip-initiated-linking-hip"
-        ],
-        "operationId": "abdm-hip-initiated-linking-hip 4",
-        "summary": "This API will be used by HIP to send SMS notification to patient that a care context is linked.",
-        "description": "This API endpoint is utilized by Health Information Providers (HIPs) to send SMS notifications to patients, informing them that a care context has been successfully linked to their ABHA (Ayushman Bharat Health Account) address. By invoking this API, HIPs can ensure that patients are promptly notified about the linkage of their health records, enhancing transparency and patient engagement. This notification process is essential for keeping patients informed and involved in the management of their health information, thereby supporting a more connected and responsive healthcare system.",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "REQUEST-ID",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "example": "18235d89-cb13-479d-ad71-7a57d5f669a8",
-            "description": "Unique UUID for track the end to end request transaction"
-          },
-          {
-            "name": "TIMESTAMP",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "example": "2022-10-06T15:10:00.587Z",
-            "description": "Actual time of the request was initiated, ISO 8601 represents date and time by starting with the year, followed by the month, the day, the hour, the minutes, seconds and milliseconds"
-          },
-          {
-            "name": "X-CM-ID",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "example": "sbx",
-            "description": "Suffix of the consent manager to which the request was intended"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "notification"
-                ],
-                "properties": {
-                  "notification": {
-                    "type": "object",
-                    "required": [
-                      "phoneNo",
-                      "hip"
-                    ],
-                    "properties": {
-                      "phoneNo": {
-                        "type": "string",
-                        "nullable": false,
-                        "example": "986543***",
-                        "description": "The mobile number to send SMS"
-                      },
-                      "hip": {
+                    "patient": {
+                      "type": "array",
+                      "items": {
                         "type": "object",
-                        "required": [
-                          "id",
-                          "name"
-                        ],
                         "properties": {
-                          "id": {
+                          "referenceNumber": {
                             "type": "string",
-                            "nullable": false,
-                            "example": "ABDM_HIP",
-                            "description": "The service ID of the health information provider"
+                            "example": "nithishjanithi@sbx"
                           },
-                          "name": {
+                          "careContexts": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "referenceNumber": {
+                                  "type": "string",
+                                  "example": "New test 1"
+                                }
+                              }
+                            }
+                          },
+                          "hiType": {
                             "type": "string",
-                            "nullable": false,
-                            "example": "ABC Hospital",
-                            "description": "The name of the health information provider"
+                            "example": "OPConsultation"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "example": 1
                           }
                         }
                       }
                     }
+                  }
+                },
+                "examples": {
+                  "Success": {
+                    "value": {
+                      "transactionId": "c1ce50dc-d1f7-4a31-987a-c6bf6d08ad5a",
+                      "abhaAddress": "nithishjanithi@sbx",
+                      "patient": [
+                        {
+                          "referenceNumber": "nithishjanithi@sbx",
+                          "careContexts": [
+                            {
+                              "referenceNumber": "New test 1"
+                            }
+                          ],
+                          "hiType": "OPConsultation",
+                          "count": 1
+                        }
+                      ]
+                    }
+                  },
+                  "Already Linked": {
+                    "value": {
+                      "transactionId": "992242c9-6628-412e-b323-681e612e188c",
+                      "error": {
+                        "code": "ABDM-1056",
+                        "message": "This care context has already been linked"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "example": "ABDM-1104: "
+                        },
+                        "message": {
+                          "type": "string",
+                          "example": "Duplicate Init request"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "example": "900901"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid Credentials"
+                    },
+                    "description": {
+                      "type": "string",
+                      "example": "Invalid Credentials. Make sure you have provided the correct security credentials"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Access Denied"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error -> It is just one example, for every api the path will be changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "timestamp",
+                    "path",
+                    "status",
+                    "error",
+                    "requestId"
+                  ],
+                  "properties": {
+                    "timestamp": {
+                      "type": "number",
+                      "example": 1731557446506
+                    },
+                    "path": {
+                      "type": "string",
+                      "example": "/api/v3/hiecm/user-initiated-linking/patient/care-context/discover"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 500
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": " Internal Server Error"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "example": "d20b575b-2659",
+                      "description": "The request id that was passed.Allows alpha numeric characters and special characters like \"^[0-9a-fA-F]{8}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{12}\""
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hiecm/user-initiated-linking/v3/link/care-context/on-init": {
+      "post": {
+        "tags": [
+          "abdm-user-initiated-linking-hip"
+        ],
+        "operationId": "abdm-user-initiated-linking 4",
+        "summary": "As a result of the initialization, HIP has to generate a unique reference-number in the link object which is called as link-reference-number and it has to trigger a OTP (token) to the patient's mobile number that is present with the HIP/HMIS/LIMS which will be provided back to HIP for validation during confirm request flow.",
+        "description": "This API endpoint is invoked by the Health Information Provider (HIP) to share the response of the /api/hiecm/user-initiated-linking/v3/link/care-context/on-init API. By using this API, the HIP communicates the outcome of the care context linking process, ensuring that the system accurately reflects the status of the operation. This process is essential for maintaining the integrity and synchronization of patient health records, supporting seamless and efficient health information exchange within the healthcare ecosystem.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "REQUEST-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "18235d89-cb13-479d-ad71-7a57d5f669a8",
+            "description": "Unique UUID for track the end to end request transaction"
+          },
+          {
+            "name": "TIMESTAMP",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "2022-10-06T15:10:00.587Z",
+            "description": "Actual time of the request was initiated, ISO 8601 represents date and time by starting with the year, followed by the month, the day, the hour, the minutes, seconds and milliseconds"
+          },
+          {
+            "name": "X-CM-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "sbx",
+            "description": "Suffix of the consent manager to which the request was intended"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "In the request body, either ‘link’ or ‘error’ must be included.<br> <ol type='a'><br/> <li>link is mandatory and error should be null</li> <li>error is mandatory and patient should be null</li><li>response is mandatory object in both the cases</li></ol> ",
+                "required": [
+                  "transactionId",
+                  "link",
+                  "response"
+                ],
+                "properties": {
+                  "transactionId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true,
+                    "example": "f901b782-bfdf-4224-9f8d-da2cadc20c0d",
+                    "description": "UUID from discover request callback to track the entire user link flow."
+                  },
+                  "link": {
+                    "type": "object",
+                    "nullable": false,
+                    "required": [
+                      "referenceNumber",
+                      "authenticationType",
+                      "meta"
+                    ],
+                    "properties": {
+                      "referenceNumber": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": false,
+                        "example": "d353b782-bfdf-4224-9f8d-da2cadc20c0d",
+                        "description": "The link reference number. Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. ()/:\\\\\\\\]{0,255}$\""
+                      },
+                      "authenticationType": {
+                        "type": "string",
+                        "enum": [
+                          "DIRECT",
+                          "MEDIATED"
+                        ],
+                        "nullable": false,
+                        "example": "DIRECT",
+                        "description": "The type of authentication.Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\""
+                      },
+                      "meta": {
+                        "type": "object",
+                        "nullable": false,
+                        "required": [
+                          "communicationMedium",
+                          "communicationHint",
+                          "communicationExpiry"
+                        ],
+                        "properties": {
+                          "communicationMedium": {
+                            "type": "string",
+                            "enum": [
+                              "MOBILE",
+                              "EMAIL"
+                            ],
+                            "nullable": false,
+                            "example": "MOBILE",
+                            "description": "The communication medium. Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\""
+                          },
+                          "communicationHint": {
+                            "type": "string",
+                            "nullable": true,
+                            "example": "OTP",
+                            "description": "The communication hint. Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\""
+                          },
+                          "communicationExpiry": {
+                            "type": "string",
+                            "format": "iso-date-time",
+                            "nullable": false,
+                            "example": "2024-05-01T05:22:34.123Z",
+                            "description": "The communication expiry date. Should be UTC date in ISO format. Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\""
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "error": {
+                    "type": "object",
+                    "nullable": true,
+                    "required": [
+                      "code",
+                      "message"
+                    ],
+                    "properties": {
+                      "code": {
+                        "type": "string",
+                        "nullable": false,
+                        "example": "ABDM-1001",
+                        "description": "The ABDM error code. Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\""
+                      },
+                      "message": {
+                        "type": "string",
+                        "nullable": false,
+                        "example": "error message",
+                        "description": "The appropriate error message. Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\""
+                      }
+                    }
+                  },
+                  "response": {
+                    "type": "object",
+                    "nullable": false,
+                    "required": [
+                      "requestId"
+                    ],
+                    "properties": {
+                      "requestId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": false,
+                        "minimum": 36,
+                        "maximum": 50,
+                        "example": "f29f0e59-8388-4698-9fe6-05db67aeac46",
+                        "description": "The request id that was passed"
+                      }
+                    },
+                    "description": "The request id is from the link/init callback. Allows alpha numeric characters and special characters like \"^[0-9a-fA-F]{8}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{12}\""
                   }
                 }
               }
@@ -1303,12 +1187,12 @@
                       ],
                       "properties": {
                         "code": {
-                          "type": "string",
-                          "example": "ABDM-1006: "
+                          "type": "integer",
+                          "example": "ABDM-1107: "
                         },
                         "message": {
                           "type": "string",
-                          "example": "Bad Request, invalid request Body"
+                          "example": "Duplicate On init request"
                         }
                       }
                     }
@@ -1326,15 +1210,15 @@
                   "properties": {
                     "code": {
                       "type": "string",
-                      "example": "900902"
+                      "example": "900901"
                     },
                     "message": {
                       "type": "string",
-                      "example": "Unauthorized"
+                      "example": "Invalid Credentials"
                     },
                     "description": {
                       "type": "string",
-                      "example": "Invalid Credentials. Make sure your API invocation call has a header: 'Authorization : Bearer ACCESS_TOKEN' or 'Authorization : Basic ACCESS_TOKEN' or 'apikey: API_KEY'"
+                      "example": "Invalid Credentials. Make sure you have provided the correct security credentials"
                     }
                   }
                 }
@@ -1352,49 +1236,40 @@
               }
             }
           },
-          "404": {
-            "description": "server cannot find the requested resource",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": [
-                        "code",
-                        "message"
-                      ],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "example": "ABDM-1001: "
-                        },
-                        "message": {
-                          "type": "string",
-                          "example": "No data found"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "500": {
-            "description": "Internal Server Error",
+            "description": "Internal Server Error -> It is just one example, for every api the path will be changed.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "timestamp",
+                    "path",
+                    "status",
+                    "error",
+                    "requestId"
+                  ],
                   "properties": {
-                    "code": {
-                      "type": "string",
-                      "example": "ABDM-9999: "
+                    "timestamp": {
+                      "type": "number",
+                      "example": 1731557446506
                     },
-                    "message": {
+                    "path": {
                       "type": "string",
-                      "example": "Unknown exception"
+                      "example": "/api/v3/hiecm/user-initiated-linking/patient/care-context/discover"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 500
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": " Internal Server Error"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "example": "d20b575b-2659",
+                      "description": "The request id from discover call back .Allows alpha numeric characters and special characters like \"^[0-9a-fA-F]{8}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{12}\""
                     }
                   }
                 }
@@ -1404,14 +1279,14 @@
         }
       }
     },
-    "<callback_url>/api/v3/patients/sms/on-notify": {
+    "<callback_url>/api/v3/hip/link/care-context/confirm": {
       "post": {
         "tags": [
-          "abdm-hip-initiated-linking-hip"
+          "abdm-user-initiated-linking-hip"
         ],
-        "operationId": "hip-initiated-linking 5",
-        "summary": "This API endpoint is a call back API for /api/hiecm/hip/v3/link/patient/links/sms/notify2",
-        "description": "This API endpoint is a call back API for /api/hiecm/hip/v3/link/patient/links/sms/notify2 <br><br/> <ol> <li>If the SMS trigger is successful, pass the successful message </li> <li>If the SMS trigger is unsuccessful, pass the error message with the error code and message </li> </ol>",
+        "operationId": "abdm-user-initiated-linking 5",
+        "summary": "This API endpoint is used to confirm the linking of care contexts for a patient. It allows healthcare information providers (HIPs) to verify the linking process using a confirmation token.",
+        "description": "The confirm API endpoint facilitates the confirmation of care context linking for a patient. When a request is made to this endpoint, it verifies the linking process using a provided token and reference number. This ensures that the care contexts are accurately linked to the patient’s ABHA (Ayushman Bharat Health Account) address.",
         "security": [
           {
             "bearerAuth": []
@@ -1455,62 +1330,29 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "description": "In the request body, either ‘acknowledgement’ or ‘error’ must be included.<br> <ol type='a'><br/> <li>Incase of success scenario,acknowledgement is mandatory and error is optional </li> <li>Incase of failure scenario,error is mandatory and acknowledgment is optional</li> <li>response is mandatory object in both the cases</li> </ol>",
                 "required": [
-                  "acknowledgement",
-                  "response"
+                  "confirmation"
                 ],
                 "properties": {
-                  "acknowledgement": {
+                  "confirmation": {
                     "type": "object",
                     "required": [
-                      "status"
+                      "token",
+                      "linkRefNumber"
                     ],
                     "properties": {
-                      "status": {
-                        "type": "string",
+                      "token": {
+                        "type": "integer",
                         "nullable": false,
-                        "enum": [
-                          "SUCCESS",
-                          "ERRORED"
-                        ],
-                        "example": "SUCCESS"
-                      }
-                    }
-                  },
-                  "error": {
-                    "type": "object",
-                    "nullable": true,
-                    "required": [
-                      "code",
-                      "message"
-                    ],
-                    "properties": {
-                      "code": {
-                        "type": "string",
-                        "nullable": false,
-                        "example": "ABDM-1024"
+                        "example": 123456,
+                        "description": "The token number. Must be 6 digit and contain only 0-9"
                       },
-                      "message": {
-                        "type": "string",
-                        "nullable": false,
-                        "example": "Dependent service unavailable"
-                      }
-                    }
-                  },
-                  "response": {
-                    "type": "object",
-                    "nullable": false,
-                    "required": [
-                      "requestId"
-                    ],
-                    "properties": {
-                      "requestId": {
+                      "linkRefNumber": {
                         "type": "string",
                         "format": "uuid",
                         "nullable": false,
-                        "example": "6f0b4665-a915-4c92-aa36-65afb4a2cd71",
-                        "description": "The requestId that was passed"
+                        "example": "d353b782-bfdf-4224-9f8d-da2cadc20c0d",
+                        "description": "The link reference number random uuid. Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\""
                       }
                     }
                   }
@@ -1538,12 +1380,12 @@
                       ],
                       "properties": {
                         "code": {
-                          "type": "string",
-                          "example": "ABDM-1006: "
+                          "type": "integer",
+                          "example": "ABDM-1105: "
                         },
                         "message": {
                           "type": "string",
-                          "example": "Bad Request, invalid request Body"
+                          "example": "Duplicate Confirm request"
                         }
                       }
                     }
@@ -1561,15 +1403,15 @@
                   "properties": {
                     "code": {
                       "type": "string",
-                      "example": "900902"
+                      "example": "900901"
                     },
                     "message": {
                       "type": "string",
-                      "example": "Unauthorized"
+                      "example": "Invalid Credentials"
                     },
                     "description": {
                       "type": "string",
-                      "example": "Invalid Credentials. Make sure your API invocation call has a header: 'Authorization : Bearer ACCESS_TOKEN' or 'Authorization : Basic ACCESS_TOKEN' or 'apikey: API_KEY'"
+                      "example": "Invalid Credentials. Make sure you have provided the correct security credentials"
                     }
                   }
                 }
@@ -1587,49 +1429,40 @@
               }
             }
           },
-          "404": {
-            "description": "server cannot find the requested resource",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": [
-                        "code",
-                        "message"
-                      ],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "example": "ABDM-1001: "
-                        },
-                        "message": {
-                          "type": "string",
-                          "example": "No data found"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "500": {
-            "description": "Internal Server Error",
+            "description": "Internal Server Error -> It is just one example, for every api the path will be changed.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "timestamp",
+                    "path",
+                    "status",
+                    "error",
+                    "requestId"
+                  ],
                   "properties": {
-                    "code": {
-                      "type": "string",
-                      "example": "ABDM-9999: "
+                    "timestamp": {
+                      "type": "number",
+                      "example": 1731557446506
                     },
-                    "message": {
+                    "path": {
                       "type": "string",
-                      "example": "Unknown exception"
+                      "example": "/api/v3/hiecm/user-initiated-linking/patient/care-context/discover"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 500
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": " Internal Server Error"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "example": "d20b575b-2659",
+                      "description": "The request id that was passed.Allows alpha numeric characters and special characters like \"^[0-9a-fA-F]{8}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{12}\""
                     }
                   }
                 }
@@ -1639,14 +1472,14 @@
         }
       }
     },
-    "/api/hiecm/hip/v3/link/patient/links": {
-      "get": {
+    "/api/hiecm/user-initiated-linking/v3/link/care-context/on-confirm": {
+      "post": {
         "tags": [
-          "abdm-hip-initiated-linking-phr"
+          "abdm-user-initiated-linking-hip"
         ],
-        "operationId": "abdm-hip-initiated-linking-hip 2",
-        "summary": "This API will be used to fetch all linked care contexts from all HIPs for a patient.",
-        "description": "This API endpoint is designed to retrieve all linked care contexts for a patient from various Health Information Providers (HIPs). By invoking this API, users can obtain a comprehensive list of care contexts associated with a patient’s ABHA (Ayushman Bharat Health Account) address. This functionality is essential for ensuring that all relevant health records are accessible and consolidated, thereby supporting coordinated and efficient patient care. The API facilitates seamless health information exchange, enhancing the overall quality and continuity of care within the healthcare ecosystem.",
+        "operationId": "abdm-user-initiated-linking 6",
+        "summary": "This API will be invoked by the HIP for sharing the response of /api/hiecm/user-initiated-linking/v3/link/care-context/on-confirm API",
+        "description": "This API endpoint is invoked by the Health Information Provider (HIP) to share the response of the /api/hiecm/user-initiated-linking/v3/link/care-context/on-confirm API. By using this API, the HIP communicates the outcome of the care context confirmation process, ensuring that the system accurately reflects the status of the operation. This process is essential for maintaining the integrity and synchronization of patient health records, supporting seamless and efficient health information exchange within the healthcare ecosystem. <br><ol type=\"a\"><li>In case of success scenario, patient object is mandatory and error object is optional</li>\n              <br>\n              <li>In case of error scenario, error object is mandatory and patient object is optional</li>\n              <br>\n              <li>Response is mandatory in both scenarios</li>\n    </ol>",
         "security": [
           {
             "bearerAuth": []
@@ -1682,118 +1515,779 @@
             },
             "example": "sbx",
             "description": "Suffix of the consent manager to which the request was intended"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "In the request body, either ‘patient’ or ‘error’ must be included.<br> <ol type='a'><br/> <li>Incase of success scenario,patient is mandatory and error is optional</li> <li>Incase of failure scenario,error is mandatory and patient is optional</li><li>response is mandatory object in both the cases</li></ol> ",
+                "required": [
+                  "patient",
+                  "response"
+                ],
+                "properties": {
+                  "patient": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "referenceNumber",
+                        "display",
+                        "careContexts",
+                        "hiType",
+                        "count"
+                      ],
+                      "properties": {
+                        "referenceNumber": {
+                          "type": "string",
+                          "nullable": false,
+                          "example": "abc123@sbx",
+                          "description": "A patient identifier with which patient is registered in the facility/hospital.Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. ()/:\\\\\\\\]{0,255}$\"\n"
+                        },
+                        "display": {
+                          "type": "string",
+                          "nullable": true,
+                          "example": 12345,
+                          "description": "Display text for patient reference. Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\""
+                        },
+                        "careContexts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "referenceNumber",
+                              "display"
+                            ],
+                            "properties": {
+                              "referenceNumber": {
+                                "type": "string",
+                                "nullable": false,
+                                "example": "abc123",
+                                "description": "An identifier of patient's care context created in HIP. A care context is a group of patient's health data (Not the actual health data).Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. ()/:\\\\\\\\]{0,255}$\"\n"
+                              },
+                              "display": {
+                                "type": "string",
+                                "nullable": true,
+                                "example": 12345,
+                                "description": "Display text for care context reference. Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\"\n"
+                              }
+                            }
+                          }
+                        },
+                        "hiType": {
+                          "type": "string",
+                          "nullable": false,
+                          "enum": [
+                            "Prescription",
+                            "DiagnosticReport",
+                            "OPConsultation",
+                            "DischargeSummary",
+                            "ImmunizationRecord",
+                            "HealthDocumentRecord",
+                            "WellnessRecord",
+                            "Invoice"
+                          ],
+                          "example": "Prescription",
+                          "description": "The health information type"
+                        },
+                        "count": {
+                          "type": "integer",
+                          "nullable": false,
+                          "example": 1,
+                          "description": "The count should match the number of care contexts in the payload\n"
+                        }
+                      }
+                    }
+                  },
+                  "error": {
+                    "type": "object",
+                    "nullable": true,
+                    "required": [
+                      "code",
+                      "message"
+                    ],
+                    "properties": {
+                      "code": {
+                        "type": "string",
+                        "nullable": false,
+                        "example": "ABDM-1001",
+                        "description": "The ABDM error code"
+                      },
+                      "message": {
+                        "type": "string",
+                        "nullable": false,
+                        "example": "error message",
+                        "description": "The appropriate error message"
+                      }
+                    }
+                  },
+                  "response": {
+                    "type": "object",
+                    "nullable": false,
+                    "required": [
+                      "requestId"
+                    ],
+                    "properties": {
+                      "requestId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": false,
+                        "minimum": 36,
+                        "maximum": 50,
+                        "example": "f29f0e59-8388-4698-9fe6-05db67aeac46",
+                        "description": "The request id that was passed"
+                      }
+                    },
+                    "description": "The request id is from the link/confirm callback. Allows alpha numeric characters and special characters like \"^[0-9a-fA-F]{8}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{12}\""
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "example": "ABDM-1108: "
+                        },
+                        "message": {
+                          "type": "string",
+                          "example": "Duplicate On confirm request"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "example": "900901"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid Credentials"
+                    },
+                    "description": {
+                      "type": "string",
+                      "example": "Invalid Credentials. Make sure you have provided the correct security credentials"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Access Denied"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error -> It is just one example, for every api the path will be changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "timestamp",
+                    "path",
+                    "status",
+                    "error",
+                    "requestId"
+                  ],
+                  "properties": {
+                    "timestamp": {
+                      "type": "number",
+                      "example": 1731557446506
+                    },
+                    "path": {
+                      "type": "string",
+                      "example": "/api/v3/hiecm/user-initiated-linking/patient/care-context/discover"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 500
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": " Internal Server Error"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "example": "d20b575b-2659"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hiecm/user-initiated-linking/v3/patient/care-context/discover": {
+      "post": {
+        "tags": [
+          "abdm-user-initiated-linking-phr"
+        ],
+        "operationId": "abdm-user-initiated-linking-phr 1",
+        "summary": "This API will be invoked by the patient/user from PHR application to discover his/her health records.",
+        "description": "This API endpoint is designed to be invoked by the patient or user through the Personal Health Record (PHR) application to discover their health records. By using this API, patients can initiate a search to locate and access their health information across various Health Information Providers (HIPs). This functionality empowers patients to have greater control and visibility over their health data, facilitating a more informed and engaged approach to managing their health. The API supports the seamless retrieval of health records, ensuring that patients can easily discover and review their care contexts.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "REQUEST-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "18235d89-cb13-479d-ad71-7a57d5f669a8",
+            "description": "Unique UUID for track the end to end request transaction"
+          },
+          {
+            "name": "TIMESTAMP",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "2022-10-06T15:10:00.587Z",
+            "description": "Actual time of the request was initiated, ISO 8601 represents date and time by starting with the year, followed by the month, the day, the hour, the minutes, seconds and milliseconds"
+          },
+          {
+            "name": "X-CM-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "sbx",
+            "description": "Suffix of the consent manager to which the request was intended"
+          },
+          {
+            "name": "X-HIU-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "IN2810014366",
+            "description": "Identifier of the health information user to which the request was intended"
           },
           {
             "name": "X-AUTH-TOKEN",
             "in": "header",
             "required": true,
+            "description": "JWT Authentication token which was issued by ABDM after successful validation of username and password",
             "schema": {
-              "type": "string"
-            },
-            "description": "JWT Authentication token which was issued by ABDM after successful validation of username and password"
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            },
-            "description": "Limit the number of records returned. Send -1 to get all the links of the patient."
+              "type": "string",
+              "format": "bearer",
+              "minimum": 1,
+              "maximum": 100,
+              "example": "eyJhbGciOiJSUzUxMiJ9.eyJzdWIiOiJ2YXNhbnRoYWt1bWFyLmtlc2F2"
+            }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "hip",
+                  "unverifiedIdentifiers"
+                ],
+                "properties": {
+                  "hip": {
+                    "type": "object",
+                    "nullable": false,
+                    "required": [
+                      "id"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "nullable": false,
+                        "example": "cowin_hip_01",
+                        "description": "The service ID of the health information provider"
+                      }
+                    }
+                  },
+                  "unverifiedIdentifiers": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "type",
+                        "value"
+                      ],
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "MR",
+                            "MOBILE",
+                            "ABHA_NUMBER",
+                            "ABHA_ADDRESS"
+                          ],
+                          "nullable": false,
+                          "example": "MOBILE"
+                        },
+                        "value": {
+                          "type": "string",
+                          "nullable": false,
+                          "example": "+9198765*****",
+                          "description": "Allows alphanumeric characters and special characters like \"^(\\\\+)?[a-zA-Z0-9_\\\\-@,. ]{0,255}$\""
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
-          "200": {
-            "description": "OK",
+          "202": {
+            "description": "Accepted"
+          },
+          "400": {
+            "description": "Bad Request",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "Patient": {
+                    "error": {
                       "type": "object",
                       "required": [
-                        "id",
-                        "links",
-                        "referenceNumber",
-                        "display",
-                        "hiTypes",
-                        "careContexts"
+                        "code",
+                        "message"
                       ],
                       "properties": {
-                        "id": {
-                          "type": "string",
-                          "example": "abc@abdm"
+                        "code": {
+                          "type": "integer",
+                          "example": "ABDM-1103: "
                         },
-                        "links": {
+                        "message": {
+                          "type": "string",
+                          "example": "Duplicate Discovery request"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "example": "900901"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid Credentials"
+                    },
+                    "description": {
+                      "type": "string",
+                      "example": "Invalid Credentials. Make sure you have provided the correct security credentials"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Access Denied"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error -> It is just one example, for every api the path will be changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "timestamp",
+                    "path",
+                    "status",
+                    "error",
+                    "requestId"
+                  ],
+                  "properties": {
+                    "timestamp": {
+                      "type": "number",
+                      "example": 1731557446506
+                    },
+                    "path": {
+                      "type": "string",
+                      "example": "/api/v3/hiecm/user-initiated-linking/patient/care-context/discover"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 500
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": " Internal Server Error"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "example": "d20b575b-2659",
+                      "description": "Unique UUID"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "<callback_url>/api/v3/hiu/patient/care-context/on-discover": {
+      "post": {
+        "tags": [
+          "abdm-user-initiated-linking-phr"
+        ],
+        "operationId": "abdm-user-initiated-linking-phr 2",
+        "summary": "This API endpoint is used by healthcare information users (HIUs) to receive the discovered care contexts of a patient. It provides detailed information about the patient’s care contexts, including any errors encountered during the discovery process.",
+        "description": "The on-discover API endpoint allows HIUs to receive and process the care contexts associated with a patient. When a request is made to this endpoint, it returns a detailed response containing the patient’s care contexts, transaction details, and any errors that occurred. This ensures that HIUs have the necessary information to manage patient care effectively. <p><strong>NOTE:</strong> In the request body, either 'patient' or 'error' must be included. <ol type = \"a\"> <li>In case of success scenario, patient object is mandatory and error object is optional</li> <br> <li>In case of error scenario, error object is mandatory and patient object is optional</li> <br> <li>Response is mandatory in both scenarios</li> </ol>",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "REQUEST-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "18235d89-cb13-479d-ad71-7a57d5f669a8",
+            "description": "Unique UUID for track the end to end request transaction"
+          },
+          {
+            "name": "TIMESTAMP",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "2022-10-06T15:10:00.587Z",
+            "description": "Actual time of the request was initiated, ISO 8601 represents date and time by starting with the year, followed by the month, the day, the hour, the minutes, seconds and milliseconds"
+          },
+          {
+            "name": "X-HIU-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "IN2810014366",
+            "description": "Identifier of the health information user to which the request was intended"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "In the request body, either 'patient' or 'error' must be included. <ol type = \"a\"> <li>In case of success scenario, patient object is mandatory and error object is optional</li> <br> <li>In case of error scenario, error object is mandatory and patient object is optional</li> <br> <li>Response is mandatory in both scenarios</li> </ol>",
+                "required": [
+                  "transactionId",
+                  "patient",
+                  "createdAt",
+                  "response"
+                ],
+                "properties": {
+                  "transactionId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": false,
+                    "example": "f901b782-bfdf-4224-9f8d-da2cadc20c0d",
+                    "description": null
+                  },
+                  "patient": {
+                    "type": "array",
+                    "nullable": false,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "referenceNumber",
+                        "careContexts",
+                        "hiType",
+                        "count"
+                      ],
+                      "properties": {
+                        "referenceNumber": {
+                          "type": "string",
+                          "nullable": false,
+                          "example": "abc123",
+                          "description": "A patient identifier with which patient is registered in the facility/hospital.Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. ()/:\\\\\\\\]{0,255}$\""
+                        },
+                        "display": {
+                          "type": "string",
+                          "nullable": true,
+                          "example": 12345,
+                          "description": "Display text for patient reference.Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\""
+                        },
+                        "careContexts": {
                           "type": "array",
                           "items": {
                             "type": "object",
+                            "required": [
+                              "referenceNumber",
+                              "display"
+                            ],
                             "properties": {
-                              "hip": {
-                                "type": "object",
-                                "properties": {
-                                  "id": {
-                                    "type": "string",
-                                    "example": "ABDM_HIP"
-                                  },
-                                  "name": {
-                                    "type": "string",
-                                    "example": "ABC Hospital"
-                                  },
-                                  "type": {
-                                    "type": "string",
-                                    "example": "HIP"
-                                  }
-                                }
-                              },
                               "referenceNumber": {
                                 "type": "string",
-                                "example": "string"
+                                "nullable": false,
+                                "example": "abc123",
+                                "description": "An identifier of patient's care context created in HIP. A care context is a group of patient's health data (Not the actual health data).Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. ()/:\\\\\\\\]{0,255}$\""
                               },
                               "display": {
                                 "type": "string",
-                                "example": "string"
-                              },
-                              "hiType": {
-                                "type": "string",
-                                "enum": [
-                                  "Prescription",
-                                  "DiagnosticReport",
-                                  "OPConsultation",
-                                  "DischargeSummary",
-                                  "ImmunizationRecord",
-                                  "HealthDocumentRecord",
-                                  "WellnessRecord",
-                                  "Invoice"
-                                ],
-                                "nullable": false,
-                                "example": "DiagnosticReport"
-                              },
-                              "careContexts": {
-                                "type": "array",
-                                "items": {
-                                  "type": "object",
-                                  "properties": {
-                                    "referenceNumber": {
-                                      "type": "string",
-                                      "example": "TMH-PUID-001"
-                                    },
-                                    "display": {
-                                      "type": "string",
-                                      "example": "display 1"
-                                    }
-                                  }
-                                }
-                              },
-                              "dateCreated": {
-                                "type": "string",
-                                "format": "date-time",
-                                "example": "2024-05-09T10:34:00.387Z"
+                                "nullable": true,
+                                "example": 12345,
+                                "description": "Display text for care context reference. Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\""
                               }
                             }
                           }
+                        },
+                        "hiType": {
+                          "type": "string",
+                          "nullable": false,
+                          "enum": [
+                            "Prescription",
+                            "DiagnosticReport",
+                            "OPConsultation",
+                            "DischargeSummary",
+                            "ImmunizationRecord",
+                            "HealthDocumentRecord",
+                            "WellnessRecord",
+                            "Invoice"
+                          ],
+                          "example": "Prescription",
+                          "description": "The health information type"
+                        },
+                        "count": {
+                          "type": "integer",
+                          "nullable": false,
+                          "example": 1,
+                          "description": "The count should match the number of care contexts in the payload"
                         }
+                      }
+                    }
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": false,
+                    "example": "2024-12-31T05:45:35.429Z"
+                  },
+                  "error": {
+                    "type": "object",
+                    "nullable": true,
+                    "required": [
+                      "code",
+                      "message"
+                    ],
+                    "properties": {
+                      "code": {
+                        "type": "string",
+                        "nullable": false,
+                        "example": "ABDM-1001",
+                        "description": "The ABDM error code"
+                      },
+                      "message": {
+                        "type": "string",
+                        "nullable": false,
+                        "example": "error message",
+                        "description": "The appropriate error message"
+                      }
+                    }
+                  },
+                  "response": {
+                    "type": "object",
+                    "nullable": false,
+                    "required": [
+                      "requestId"
+                    ],
+                    "properties": {
+                      "requestId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": false,
+                        "minimum": 36,
+                        "maximum": 50,
+                        "example": "f29f0e59-8388-4698-9fe6-05db67aeac46",
+                        "description": "The request id that was passed.Allows alpha numeric characters and special characters like \"^[0-9a-fA-F]{8}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{12}\""
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "transactionId": {
+                      "type": "string",
+                      "example": "0d36501c-551a-4bb5-b247-eec4bb42984b"
+                    },
+                    "patient": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "referenceNumber": {
+                            "type": "string",
+                            "example": "example01"
+                          },
+                          "display": {
+                            "type": "string",
+                            "example": "abcd-display"
+                          },
+                          "careContexts": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "referenceNumber": {
+                                  "type": "string",
+                                  "example": "abcd"
+                                },
+                                "display": {
+                                  "type": "string",
+                                  "example": "123-display"
+                                }
+                              }
+                            }
+                          },
+                          "hiType": {
+                            "type": "string",
+                            "example": "PRESCRIPTION"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "example": 1
+                          }
+                        }
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2023-06-13T08:05:43.030Z"
+                    },
+                    "response": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string",
+                          "example": "d89525a2-3a3f-4d39-98b5-477afb1865f6"
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "success": {
+                    "value": {
+                      "transactionId": "0d36501c-551a-4bb5-b247-eec4bb42984b",
+                      "patient": [
+                        {
+                          "referenceNumber": "example01",
+                          "display": "abcd-display",
+                          "careContexts": [
+                            {
+                              "referenceNumber": "abcd",
+                              "display": "123-display"
+                            }
+                          ],
+                          "hiType": "PRESCRIPTION",
+                          "count": 1
+                        }
+                      ],
+                      "createdAt": "2023-06-13T08:05:43.030Z",
+                      "response": {
+                        "requestId": "d89525a2-3a3f-4d39-98b5-477afb1865f6"
+                      }
+                    }
+                  },
+                  "Invalid Gender": {
+                    "value": {
+                      "transactionId": "704bd69e-641b-4f92-8709-0d5062336e2c",
+                      "error": {
+                        "code": "ABDM-1056",
+                        "message": "Gender is invalid"
+                      },
+                      "response": {
+                        "requestId": "f9d4adac-723f-40e6-9f95-9c55ef508cf5"
                       }
                     }
                   }
@@ -1816,12 +2310,12 @@
                       ],
                       "properties": {
                         "code": {
-                          "type": "string",
-                          "example": "ABDM-1065: "
+                          "type": "integer",
+                          "example": "ABDM-1106: "
                         },
                         "message": {
                           "type": "string",
-                          "example": "Invalid X Auth token"
+                          "example": "Duplicate On discovery request"
                         }
                       }
                     }
@@ -1839,15 +2333,15 @@
                   "properties": {
                     "code": {
                       "type": "string",
-                      "example": "900902"
+                      "example": "900901"
                     },
                     "message": {
                       "type": "string",
-                      "example": "Unauthorized"
+                      "example": "Invalid Credentials"
                     },
                     "description": {
                       "type": "string",
-                      "example": "Invalid Credentials. Make sure your API invocation call has a header: 'Authorization : Bearer ACCESS_TOKEN' or 'Authorization : Basic ACCESS_TOKEN' or 'apikey: API_KEY'"
+                      "example": "Invalid Credentials. Make sure you have provided the correct security credentials"
                     }
                   }
                 }
@@ -1865,8 +2359,218 @@
               }
             }
           },
-          "404": {
-            "description": "server cannot find the requested resource",
+          "500": {
+            "description": "Internal Server Error -> It is just one example, for every api the path will be changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "timestamp",
+                    "path",
+                    "status",
+                    "error",
+                    "requestId"
+                  ],
+                  "properties": {
+                    "timestamp": {
+                      "type": "number",
+                      "example": 1731557446506
+                    },
+                    "path": {
+                      "type": "string",
+                      "example": "/api/v3/hiecm/user-initiated-linking/patient/care-context/discover"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 500
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": " Internal Server Error"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "example": "d20b575b-2659"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hiecm/user-initiated-linking/v3/link/care-context/init": {
+      "post": {
+        "tags": [
+          "abdm-user-initiated-linking-phr"
+        ],
+        "operationId": "abdm-user-initiated-linking-phr 3",
+        "summary": "This API will be invoked by the patient/user to link his/her health records.",
+        "description": "This API endpoint is designed to be invoked by the patient or user to link their health records. By using this API, patients can initiate the process of associating their health information with their ABHA (Ayushman Bharat Health Account) address. This functionality empowers patients to actively manage and consolidate their health records, ensuring that all relevant care contexts are accurately linked and accessible. The API supports a seamless and efficient health information exchange, enhancing the overall quality and continuity of care within the healthcare ecosystem.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "REQUEST-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "18235d89-cb13-479d-ad71-7a57d5f669a8",
+            "description": "Unique UUID for track the end to end request transaction"
+          },
+          {
+            "name": "TIMESTAMP",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "2022-10-06T15:10:00.587Z",
+            "description": "Actual time of the request was initiated, ISO 8601 represents date and time by starting with the year, followed by the month, the day, the hour, the minutes, seconds and milliseconds"
+          },
+          {
+            "name": "X-CM-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "sbx",
+            "description": "Suffix of the consent manager to which the request was intended"
+          },
+          {
+            "name": "X-HIU-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "IN2810014366",
+            "description": "Identifier of the health information user to which the request was intended"
+          },
+          {
+            "name": "X-AUTH-TOKEN",
+            "in": "header",
+            "required": true,
+            "description": "JWT Authentication token which was issued by ABDM after successful validation of username and password",
+            "schema": {
+              "type": "string",
+              "format": "bearer",
+              "minimum": 1,
+              "maximum": 100,
+              "example": "eyJhbGciOiJSUzUxMiJ9.eyJzdWIiOiJ2YXNhbnRoYWt1bWFyLmtlc2F2"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "transactionId",
+                  "patient"
+                ],
+                "properties": {
+                  "transactionId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": false,
+                    "example": "f901b782-bfdf-4224-9f8d-da2cadc20c0d",
+                    "description": "UUID from discover request callback to track the entire user link flow"
+                  },
+                  "patient": {
+                    "type": "array",
+                    "nullable": false,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "referenceNumber",
+                        "display",
+                        "careContexts",
+                        "hiType",
+                        "count"
+                      ],
+                      "properties": {
+                        "referenceNumber": {
+                          "type": "string",
+                          "nullable": false,
+                          "example": "sample@sbx",
+                          "description": "A patient identifier with which patient is registered in the facility/hospital.Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. ()/:\\\\\\\\]{0,255}$\""
+                        },
+                        "display": {
+                          "type": "string",
+                          "nullable": true,
+                          "example": "Test",
+                          "description": "Display text for patient reference.Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\""
+                        },
+                        "careContexts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "referenceNumber"
+                            ],
+                            "properties": {
+                              "referenceNumber": {
+                                "type": "string",
+                                "nullable": false,
+                                "example": "abc123",
+                                "description": "An identifier of patient's care context created in HIP. A care context is a group of patient's health data (Not the actual health data).Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. ()/:\\\\\\\\]{0,255}$\""
+                              },
+                              "display": {
+                                "type": "string",
+                                "nullable": true,
+                                "example": "Sugar Test",
+                                "description": "Display text for care context reference.Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\""
+                              }
+                            }
+                          }
+                        },
+                        "hiType": {
+                          "type": "string",
+                          "nullable": false,
+                          "enum": [
+                            "Prescription",
+                            "DiagnosticReport",
+                            "OPConsultation",
+                            "DischargeSummary",
+                            "ImmunizationRecord",
+                            "HealthDocumentRecord",
+                            "WellnessRecord",
+                            "Invoice"
+                          ],
+                          "example": "OPConsultation",
+                          "description": "The health information type"
+                        },
+                        "count": {
+                          "type": "integer",
+                          "nullable": false,
+                          "example": 1,
+                          "description": "The count should match the number of care contexts in the payload"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          },
+          "400": {
+            "description": "Bad Request",
             "content": {
               "application/json": {
                 "schema": {
@@ -1880,12 +2584,12 @@
                       ],
                       "properties": {
                         "code": {
-                          "type": "string",
-                          "example": "ABDM-1001: "
+                          "type": "integer",
+                          "example": "ABDM-1104: "
                         },
                         "message": {
                           "type": "string",
-                          "example": "No data found"
+                          "example": "Duplicate Init request"
                         }
                       }
                     }
@@ -1894,8 +2598,8 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
@@ -1903,11 +2607,843 @@
                   "properties": {
                     "code": {
                       "type": "string",
-                      "example": "ABDM-9999: "
+                      "example": "900901"
                     },
                     "message": {
                       "type": "string",
-                      "example": "Unknown exception"
+                      "example": "Invalid Credentials"
+                    },
+                    "description": {
+                      "type": "string",
+                      "example": "Invalid Credentials. Make sure you have provided the correct security credentials"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Access Denied"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error -> It is just one example, for every api the path will be changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "timestamp",
+                    "path",
+                    "status",
+                    "error",
+                    "requestId"
+                  ],
+                  "properties": {
+                    "timestamp": {
+                      "type": "number",
+                      "example": 1731557446506
+                    },
+                    "path": {
+                      "type": "string",
+                      "example": "/api/v3/hiecm/user-initiated-linking/patient/care-context/discover"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 500
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": " Internal Server Error"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "example": "d20b575b-2659",
+                      "description": "The request id from discover call back .Allows alpha numeric characters and special characters like \"^[0-9a-fA-F]{8}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{12}\""
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "<callback_url>/api/v3/hiu/patient/care-context/on-init": {
+      "post": {
+        "tags": [
+          "abdm-user-initiated-linking-phr"
+        ],
+        "operationId": "abdm-user-initiated-linking-phr 4",
+        "summary": "This API endpoint is used by healthcare information users (HIUs) to receive the initial linking of care contexts for a patient. It provides detailed information about the linking process, including authentication details and any errors encountered.",
+        "description": "The on-init API endpoint allows HIUs to receive and process the initial linking of care contexts associated with a patient. When a request is made to this endpoint, it returns a detailed response containing the transaction ID, linking information, authentication details, and any errors that occurred. This ensures that HIUs have the necessary information to manage patient care effectively.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "REQUEST-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "18235d89-cb13-479d-ad71-7a57d5f669a8",
+            "description": "Unique UUID for track the end to end request transaction"
+          },
+          {
+            "name": "TIMESTAMP",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "2022-10-06T15:10:00.587Z",
+            "description": "Actual time of the request was initiated, ISO 8601 represents date and time by starting with the year, followed by the month, the day, the hour, the minutes, seconds and milliseconds"
+          },
+          {
+            "name": "X-HIU-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "IN2810014366",
+            "description": "Identifier of the health information user to which the request was intended"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "In the request body, either ‘link’ or ‘error’ must be included.<ol type='a'><br/> <li>Incase of success scenario,link is mandatory and error is optional</li> <li>Incase of failure scenario, error is mandatory and link is optional</li> <li>response is mandatory object in both the cases</li> </ol> ",
+                "required": [
+                  "transactionId",
+                  "link",
+                  "response"
+                ],
+                "properties": {
+                  "transactionId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true,
+                    "example": "f901b782-bfdf-4224-9f8d-da2cadc20c0d",
+                    "description": "UUID from discover request callback to track the entire user link flow"
+                  },
+                  "link": {
+                    "type": "object",
+                    "nullable": false,
+                    "required": [
+                      "referenceNumber",
+                      "authenticationType",
+                      "meta"
+                    ],
+                    "properties": {
+                      "referenceNumber": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": false,
+                        "example": "d353b782-bfdf-4224-9f8d-da2cadc20c0d",
+                        "description": "The link reference number. Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. ()/:\\\\\\\\]{0,255}$\""
+                      },
+                      "authenticationType": {
+                        "type": "string",
+                        "enum": [
+                          "DIRECT",
+                          "MEDIATED"
+                        ],
+                        "nullable": false,
+                        "example": "DIRECT",
+                        "description": "The authenticationType. Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\""
+                      },
+                      "meta": {
+                        "type": "object",
+                        "nullable": false,
+                        "required": [
+                          "communicationMedium",
+                          "communicationHint",
+                          "communicationExpiry"
+                        ],
+                        "properties": {
+                          "communicationMedium": {
+                            "type": "string",
+                            "enum": [
+                              "MOBILE",
+                              "EMAIL"
+                            ],
+                            "nullable": false,
+                            "example": "MOBILE",
+                            "description": "The communication medium. Allows alpha numeric characters and special characters like\"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$"
+                          },
+                          "communicationHint": {
+                            "type": "string",
+                            "nullable": true,
+                            "example": "OTP",
+                            "description": "The communication hint. Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$"
+                          },
+                          "communicationExpiry": {
+                            "type": "string",
+                            "format": "iso-date-time",
+                            "nullable": false,
+                            "example": "2024-05-01T05:22:34.123Z",
+                            "description": "The communication expiry date. Should be UTC date in ISO format.Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "error": {
+                    "type": "object",
+                    "nullable": true,
+                    "required": [
+                      "code",
+                      "message"
+                    ],
+                    "properties": {
+                      "code": {
+                        "type": "string",
+                        "nullable": false,
+                        "example": "ABDM-1001",
+                        "description": "The ABDM error code"
+                      },
+                      "message": {
+                        "type": "string",
+                        "nullable": false,
+                        "example": "error message",
+                        "description": "The appropriate error message"
+                      }
+                    }
+                  },
+                  "response": {
+                    "type": "object",
+                    "nullable": false,
+                    "required": [
+                      "requestId"
+                    ],
+                    "properties": {
+                      "requestId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": false,
+                        "minimum": 36,
+                        "maximum": 50,
+                        "example": "f29f0e59-8388-4698-9fe6-05db67aeac46",
+                        "description": "The request id that was passed.Allows alpha numeric characters and special characters like \"^[0-9a-fA-F]{8}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{12}\""
+                      }
+                    },
+                    "description": "The request id is from the link/init callback"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "example": "ABDM-1107: "
+                        },
+                        "message": {
+                          "type": "string",
+                          "example": "Duplicate On init request"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "example": "900901"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid Credentials"
+                    },
+                    "description": {
+                      "type": "string",
+                      "example": "Invalid Credentials. Make sure you have provided the correct security credentials"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Access Denied"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error -> It is just one example, for every api the path will be changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "timestamp",
+                    "path",
+                    "status",
+                    "error",
+                    "requestId"
+                  ],
+                  "properties": {
+                    "timestamp": {
+                      "type": "number",
+                      "example": 1731557446506
+                    },
+                    "path": {
+                      "type": "string",
+                      "example": "/api/v3/hiecm/user-initiated-linking/patient/care-context/discover"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 500
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": " Internal Server Error"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "example": "d20b575b-2659",
+                      "description": "The request id that was passed.Allows alpha numeric characters and special characters like \"^[0-9a-fA-F]{8}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{12}\""
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hiecm/user-initiated-linking/v3/link/care-context/confirm": {
+      "post": {
+        "tags": [
+          "abdm-user-initiated-linking-phr"
+        ],
+        "operationId": "abdm-user-initiated-linking-phr 5",
+        "summary": "This API will be invoked by the patient/user to confirm his/her health records.",
+        "description": "This API endpoint is designed to be invoked by the patient or user to confirm their health records. By using this API, patients can validate and confirm the linkage of their health information to their ABHA (Ayushman Bharat Health Account) address. This confirmation process ensures that all relevant care contexts are accurately linked and verified, providing patients with control over their health data. The API supports a seamless and efficient health information exchange, enhancing the overall quality and continuity of care within the healthcare ecosystem.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "REQUEST-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "18235d89-cb13-479d-ad71-7a57d5f669a8",
+            "description": "Unique UUID for track the end to end request transaction"
+          },
+          {
+            "name": "TIMESTAMP",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "2022-10-06T15:10:00.587Z",
+            "description": "Actual time of the request was initiated, ISO 8601 represents date and time by starting with the year, followed by the month, the day, the hour, the minutes, seconds and milliseconds"
+          },
+          {
+            "name": "X-CM-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "sbx",
+            "description": "Suffix of the consent manager to which the request was intended"
+          },
+          {
+            "name": "X-HIU-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "IN2810014366",
+            "description": "Identifier of the health information user to which the request was intended"
+          },
+          {
+            "name": "X-AUTH-TOKEN",
+            "in": "header",
+            "required": true,
+            "description": "JWT Authentication token which was issued by ABDM after successful validation of username and password",
+            "schema": {
+              "type": "string",
+              "format": "bearer",
+              "minimum": 1,
+              "maximum": 100,
+              "example": "eyJhbGciOiJSUzUxMiJ9.eyJzdWIiOiJ2YXNhbnRoYWt1bWFyLmtlc2F2"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "token",
+                  "linkRefNumber"
+                ],
+                "properties": {
+                  "token": {
+                    "type": "integer",
+                    "nullable": false,
+                    "example": 123456,
+                    "description": "The token number. Must be 6 digit and contain only 0-9. Allows the numerical values like \"[\\\\d]*$\""
+                  },
+                  "linkRefNumber": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": false,
+                    "example": "d353b782-bfdf-4224-9f8d-da2cadc20c0d",
+                    "description": "The link reference number from the /on-init call back . Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\""
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "example": "ABDM-1105: "
+                        },
+                        "message": {
+                          "type": "string",
+                          "example": "Duplicate Confirm request"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "example": "900901"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid Credentials"
+                    },
+                    "description": {
+                      "type": "string",
+                      "example": "Invalid Credentials. Make sure you have provided the correct security credentials"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Access Denied"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error -> It is just one example, for every api the path will be changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "timestamp",
+                    "path",
+                    "status",
+                    "error",
+                    "requestId"
+                  ],
+                  "properties": {
+                    "timestamp": {
+                      "type": "number",
+                      "example": 1731557446506
+                    },
+                    "path": {
+                      "type": "string",
+                      "example": "/api/v3/hiecm/user-initiated-linking/patient/care-context/discover"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 500
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": " Internal Server Error"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "example": "d20b575b-2659",
+                      "description": "The request id from discover call back .Allows alpha numeric characters and special characters like \"^[0-9a-fA-F]{8}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{12}\""
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "<callback_url>/api/v3/hiu/patient/care-context/on-confirm": {
+      "post": {
+        "tags": [
+          "abdm-user-initiated-linking-phr"
+        ],
+        "operationId": "abdm-user-initiated-linking-phr 6",
+        "summary": "This API endpoint is used by healthcare information users (HIUs) to receive confirmation of the linked care contexts for a patient. It provides detailed information about the patient’s care contexts, including any errors encountered during the confirmation process.",
+        "description": "The on-confirm API endpoint allows HIUs to receive and process the confirmation of care context linking for a patient. When a request is made to this endpoint, it returns a detailed response containing the patient’s care contexts, transaction details, and any errors that occurred. This ensures that HIUs have the necessary information to manage patient care effectively and verify that the care contexts have been correctly linked. <p><strong>NOTE:</strong> In the request body, either 'patient' or 'error' must be included. <ol type = \"a\"> <li>In case of success scenario, patient object is mandatory and error object is optional</li> <br> <li>In case of failure scenario, error object is mandatory and patient object is optional</li> <br> <li>Response is mandatory in both scenarios</li> </ol>",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "REQUEST-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "18235d89-cb13-479d-ad71-7a57d5f669a8",
+            "description": "Unique UUID for track the end to end request transaction"
+          },
+          {
+            "name": "TIMESTAMP",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "2022-10-06T15:10:00.587Z",
+            "description": "Actual time of the request was initiated, ISO 8601 represents date and time by starting with the year, followed by the month, the day, the hour, the minutes, seconds and milliseconds"
+          },
+          {
+            "name": "X-HIU-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "IN2810014366",
+            "description": "Identifier of the health information user to which the request was intended"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "In the request body, either 'patient' or 'error' must be included. <ol type = \"a\"> <li>In case of success scenario, patient object is mandatory and error object is optional</li> <br> <li>In case of failure scenario, error object is mandatory and patient object is optional</li> <br> <li>Response is mandatory in both scenarios</li> </ol>",
+                "required": [
+                  "patient",
+                  "response"
+                ],
+                "properties": {
+                  "response": {
+                    "type": "object",
+                    "nullable": false,
+                    "required": [
+                      "requestId"
+                    ],
+                    "properties": {
+                      "requestId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": false,
+                        "minimum": 36,
+                        "maximum": 50,
+                        "example": "f29f0e59-8388-4698-9fe6-05db67aeac46",
+                        "description": "The request id that was passed.Allows alpha numeric characters and special characters like \"^[0-9a-fA-F]{8}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{12}\""
+                      }
+                    },
+                    "description": "The request id is from the link/confirm callback"
+                  },
+                  "patient": {
+                    "type": "object",
+                    "nullable": false,
+                    "required": [
+                      "referenceNumber",
+                      "display",
+                      "careContexts",
+                      "hiType",
+                      "count"
+                    ],
+                    "properties": {
+                      "referenceNumber": {
+                        "type": "string",
+                        "nullable": false,
+                        "example": "abc123",
+                        "description": "A patient identifier with which patient is registered in the facility/hospitalauthenticationType.Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$"
+                      },
+                      "display": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": 12345,
+                        "description": "Display text for patient reference.Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\""
+                      },
+                      "careContexts": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "referenceNumber",
+                            "display"
+                          ],
+                          "properties": {
+                            "referenceNumber": {
+                              "type": "string",
+                              "nullable": false,
+                              "example": "abc123",
+                              "description": "An identifier of patient's care context created in HIP. A care context is a group of patient's health data (Not the actual health data).Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$"
+                            },
+                            "display": {
+                              "type": "string",
+                              "nullable": true,
+                              "example": 12345,
+                              "description": "Display text for care context reference. Allows alpha numeric characters and special characters like \"^[a-zA-Z0-9_\\\\-@,. \\\"':|()/]{0,255}$\""
+                            }
+                          }
+                        }
+                      },
+                      "hiType": {
+                        "type": "string",
+                        "nullable": false,
+                        "enum": [
+                          "Prescription",
+                          "DiagnosticReport",
+                          "OPConsultation",
+                          "DischargeSummary",
+                          "ImmunizationRecord",
+                          "HealthDocumentRecord",
+                          "WellnessRecord",
+                          "Invoice"
+                        ],
+                        "example": "Prescription",
+                        "description": "The health information type"
+                      },
+                      "count": {
+                        "type": "integer",
+                        "nullable": false,
+                        "example": 1,
+                        "description": "The count should match the number of care contexts in the payload"
+                      }
+                    }
+                  },
+                  "error": {
+                    "type": "object",
+                    "nullable": true,
+                    "required": [
+                      "code",
+                      "message"
+                    ],
+                    "properties": {
+                      "code": {
+                        "type": "string",
+                        "nullable": false,
+                        "example": "ABDM-1001",
+                        "description": "The ABDM error code"
+                      },
+                      "message": {
+                        "type": "string",
+                        "nullable": false,
+                        "example": "error message",
+                        "description": "The appropriate error message"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "example": "ABDM-1108: "
+                        },
+                        "message": {
+                          "type": "string",
+                          "example": "Duplicate On confirm request"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "example": "900901"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid Credentials"
+                    },
+                    "description": {
+                      "type": "string",
+                      "example": "Invalid Credentials. Make sure you have provided the correct security credentials"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Access Denied"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error -> It is just one example, for every api the path will be changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "timestamp",
+                    "path",
+                    "status",
+                    "error",
+                    "requestId"
+                  ],
+                  "properties": {
+                    "timestamp": {
+                      "type": "number",
+                      "example": 1731557446506
+                    },
+                    "path": {
+                      "type": "string",
+                      "example": "/api/v3/hiecm/user-initiated-linking/patient/care-context/discover"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 500
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": " Internal Server Error"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "example": "d20b575b-2659",
+                      "description": "The request id that was passed.Allows alpha numeric characters and special characters like \"^[0-9a-fA-F]{8}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{4}\\\\b-[0-9a-fA-F]{12}\""
                     }
                   }
                 }

@@ -7,7 +7,9 @@ import in.docq.abha.rest.client.AbhaRestClient;
 import in.docq.abha.rest.client.model.*;
 import in.docq.health.facility.controller.HipWebhookController;
 import in.docq.health.facility.dao.CareContextDao;
+import in.docq.health.facility.dao.UserInitiatedLinkingDao;
 import in.docq.health.facility.model.*;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -33,6 +37,7 @@ public class CareContextService {
     private final PatientService patientService;
     private final HIPLinkingTokenService hipLinkingTokenService;
     private final AbhaRestClient abhaRestClient;
+    private final UserInitiatedLinkingDao userInitiatedLinkingDao;
     private final String xCmId;
     private final Cache<String, OPD> opdCache = CacheBuilder.newBuilder()
             .maximumSize(10000)
@@ -40,7 +45,7 @@ public class CareContextService {
 
     @Autowired
     public CareContextService(CareContextDao careContextDao, OPDService opdService, HealthFacilityService healthFacilityService, PatientService patientService, HIPLinkingTokenService hipLinkingTokenService,
-                              AbhaRestClient abhaRestClient,
+                              AbhaRestClient abhaRestClient, UserInitiatedLinkingDao userInitiatedLinkingDao,
                               @Value("${x.cm.id}") String xCmId) {
         this.careContextDao = careContextDao;
         this.opdService = opdService;
@@ -48,6 +53,7 @@ public class CareContextService {
         this.patientService = patientService;
         this.hipLinkingTokenService = hipLinkingTokenService;
         this.abhaRestClient = abhaRestClient;
+        this.userInitiatedLinkingDao = userInitiatedLinkingDao;
         this.xCmId = xCmId;
     }
 
@@ -245,5 +251,9 @@ public class CareContextService {
                     request.getResponse().getRequestId(), throwable);
             return null;
         });
+    }
+
+    public CompletionStage<List<CareContext>> getUnlinkedCareContexts(String patientId, String healthFacilityId) {
+        return careContextDao.getUnlinkedByPatientAndFacility(patientId, healthFacilityId);
     }
 }

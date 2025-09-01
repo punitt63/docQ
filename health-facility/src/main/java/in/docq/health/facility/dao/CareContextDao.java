@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
@@ -23,6 +24,8 @@ public class CareContextDao {
     private final String getCareContextQuery;
     private final String getCareContextByLinkRequestIdQuery;
     private final String getCareContextByNotifyRequestIdQuery;
+    private final String getUnlinkedByPatientAndFacilityQuery;
+
     private final Gson gson = new Gson();
     private final PostgresDAO postgresDAO;
 
@@ -41,6 +44,8 @@ public class CareContextDao {
         this.getCareContextQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE appointment_id = ?";
         this.getCareContextByLinkRequestIdQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE link_request_id = ?";
         this.getCareContextByNotifyRequestIdQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE notify_request_id = ?";
+        this.getUnlinkedByPatientAndFacilityQuery = "SELECT " + Column.allColumNamesSeparatedByComma() +
+                " FROM " + table + " WHERE patient_id = ? AND health_facility_id = ? AND is_linked = false";
     }
 
     public CompletionStage<Void> upsert(CareContext careContext) {
@@ -89,6 +94,19 @@ public class CareContextDao {
                 .isPatientNotified(rs.getBoolean(Column.IS_PATIENT_NOTIFIED.getColumnName()))
                 .notifyRequestId(rs.getString(Column.NOTIFY_REQUEST_ID.getColumnName()))
                 .build(), requestId);
+    }
+
+    public CompletionStage<List<CareContext>> getUnlinkedByPatientAndFacility(String patientId, String healthFacilityId) {
+        return postgresDAO.query(dbMetricsGroupName, "getUnlinkedByPatientAndFacility",
+                getUnlinkedByPatientAndFacilityQuery, (rs, rowNum) -> CareContext.builder()
+                        .appointmentID(rs.getString(Column.APPOINTMENT_ID.getColumnName()))
+                        .healthFacilityId(rs.getString(Column.HEALTH_FACILITY_ID.getColumnName()))
+                        .patientId(rs.getString(Column.PATIENT_ID.getColumnName()))
+                        .linkRequestId(rs.getString(Column.LINK_REQUEST_ID.getColumnName()))
+                        .isLinked(rs.getBoolean(Column.IS_LINKED.getColumnName()))
+                        .isPatientNotified(rs.getBoolean(Column.IS_PATIENT_NOTIFIED.getColumnName()))
+                        .notifyRequestId(rs.getString(Column.NOTIFY_REQUEST_ID.getColumnName()))
+                        .build(), patientId, healthFacilityId);
     }
 
     public CompletionStage<Integer> truncate() {

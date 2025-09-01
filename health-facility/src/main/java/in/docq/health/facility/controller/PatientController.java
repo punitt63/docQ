@@ -17,6 +17,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+import static com.google.common.base.Preconditions.checkState;
+
 @RestController
 public class PatientController {
     private final PatientService patientService;
@@ -31,8 +33,12 @@ public class PatientController {
     @GetMapping("/health-facilities/{health-facility-id}/patients")
     @Authorized(resource = "patient", scope = "read")
     public CompletionStage<ResponseEntity<List<Patient>>> searchPatients(@PathVariable("health-facility-id") String healthFacilityID,
-                                                                         @RequestParam("mobile-no") String mobileNo) {
-        return patientService.searchPatients(mobileNo)
+                                                                         @RequestParam("mobile-no") String mobileNo,
+                                                                         @RequestParam("abha-address") String abhaAddress,
+                                                                         @RequestParam("dob") LocalDate dob,
+                                                                         @RequestParam("gender") String gender) {
+        checkState(abhaAddress != null || mobileNo != null, "mobile-no or abhaAddress is required");
+        return patientService.list(abhaAddress, mobileNo, dob, gender)
                 .thenApply(ResponseEntity::ok);
     }
 
