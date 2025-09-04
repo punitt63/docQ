@@ -379,4 +379,9 @@ public class AbhaRestClient {
         return getAccessToken()
                 .thenCompose(token -> userInitiatedLinkingHipApi.abdmUserInitiatedLinking4Async(token, requestId, timestamp, xCmId, abdmUserInitiatedLinking4Request));
     }
+
+    public CompletionStage<Void> confirmCareContextLinking(String requestId, String timestamp, String xCmId, AbdmUserInitiatedLinking6Request abdmUserInitiatedLinking6Request) {
+        return getAccessToken()
+                .thenCompose(token -> userInitiatedLinkingHipApi.abdmUserInitiatedLinking6Async(token, requestId, timestamp, xCmId, abdmUserInitiatedLinking6Request));
+    }
 }

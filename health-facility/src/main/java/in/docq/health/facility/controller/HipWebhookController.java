@@ -63,6 +63,29 @@ public class HipWebhookController {
                 .thenApply(ignore -> ResponseEntity.accepted().build());
     }
 
+    @PostMapping("/hip/link/care-context/confirm")
+    public CompletionStage<ResponseEntity<Void>> confirmCareContextLink(
+            @RequestHeader("REQUEST-ID") String requestId,
+            @RequestHeader("TIMESTAMP") String timestamp,
+            @RequestHeader("X-HIP-ID") String healthFacilityId,
+            @RequestBody ConfirmCareContextLinkRequest request) {
+        return userInitiatedLinkingService.confirmCareContextLink(requestId, timestamp, healthFacilityId, request)
+                .thenApply(ignore -> ResponseEntity.ok().build());
+    }
+
+    @Builder
+    @Getter
+    public static class ConfirmCareContextLinkRequest {
+        private final Confirmation confirmation;
+
+        @Builder
+        @Getter
+        public static class Confirmation {
+            private final String token;
+            private final String linkRefNumber;
+        }
+    }
+
     @Builder
     @Getter
     public static class OnGenerateTokenRequest {

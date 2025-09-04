@@ -4,9 +4,9 @@ CREATE TABLE hip_linking_token (
     last_token_request_appointment_id varchar(100) NOT NULL,
     last_token_request_id varchar(100) NOT NULL,
     last_token text,
-    CONSTRAINT hip_linking_token_pkey PRIMARY KEY (health_facility_id, patient_id)
     created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+    updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT hip_linking_token_pkey PRIMARY KEY (health_facility_id, patient_id)
 );
 
 CREATE TRIGGER update_hip_linking_token_timestamp

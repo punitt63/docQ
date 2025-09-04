@@ -9,15 +9,18 @@ import in.docq.health.facility.controller.HipWebhookController;
 import in.docq.health.facility.dao.CareContextDao;
 import in.docq.health.facility.dao.HIPLinkingTokenDao;
 import in.docq.health.facility.dao.PatientDao;
+import in.docq.health.facility.dao.UserInitiatedLinkingDao;
 import in.docq.health.facility.model.CareContext;
 import in.docq.health.facility.model.HIPLinkingToken;
 import in.docq.health.facility.model.Patient;
+import in.docq.health.facility.model.UserInitiatedLinking;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -25,8 +28,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import static configuration.TestAbhaClientConfiguration.MockAbhaRestClient.testHealthFacilityID;
@@ -54,6 +60,9 @@ public class HipWebhookControllerTest {
     private CareContextDao careContextDao;
 
     @Autowired
+    private UserInitiatedLinkingDao userInitiatedLinkingDao;
+
+    @Autowired
     private TestAbhaClientConfiguration.MockAbhaRestClient abhaRestClient;
 
     private static final Gson gson = new GsonBuilder()
@@ -61,7 +70,7 @@ public class HipWebhookControllerTest {
             .create();
 
     private static final String TEST_ABHA_ADDRESS = "test-abha@sbx";
-    private static final String TEST_REQUEST_ID = "test-request-id";
+    private static final String TEST_REQUEST_ID = UUID.randomUUID().toString();
     private static final String TEST_LINK_TOKEN = "test-link-token";
     private static final String TEST_PATIENT_ID = "test-patient-id";
     private static final String TEST_APPOINTMENT_ID = "test-appointment-id";
@@ -71,9 +80,11 @@ public class HipWebhookControllerTest {
         hipLinkingTokenDao.truncate().toCompletableFuture().join();
         patientDao.truncate().toCompletableFuture().join();
         careContextDao.truncate().toCompletableFuture().join();
+        userInitiatedLinkingDao.truncate().toCompletableFuture().join();
         abhaRestClient.linkCareContextCount = 0;
         abhaRestClient.sendDeepLinkNotificationCount = 0;
         abhaRestClient.generateLinkingTokenCount = 0;
+        abhaRestClient.linkUserInitiatedCareContextCount = 0;
     }
 
     @Test
@@ -311,6 +322,428 @@ public class HipWebhookControllerTest {
         assertFalse(updatedCareContext.get().isPatientNotified());
     }
 
+    @Test
+    public void testDiscoverCareContextNoUnlinkedCareContext() throws Exception {
+        // Create ABHA patient with no care contexts
+        Patient patient = Patient.builder()
+                .id(TEST_PATIENT_ID)
+                .name("Test Patient")
+                .mobileNo("9876543210")
+                .gender("M")
+                .dob(LocalDate.of(1990, 1, 1))
+                .abhaAddress(TEST_ABHA_ADDRESS)
+                .abhaNo("91536782361862")
+                .build();
+        patientDao.insert(patient).toCompletableFuture().join();
+
+        // Create request
+        HipWebhookController.UserInitiatedLinkingRequest request =
+                HipWebhookController.UserInitiatedLinkingRequest.builder()
+                        .transactionId("txn-123")
+                        .patient(HipWebhookController.UserInitiatedLinkingRequest.Patient.builder()
+                                .id(TEST_ABHA_ADDRESS)
+                                .name("Test Patient")
+                                .build())
+                        .build();
+
+        // Execute request
+        handleAsyncProcessing(mockMvc.perform(post("/api/v3/hip/patient/care-context/discover")
+                .header("REQUEST-ID", TEST_REQUEST_ID)
+                .header("TIMESTAMP", Instant.now().toString())
+                .header("X-HIP-ID", testHealthFacilityID)
+                .content(gson.toJson(request))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isAccepted());
+
+        // Assert no linkUserInitiatedCareContext call
+        assertEquals(0, abhaRestClient.linkUserInitiatedCareContextCount);
+    }
+
+    @Test
+    public void testDiscoverCareContextOneUnlinkedCareContextMatchedByAbhaAddress() throws Exception {
+        // Create ABHA patient
+        Patient patient = Patient.builder()
+                .id(TEST_PATIENT_ID)
+                .name("Test Patient")
+                .mobileNo("9876543210")
+                .gender("M")
+                .dob(LocalDate.of(1990, 1, 1))
+                .abhaAddress(TEST_ABHA_ADDRESS)
+                .abhaNo("91536782361862")
+                .build();
+        patientDao.insert(patient).toCompletableFuture().join();
+
+        // Create unlinked care context
+        CareContext careContext = CareContext.builder()
+                .appointmentID("appt-123")
+                .healthFacilityId(testHealthFacilityID)
+                .patientId(TEST_PATIENT_ID)
+                .isLinked(false)
+                .isPatientNotified(false)
+                .build();
+        careContextDao.upsert(careContext).toCompletableFuture().join();
+
+        // Create request
+        HipWebhookController.UserInitiatedLinkingRequest request =
+                HipWebhookController.UserInitiatedLinkingRequest.builder()
+                        .transactionId("txn-123")
+                        .patient(HipWebhookController.UserInitiatedLinkingRequest.Patient.builder()
+                                .id(TEST_ABHA_ADDRESS)
+                                .name("Test Patient")
+                                .build())
+                        .build();
+
+        // Execute request
+        handleAsyncProcessing(mockMvc.perform(post("/api/v3/hip/patient/care-context/discover")
+                .header("REQUEST-ID", TEST_REQUEST_ID)
+                .header("TIMESTAMP", Instant.now().toString())
+                .header("X-HIP-ID", testHealthFacilityID)
+                .content(gson.toJson(request))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isAccepted());
+
+        // Assert one linkUserInitiatedCareContext call with one care context
+        assertEquals(1, abhaRestClient.linkUserInitiatedCareContextCount);
+        assertEquals(1, abhaRestClient.lastLinkUserInitiatedCareContextRequest.getPatient().get(0).getCareContexts().size());
+        UserInitiatedLinking userInitiatedLinking = getUserInitiatedLinking("txn-123");
+        assertEquals("AWAITING_LINKING_INITIATION", userInitiatedLinking.getStatus());
+    }
+
+    @Test
+    public void testDiscoverCareContextZeroUnlinkedCareContextNotMatchedByMobile() throws Exception {
+        // Create patient without ABHA address
+        Patient patient = Patient.builder()
+                .id(TEST_PATIENT_ID)
+                .name("Test Patient")
+                .mobileNo("9876543210")
+                .abhaAddress(null)
+                .gender("M")
+                .dob(LocalDate.of(1990, 1, 1))
+                .build();
+        patientDao.insert(patient).toCompletableFuture().join();
+
+        // Create unlinked care context
+        CareContext careContext = CareContext.builder()
+                .appointmentID("appt-123")
+                .healthFacilityId(testHealthFacilityID)
+                .patientId(TEST_PATIENT_ID)
+                .isLinked(false)
+                .isPatientNotified(false)
+                .build();
+        careContextDao.upsert(careContext).toCompletableFuture().join();
+
+        // Create request with mobile identifier
+        HipWebhookController.UserInitiatedLinkingRequest request =
+                HipWebhookController.UserInitiatedLinkingRequest.builder()
+                        .transactionId("txn-123")
+                        .patient(HipWebhookController.UserInitiatedLinkingRequest.Patient.builder()
+                                .id(TEST_ABHA_ADDRESS)
+                                .name("Test Patient")
+                                .verifiedIdentifiers(List.of(
+                                        HipWebhookController.UserInitiatedLinkingRequest.Identifier.builder()
+                                                .type(HipWebhookController.UserInitiatedLinkingRequest.Type.MOBILE)
+                                                .value("9876543211")
+                                                .build()
+                                ))
+                                .build())
+                        .build();
+
+        // Execute request
+        handleAsyncProcessing(mockMvc.perform(post("/api/v3/hip/patient/care-context/discover")
+                .header("REQUEST-ID", TEST_REQUEST_ID)
+                .header("TIMESTAMP", Instant.now().toString())
+                .header("X-HIP-ID", testHealthFacilityID)
+                .content(gson.toJson(request))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isAccepted());
+
+        // Assert one linkUserInitiatedCareContext call with one care context
+        assertEquals(0, abhaRestClient.linkUserInitiatedCareContextCount);
+        Optional<UserInitiatedLinking> userInitiatedLinking = getUserInitiatedLinkingOptional("txn-123");
+        assertFalse(userInitiatedLinking.isPresent());
+    }
+
+    @Test
+    public void testDiscoverCareContextOneUnlinkedCareContextMatchedByMobileMatchGenderNotMatch() throws Exception {
+        // Create patient without ABHA address
+        Patient patient = Patient.builder()
+                .id(TEST_PATIENT_ID)
+                .name("Test Patient")
+                .mobileNo("9876543210")
+                .gender("M")
+                .dob(LocalDate.of(1990, 1, 1))
+                .abhaAddress(null)
+                .build();
+        patientDao.insert(patient).toCompletableFuture().join();
+
+        // Create unlinked care context
+        CareContext careContext = CareContext.builder()
+                .appointmentID("appt-123")
+                .healthFacilityId(testHealthFacilityID)
+                .patientId(TEST_PATIENT_ID)
+                .isLinked(false)
+                .isPatientNotified(false)
+                .build();
+        careContextDao.upsert(careContext).toCompletableFuture().join();
+
+        // Create request with mobile identifier and gender
+        HipWebhookController.UserInitiatedLinkingRequest request =
+                HipWebhookController.UserInitiatedLinkingRequest.builder()
+                        .transactionId("txn-123")
+                        .patient(HipWebhookController.UserInitiatedLinkingRequest.Patient.builder()
+                                .id(TEST_ABHA_ADDRESS)
+                                .name("Test Patient")
+                                .gender("F")
+                                .verifiedIdentifiers(List.of(
+                                        HipWebhookController.UserInitiatedLinkingRequest.Identifier.builder()
+                                                .type(HipWebhookController.UserInitiatedLinkingRequest.Type.MOBILE)
+                                                .value("9876543210")
+                                                .build()
+                                ))
+                                .build())
+                        .build();
+
+        // Execute request
+        handleAsyncProcessing(mockMvc.perform(post("/api/v3/hip/patient/care-context/discover")
+                .header("REQUEST-ID", TEST_REQUEST_ID)
+                .header("TIMESTAMP", Instant.now().toString())
+                .header("X-HIP-ID", testHealthFacilityID)
+                .content(gson.toJson(request))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isAccepted());
+
+        // Assert one linkUserInitiatedCareContext call with one care context
+        assertEquals(0, abhaRestClient.linkUserInitiatedCareContextCount);
+        Optional<UserInitiatedLinking> userInitiatedLinking = getUserInitiatedLinkingOptional("txn-123");
+        assertFalse(userInitiatedLinking.isPresent());
+    }
+
+    @Test
+    public void testDiscoverCareContextOneUnlinkedCareContextMatchedByMobileGenderAndAge() throws Exception {
+        // Create patient without ABHA address
+        Patient patient = Patient.builder()
+                .id(TEST_PATIENT_ID)
+                .name("Test Patient")
+                .mobileNo("9876543210")
+                .gender("M")
+                .abhaAddress(null)
+                .dob(LocalDate.of(1990, 1, 1))
+                .build();
+        patientDao.insert(patient).toCompletableFuture().join();
+
+        // Create unlinked care context
+        CareContext careContext = CareContext.builder()
+                .appointmentID("appt-123")
+                .healthFacilityId(testHealthFacilityID)
+                .patientId(TEST_PATIENT_ID)
+                .isLinked(false)
+                .isPatientNotified(false)
+                .build();
+        careContextDao.upsert(careContext).toCompletableFuture().join();
+
+        // Create request with mobile identifier, gender and year within +/-5 years
+        HipWebhookController.UserInitiatedLinkingRequest request =
+                HipWebhookController.UserInitiatedLinkingRequest.builder()
+                        .transactionId("txn-123")
+                        .patient(HipWebhookController.UserInitiatedLinkingRequest.Patient.builder()
+                                .id(TEST_ABHA_ADDRESS)
+                                .name("Test Patient")
+                                .gender("M")
+                                .yearOfBirth(1992) // Within 5 years of 1990
+                                .verifiedIdentifiers(List.of(
+                                        HipWebhookController.UserInitiatedLinkingRequest.Identifier.builder()
+                                                .type(HipWebhookController.UserInitiatedLinkingRequest.Type.MOBILE)
+                                                .value("9876543210")
+                                                .build()
+                                ))
+                                .build())
+                        .build();
+
+        // Execute request
+        handleAsyncProcessing(mockMvc.perform(post("/api/v3/hip/patient/care-context/discover")
+                .header("REQUEST-ID", TEST_REQUEST_ID)
+                .header("TIMESTAMP", Instant.now().toString())
+                .header("X-HIP-ID", testHealthFacilityID)
+                .content(gson.toJson(request))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isAccepted());
+
+        // Assert one linkUserInitiatedCareContext call with one care context
+        assertEquals(1, abhaRestClient.linkUserInitiatedCareContextCount);
+        assertEquals(1, abhaRestClient.lastLinkUserInitiatedCareContextRequest.getPatient().get(0).getCareContexts().size());
+        UserInitiatedLinking userInitiatedLinking = getUserInitiatedLinking("txn-123");
+        assertEquals("AWAITING_LINKING_INITIATION", userInitiatedLinking.getStatus());
+    }
+
+    @Test
+    public void testDiscoverCareContextZeroUnlinkedCareContextMatchedByMobileGenderAndAgeDoesntMatch() throws Exception {
+        // Create patient without ABHA address
+        Patient patient = Patient.builder()
+                .id(TEST_PATIENT_ID)
+                .name("Test Patient")
+                .mobileNo("9876543210")
+                .gender("M")
+                .abhaAddress(null)
+                .dob(LocalDate.of(1990, 1, 1))
+                .build();
+        patientDao.insert(patient).toCompletableFuture().join();
+
+        // Create unlinked care context
+        CareContext careContext = CareContext.builder()
+                .appointmentID("appt-123")
+                .healthFacilityId(testHealthFacilityID)
+                .patientId(TEST_PATIENT_ID)
+                .isLinked(false)
+                .isPatientNotified(false)
+                .build();
+        careContextDao.upsert(careContext).toCompletableFuture().join();
+
+        // Create request with mobile identifier, gender and year within +/-10 years
+        HipWebhookController.UserInitiatedLinkingRequest request =
+                HipWebhookController.UserInitiatedLinkingRequest.builder()
+                        .transactionId("txn-123")
+                        .patient(HipWebhookController.UserInitiatedLinkingRequest.Patient.builder()
+                                .id(TEST_ABHA_ADDRESS)
+                                .name("Test Patient")
+                                .gender("M")
+                                .yearOfBirth(1912) // Outside 10 years of 1990
+                                .verifiedIdentifiers(List.of(
+                                        HipWebhookController.UserInitiatedLinkingRequest.Identifier.builder()
+                                                .type(HipWebhookController.UserInitiatedLinkingRequest.Type.MOBILE)
+                                                .value("9876543210")
+                                                .build()
+                                ))
+                                .build())
+                        .build();
+
+        // Execute request
+        handleAsyncProcessing(mockMvc.perform(post("/api/v3/hip/patient/care-context/discover")
+                .header("REQUEST-ID", TEST_REQUEST_ID)
+                .header("TIMESTAMP", Instant.now().toString())
+                .header("X-HIP-ID", testHealthFacilityID)
+                .content(gson.toJson(request))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isAccepted());
+
+        // Assert one linkUserInitiatedCareContext call with zero care context
+        assertEquals(0, abhaRestClient.linkUserInitiatedCareContextCount);
+        Optional<UserInitiatedLinking> userInitiatedLinking = getUserInitiatedLinkingOptional("txn-123");
+        assertFalse(userInitiatedLinking.isPresent());
+    }
+
+    @Test
+    public void testDiscoverCareContextOneUnlinkedCareContextMatchedByPhoneticNameSearch() throws Exception {
+        // Create patient with similar name (phonetic match)
+        Patient patient = Patient.builder()
+                .id(TEST_PATIENT_ID)
+                .name("Jhon Doe") // Phonetically similar to "John Doe"
+                .mobileNo("9876543210")
+                .gender("M")
+                .dob(LocalDate.of(1990, 1, 1))
+                .build();
+        patientDao.insert(patient).toCompletableFuture().join();
+
+        // Create unlinked care context
+        CareContext careContext = CareContext.builder()
+                .appointmentID("appt-123")
+                .healthFacilityId(testHealthFacilityID)
+                .patientId(TEST_PATIENT_ID)
+                .isLinked(false)
+                .isPatientNotified(false)
+                .build();
+        careContextDao.upsert(careContext).toCompletableFuture().join();
+
+        // Create request with phonetically similar name
+        HipWebhookController.UserInitiatedLinkingRequest request =
+                HipWebhookController.UserInitiatedLinkingRequest.builder()
+                        .transactionId("txn-123")
+                        .patient(HipWebhookController.UserInitiatedLinkingRequest.Patient.builder()
+                                .id("unknown-abha@sbx")
+                                .name("John Doe")
+                                .gender("M")
+                                .yearOfBirth(1990)
+                                .verifiedIdentifiers(List.of(
+                                        HipWebhookController.UserInitiatedLinkingRequest.Identifier.builder()
+                                                .type(HipWebhookController.UserInitiatedLinkingRequest.Type.MOBILE)
+                                                .value("9876543210")
+                                                .build()
+                                ))
+                                .build())
+                        .build();
+
+        // Execute request
+        handleAsyncProcessing(mockMvc.perform(post("/api/v3/hip/patient/care-context/discover")
+                .header("REQUEST-ID", TEST_REQUEST_ID)
+                .header("TIMESTAMP", Instant.now().toString())
+                .header("X-HIP-ID", testHealthFacilityID)
+                .content(gson.toJson(request))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isAccepted());
+
+        // Assert one linkUserInitiatedCareContext call with one care context
+        assertEquals(1, abhaRestClient.linkUserInitiatedCareContextCount);
+        assertEquals(1, abhaRestClient.lastLinkUserInitiatedCareContextRequest.getPatient().get(0).getCareContexts().size());
+        UserInitiatedLinking userInitiatedLinking = getUserInitiatedLinking("txn-123");
+        assertEquals("AWAITING_LINKING_INITIATION", userInitiatedLinking.getStatus());
+    }
+
+    @Test
+    public void testDiscoverCareContextTwoUnlinkedCareContextsPresent() throws Exception {
+        // Create ABHA patient
+        Patient patient = Patient.builder()
+                .id(TEST_PATIENT_ID)
+                .name("Test Patient")
+                .mobileNo("9876543210")
+                .gender("M")
+                .dob(LocalDate.of(1990, 1, 1))
+                .abhaAddress(TEST_ABHA_ADDRESS)
+                .abhaNo("91536782361862")
+                .build();
+        patientDao.insert(patient).toCompletableFuture().join();
+
+        // Create two unlinked care contexts
+        CareContext careContext1 = CareContext.builder()
+                .appointmentID("appt-123")
+                .healthFacilityId(testHealthFacilityID)
+                .patientId(TEST_PATIENT_ID)
+                .isLinked(false)
+                .isPatientNotified(false)
+                .build();
+        careContextDao.upsert(careContext1).toCompletableFuture().join();
+
+        CareContext careContext2 = CareContext.builder()
+                .appointmentID("appt-456")
+                .healthFacilityId(testHealthFacilityID)
+                .patientId(TEST_PATIENT_ID)
+                .isLinked(false)
+                .isPatientNotified(false)
+                .build();
+        careContextDao.upsert(careContext2).toCompletableFuture().join();
+
+        // Create request
+        HipWebhookController.UserInitiatedLinkingRequest request =
+                HipWebhookController.UserInitiatedLinkingRequest.builder()
+                        .transactionId("txn-123")
+                        .patient(HipWebhookController.UserInitiatedLinkingRequest.Patient.builder()
+                                .id(TEST_ABHA_ADDRESS)
+                                .name("Test Patient")
+                                .build())
+                        .build();
+
+        // Execute request
+        handleAsyncProcessing(mockMvc.perform(post("/api/v3/hip/patient/care-context/discover")
+                .header("REQUEST-ID", TEST_REQUEST_ID)
+                .header("TIMESTAMP", Instant.now().toString())
+                .header("X-HIP-ID", testHealthFacilityID)
+                .content(gson.toJson(request))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isAccepted());
+
+        // Assert one linkUserInitiatedCareContext call with two care contexts
+        assertEquals(1, abhaRestClient.linkUserInitiatedCareContextCount);
+        assertEquals(2, abhaRestClient.lastLinkUserInitiatedCareContextRequest.getPatient().get(0).getCareContexts().size());
+    }
+
     protected ResultActions handleAsyncProcessing(ResultActions resultActions) throws Exception {
         MvcResult mvcResult = resultActions.andReturn();
         while (mvcResult.getAsyncResult() != null && mvcResult.getAsyncResult() instanceof CompletableFuture) {
@@ -323,5 +756,20 @@ public class HipWebhookControllerTest {
 
     private Optional<CareContext> getCareContext(String appointmentId) {
         return careContextDao.get(appointmentId).toCompletableFuture().join();
+    }
+
+    private UserInitiatedLinking getUserInitiatedLinking(String transactionId) {
+        return userInitiatedLinkingDao.getByTransactionId(transactionId).toCompletableFuture().join();
+    }
+
+    private Optional<UserInitiatedLinking> getUserInitiatedLinkingOptional(String transactionId) {
+        try {
+            return Optional.ofNullable(userInitiatedLinkingDao.getByTransactionId(transactionId).toCompletableFuture().join());
+        } catch (Exception e) {
+            if(e.getCause() instanceof EmptyResultDataAccessException) {
+                return Optional.empty();
+            }
+            return Optional.empty();
+        }
     }
 }

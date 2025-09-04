@@ -2,10 +2,7 @@ package configuration;
 
 import in.docq.abha.rest.client.AbhaRestClient;
 import in.docq.abha.rest.client.ApiClient;
-import in.docq.abha.rest.client.model.AbdmHipInitiatedLinkingHip1Request;
-import in.docq.abha.rest.client.model.HIPInitiatedGenerateTokenRequest;
-import in.docq.abha.rest.client.model.SearchFacilitiesData;
-import in.docq.abha.rest.client.model.SendSmsNotificationRequest;
+import in.docq.abha.rest.client.model.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +10,7 @@ import org.springframework.context.annotation.Primary;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -33,6 +31,8 @@ public class TestAbhaClientConfiguration {
         public int sendDeepLinkNotificationCount;
         public int generateLinkingTokenCount;
         public int linkCareContextCount;
+        public int linkUserInitiatedCareContextCount = 0;
+        public AbdmUserInitiatedLinking2Request lastLinkUserInitiatedCareContextRequest;
 
         public MockAbhaRestClient() {
             super(null, null, null);
@@ -68,6 +68,13 @@ public class TestAbhaClientConfiguration {
         public CompletionStage<Void> linkHIPInitiatedCareContext(String requestId, String timestamp, String xCmId, String xHipId, String xLinkToken, AbdmHipInitiatedLinkingHip1Request abdmHipInitiatedLinkingHip1Request) {
             linkCareContextCount++;
             return completedFuture(null);
+        }
+
+        @Override
+        public CompletionStage<Void> linkUserInitiatedCareContext(String requestId, String timestamp, String xCmId, String xHiuId, AbdmUserInitiatedLinking2Request request) {
+            linkUserInitiatedCareContextCount++;
+            lastLinkUserInitiatedCareContextRequest = request;
+            return CompletableFuture.completedFuture(null);
         }
     }
 }

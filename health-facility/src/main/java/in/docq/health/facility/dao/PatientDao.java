@@ -95,7 +95,7 @@ public class PatientDao {
                 whereClause += " AND ";
             }
             whereClause += Column.DOB.getColumnName() + " = ?";
-            args.add(dob);
+            args.add(Date.valueOf(dob));
         }
         if(gender != null) {
             if(!whereClause.equals(" WHERE ")) {
@@ -117,7 +117,7 @@ public class PatientDao {
                         .dob(rs.getDate(Column.DOB.getColumnName()).toLocalDate())
                         .gender(rs.getString(Column.GENDER.getColumnName()))
                         .build(),
-                args);
+                args.toArray());
     }
 
     public CompletionStage<Patient> getByAbhaAddress(String abhaAddress) {

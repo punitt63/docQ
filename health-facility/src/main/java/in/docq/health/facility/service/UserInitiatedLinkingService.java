@@ -16,12 +16,11 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+
+import static java.util.concurrent.CompletableFuture.completedFuture;
 
 @Service
 public class UserInitiatedLinkingService {
@@ -46,29 +45,33 @@ public class UserInitiatedLinkingService {
     }
 
     public CompletionStage<Void> discoverCareContext(String requestId, String healthFacilityId, HipWebhookController.UserInitiatedLinkingRequest request) {
-        return patientService.getPatientByAbhaAddress(request.getPatient().getId())
-                .thenCompose(patient -> userInitiatedLinkingDao.insert(UserInitiatedLinking.builder()
-                        .transactionId(request.getTransactionId())
-                        .patientId(patient.getId())
-                        .status("AWAITING_LINKING_INITIATION")
-                        .build()))
-                .thenCompose(ignore -> getUnlinkedCareContexts(healthFacilityId, request))
-                .thenCompose(careContexts -> abhaRestClient.linkUserInitiatedCareContext(UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), healthFacilityId, xCmId,
-                        new AbdmUserInitiatedLinking2Request()
-                                .transactionId(request.getTransactionId())
-                                .patient(ImmutableList.of(new AbdmUserInitiatedLinking2RequestPatientInner()
-                                        .referenceNumber(request.getPatient().getId())
-                                        .display(request.getPatient().getName())
-                                        .hiType(AbdmHipInitiatedLinkingHip1RequestPatientInner.HiTypesEnum.PRESCRIPTION)
-                                        .count(careContexts.getValue().size())
-                                        .careContexts(careContexts.getValue().stream().map(careContext ->
-                                                new AbdmUserInitiatedLinking2RequestPatientInnerCareContextsInner()
-                                                        .referenceNumber(careContext.getAppointmentID())
-                                                        .display("Prescription from " + healthFacilityId)
-                                        ).toList())))
-                                .matchedBy(List.of(careContexts.getKey()))
-                                .response(new AbdmUserInitiatedLinking2RequestResponse().requestId(UUID.fromString(requestId))
-                                )));
+        return getUnlinkedCareContexts(healthFacilityId, request)
+                .thenCompose(careContexts -> {
+                    if(careContexts.getValue().isEmpty()) {
+                        return completedFuture(null);
+                    }
+                    return userInitiatedLinkingDao.insert(UserInitiatedLinking.builder()
+                            .transactionId(request.getTransactionId())
+                            .patientId(careContexts.getValue().get(0).getPatientId())
+                            .status("AWAITING_LINKING_INITIATION")
+                            .build())
+                            .thenCompose(ignore -> abhaRestClient.linkUserInitiatedCareContext(UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), healthFacilityId, xCmId,
+                            new AbdmUserInitiatedLinking2Request()
+                                    .transactionId(request.getTransactionId())
+                                    .patient(ImmutableList.of(new AbdmUserInitiatedLinking2RequestPatientInner()
+                                            .referenceNumber(request.getPatient().getId())
+                                            .display(request.getPatient().getName())
+                                            .hiType(AbdmHipInitiatedLinkingHip1RequestPatientInner.HiTypesEnum.PRESCRIPTION)
+                                            .count(careContexts.getValue().size())
+                                            .careContexts(careContexts.getValue().stream().map(careContext ->
+                                                    new AbdmUserInitiatedLinking2RequestPatientInnerCareContextsInner()
+                                                            .referenceNumber(careContext.getAppointmentID())
+                                                            .display("Prescription from " + healthFacilityId)
+                                            ).toList())))
+                                    .matchedBy(List.of(careContexts.getKey()))
+                                    .response(new AbdmUserInitiatedLinking2RequestResponse().requestId(UUID.fromString(requestId))
+                                    )));
+                });
     }
 
     private CompletionStage<Pair<AbdmUserInitiatedLinking2Request.MatchedByEnum, List<CareContext>>> getUnlinkedCareContexts(String healthFacilityId, HipWebhookController.UserInitiatedLinkingRequest request) {
@@ -77,42 +80,47 @@ public class UserInitiatedLinkingService {
         return patientService.getPatientByAbhaAddressOptional(abhaAddress)
                 .thenCompose(patientOpt -> {
                     if (patientOpt.isPresent()) {
-                        return careContextService.getUnlinkedCareContexts(patientOpt.get().getId(), healthFacilityId)
-                                .thenApply(careContexts -> Pair.of(AbdmUserInitiatedLinking2Request.MatchedByEnum.ABHA_ADDRESS, careContexts));
+                        return completedFuture(Pair.of(AbdmUserInitiatedLinking2Request.MatchedByEnum.ABHA_ADDRESS, patientOpt.get()));
                     }
 
                     // Step 2: Search by mobile number
                     String mobileNumber = extractMobileNumber(request.getPatient().getVerifiedIdentifiers(),
                             request.getPatient().getUnverifiedIdentifiers());
                     if (mobileNumber == null) {
-                        return CompletableFuture.completedFuture(Pair.of(null, Collections.emptyList()));
+                        return completedFuture(Pair.of(AbdmUserInitiatedLinking2Request.MatchedByEnum.MOBILE, null));
                     }
 
                     return patientService.list(null, mobileNumber, null, request.getPatient().getGender())
-                            .thenCompose(patientsByMobileNoAndGender -> {
+                            .thenApply(patientsByMobileNoAndGender -> {
                                 if (patientsByMobileNoAndGender.isEmpty()) {
-                                    return CompletableFuture.completedFuture(Pair.of(null, Collections.emptyList()));
+                                    return Pair.of(AbdmUserInitiatedLinking2Request.MatchedByEnum.MOBILE, null);
                                 }
 
                                 // Step 2: Match age (+/- 5 years)
                                 List<Patient> matchedAgePatients = patientsByMobileNoAndGender.stream()
                                         .filter(patient -> matchesAge(patient.getDob(), request.getPatient().getYearOfBirth()))
                                         .toList();
-                                if(matchedAgePatients.isEmpty()) {
-                                    return CompletableFuture.completedFuture(Pair.of(null, Collections.emptyList()));
+                                if (matchedAgePatients.isEmpty()) {
+                                    return Pair.of(AbdmUserInitiatedLinking2Request.MatchedByEnum.MOBILE, null);
                                 }
 
                                 // Step 3: Match name phonetically
                                 List<Patient> matchedNamePatients = matchedAgePatients.stream()
                                         .filter(patient -> matchesNamePhonetically(patient.getName(), request.getPatient().getName()))
                                         .toList();
-                                if(matchedNamePatients.isEmpty()) {
-                                    return CompletableFuture.completedFuture(Pair.of(null, Collections.emptyList()));
+                                if (matchedNamePatients.isEmpty()) {
+                                    return Pair.of(AbdmUserInitiatedLinking2Request.MatchedByEnum.MOBILE, null);
                                 }
+                                return Pair.of(AbdmUserInitiatedLinking2Request.MatchedByEnum.MOBILE, matchedNamePatients.get(0));
 
-                                return careContextService.getUnlinkedCareContexts(matchedNamePatients.get(0).getId(), healthFacilityId)
-                                        .thenApply(careContexts -> Pair.of(AbdmUserInitiatedLinking2Request.MatchedByEnum.MOBILE, careContexts));
                             });
+                })
+                .thenCompose(matchedPatient -> {
+                    if(Objects.isNull(matchedPatient.getValue())) {
+                        return completedFuture(Pair.of(AbdmUserInitiatedLinking2Request.MatchedByEnum.MOBILE, new ArrayList<>()));
+                    }
+                    return careContextService.getUnlinkedCareContexts(((Patient) matchedPatient.getRight()).getId(), healthFacilityId)
+                            .thenApply(careContexts -> Pair.of(AbdmUserInitiatedLinking2Request.MatchedByEnum.MOBILE, careContexts));
                 });
     }
 
@@ -207,6 +215,7 @@ public class UserInitiatedLinkingService {
                                                     .otp(otp)
                                                     .otpExpiryTime(otpExpiryTime)
                                                     .linkReferenceNumber(linkReferenceNumber)
+                                                    .initLinkRequest(request)
                                                     .build()))
                                             .thenCompose(ignore ->
                                                     // Step 5: Call ABHA rest client
@@ -234,5 +243,54 @@ public class UserInitiatedLinkingService {
                                             );
                                 })
                 );
+    }
+
+    public CompletionStage<Void> confirmCareContextLink(String requestId, String timestamp, String healthFacilityId,
+                                                        HipWebhookController.ConfirmCareContextLinkRequest request) {
+        String linkRefNumber = request.getConfirmation().getLinkRefNumber();
+        String token = request.getConfirmation().getToken();
+
+        return userInitiatedLinkingDao.getByLinkReferenceNumber(linkRefNumber)
+                .thenCompose(userInitiatedLinking -> {
+                    // Check if OTP matches
+                    if (userInitiatedLinking.getOtp() != null && userInitiatedLinking.getOtp().equals(token)) {
+                        // OTP matches - proceed with confirmation
+                        HipWebhookController.InitCareContextLinkRequest initLinkRequest = userInitiatedLinking.getInitLinkRequest();
+
+                        return abhaRestClient.confirmCareContextLinking(
+                                requestId,
+                                timestamp,
+                                xCmId,
+                                new AbdmUserInitiatedLinking6Request()
+                                        .patient(initLinkRequest.getPatient().stream()
+                                                .map(patientInfo -> new AbdmUserInitiatedLinking6RequestPatientInner()
+                                                        .referenceNumber(patientInfo.getReferenceNumber())
+                                                        .display(patientInfo.getDisplay())
+                                                        .careContexts(patientInfo.getCareContexts().stream()
+                                                                .map(careContext -> new AbdmUserInitiatedLinking6RequestPatientInnerCareContextsInner()
+                                                                        .referenceNumber(careContext.getReferenceNumber())
+                                                                        .display(careContext.getDisplay()))
+                                                                .toList())
+                                                        .hiType(AbdmHipInitiatedLinkingHip1RequestPatientInner.HiTypesEnum.valueOf(patientInfo.getHiType()))
+                                                        .count(patientInfo.getCount()))
+                                                .toList())
+                                        .response(new AbdmUserInitiatedLinking6RequestResponse()
+                                                .requestId(UUID.fromString(requestId)))
+                        );
+                    } else {
+                        // OTP doesn't match - send error
+                        return abhaRestClient.confirmCareContextLinking(
+                                requestId,
+                                timestamp,
+                                xCmId,
+                                new AbdmUserInitiatedLinking6Request()
+                                        .error(new AbdmUserInitiatedLinking3RequestError()
+                                                .code("900901")
+                                                .message("Invalid Credentials. Make sure you have provided the correct security credentials"))
+                                        .response(new AbdmUserInitiatedLinking6RequestResponse()
+                                                .requestId(UUID.fromString(requestId)))
+                        );
+                    }
+                });
     }
 }

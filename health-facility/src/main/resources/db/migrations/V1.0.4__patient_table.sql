@@ -6,11 +6,11 @@ CREATE TABLE patient (
     mobile_no text NOT NULL,
     dob date NOT NULL,
     gender varchar(1) NOT NULL,
+    created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT patient_pkey PRIMARY KEY (id),
     CONSTRAINT patient_mob_name_dob_idx UNIQUE (mobile_no, name, dob),
     CONSTRAINT abha_address_idx UNIQUE (abha_address)
-    created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TRIGGER update_patient_timestamp
