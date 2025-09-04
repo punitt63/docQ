@@ -32,9 +32,9 @@ public class UserInitiatedLinkingDao {
             Column.PATIENT_ID.getColumnName() + " = ?, " +
             Column.STATUS.getColumnName() + " = ?, " +
             Column.LINK_REFERENCE_NUMBER.getColumnName() + " = ?, " +
-            Column.OTP.getColumnName() + " = ? " +
-            Column.OTP_EXPIRY_TIME.getColumnName() + " = ? " +
-            Column.INIT_LINK_REQUEST.getColumnName() + " = ?::jsonb" +
+            Column.OTP.getColumnName() + " = ?, " +
+            Column.OTP_EXPIRY_TIME.getColumnName() + " = ?, " +
+            Column.INIT_LINK_REQUEST.getColumnName() + " = ?::jsonb "  +
             "WHERE " + Column.TRANSACTION_ID.getColumnName() + " = ?";
 
     @Autowired

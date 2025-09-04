@@ -216,6 +216,7 @@ public class UserInitiatedLinkingService {
                                                     .otpExpiryTime(otpExpiryTime)
                                                     .linkReferenceNumber(linkReferenceNumber)
                                                     .initLinkRequest(request)
+                                                    .status("AWAITING_OTP_CONFIRMATION")
                                                     .build()))
                                             .thenCompose(ignore ->
                                                     // Step 5: Call ABHA rest client
@@ -252,6 +253,23 @@ public class UserInitiatedLinkingService {
 
         return userInitiatedLinkingDao.getByLinkReferenceNumber(linkRefNumber)
                 .thenCompose(userInitiatedLinking -> {
+                    // Check if OTP has expired
+                    if (userInitiatedLinking.getOtpExpiryTime() != null &&
+                            Instant.now().toEpochMilli() > userInitiatedLinking.getOtpExpiryTime()) {
+                        // OTP has expired - send error
+                        return abhaRestClient.confirmCareContextLinking(
+                                requestId,
+                                timestamp,
+                                xCmId,
+                                new AbdmUserInitiatedLinking6Request()
+                                        .error(new AbdmUserInitiatedLinking3RequestError()
+                                                .code("900902")
+                                                .message("OTP has expired. Please request a new OTP"))
+                                        .response(new AbdmUserInitiatedLinking6RequestResponse()
+                                                .requestId(UUID.fromString(requestId)))
+                        );
+                    }
+
                     // Check if OTP matches
                     if (userInitiatedLinking.getOtp() != null && userInitiatedLinking.getOtp().equals(token)) {
                         // OTP matches - proceed with confirmation

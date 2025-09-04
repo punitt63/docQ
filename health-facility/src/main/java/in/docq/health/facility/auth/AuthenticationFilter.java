@@ -89,6 +89,8 @@ public class AuthenticationFilter extends OncePerRequestFilter {
                 path.endsWith("/on-generate-token") ||
                 path.endsWith("/on_carecontext") ||
                 path.endsWith("/on-notify") ||
-                path.endsWith("care-context/discover");
+                path.endsWith("/care-context/discover") ||
+                path.endsWith("/care-context/init") ||
+                path.endsWith("/care-context/confirm");
     }
 }

@@ -14,6 +14,7 @@ import in.docq.health.facility.model.CareContext;
 import in.docq.health.facility.model.HIPLinkingToken;
 import in.docq.health.facility.model.Patient;
 import in.docq.health.facility.model.UserInitiatedLinking;
+import in.docq.health.facility.service.OTPService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,6 +31,7 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -63,6 +65,10 @@ public class HipWebhookControllerTest {
     private UserInitiatedLinkingDao userInitiatedLinkingDao;
 
     @Autowired
+    private TestAbhaClientConfiguration.MockOtpService otpService;
+
+
+    @Autowired
     private TestAbhaClientConfiguration.MockAbhaRestClient abhaRestClient;
 
     private static final Gson gson = new GsonBuilder()
@@ -85,6 +91,11 @@ public class HipWebhookControllerTest {
         abhaRestClient.sendDeepLinkNotificationCount = 0;
         abhaRestClient.generateLinkingTokenCount = 0;
         abhaRestClient.linkUserInitiatedCareContextCount = 0;
+        abhaRestClient.initiateUserLinking = 0;
+        otpService.sendOtpCount = 0;
+        otpService.otpToReturn = "123456";
+        otpService.lastMobileNumber = "9876543210";
+        abhaRestClient.confirmCareContextLinking = 0;
     }
 
     @Test
@@ -742,6 +753,314 @@ public class HipWebhookControllerTest {
         // Assert one linkUserInitiatedCareContext call with two care contexts
         assertEquals(1, abhaRestClient.linkUserInitiatedCareContextCount);
         assertEquals(2, abhaRestClient.lastLinkUserInitiatedCareContextRequest.getPatient().get(0).getCareContexts().size());
+    }
+
+    @Test
+    public void testConfirmCareContextLinkOtpCorrectNotExpiredOnePatient() throws Exception {
+        // Setup patient
+        Patient patient = Patient.builder()
+                .id(TEST_PATIENT_ID)
+                .name("Test Patient")
+                .mobileNo("9876543210")
+                .gender("M")
+                .dob(LocalDate.of(1990, 1, 1))
+                .abhaAddress(TEST_ABHA_ADDRESS)
+                .abhaNo("91536782361862")
+                .build();
+        patientDao.insert(patient).toCompletableFuture().join();
+
+        // Setup user initiated linking with one patient and valid OTP
+        HipWebhookController.InitCareContextLinkRequest initRequest =
+                HipWebhookController.InitCareContextLinkRequest.builder()
+                        .transactionId("txn-123")
+                        .abhaAddress(TEST_ABHA_ADDRESS)
+                        .patient(List.of(
+                                HipWebhookController.InitCareContextLinkRequest.PatientInfo.builder()
+                                        .referenceNumber(TEST_PATIENT_ID)
+                                        .display("Test Patient")
+                                        .careContexts(List.of(
+                                                HipWebhookController.InitCareContextLinkRequest.CareContextInfo.builder()
+                                                        .referenceNumber(TEST_APPOINTMENT_ID)
+                                                        .display("Prescription from " + testHealthFacilityID)
+                                                        .build()
+                                        ))
+                                        .hiType("PRESCRIPTION")
+                                        .count(1)
+                                        .build()
+                        ))
+                        .build();
+
+        UserInitiatedLinking userInitiatedLinking = UserInitiatedLinking.builder()
+                .transactionId("txn-123")
+                .patientId(TEST_PATIENT_ID)
+                .status("AWAITING_OTP_CONFIRMATION")
+                .linkReferenceNumber("link-ref-123")
+                .otp("123456")
+                .otpExpiryTime(Instant.now().plus(5, ChronoUnit.MINUTES).toEpochMilli())
+                .initLinkRequest(initRequest)
+                .build();
+        userInitiatedLinkingDao.insert(userInitiatedLinking).toCompletableFuture().join();
+
+        // Create confirm request with correct OTP
+        HipWebhookController.ConfirmCareContextLinkRequest request =
+                HipWebhookController.ConfirmCareContextLinkRequest.builder()
+                        .confirmation(HipWebhookController.ConfirmCareContextLinkRequest.Confirmation.builder()
+                                .linkRefNumber("link-ref-123")
+                                .token("123456")
+                                .build())
+                        .build();
+
+        // Execute request
+        handleAsyncProcessing(mockMvc.perform(post("/api/v3/hip/link/care-context/confirm")
+                .header("REQUEST-ID", TEST_REQUEST_ID)
+                .header("TIMESTAMP", Instant.now().toString())
+                .header("X-HIP-ID", testHealthFacilityID)
+                .content(gson.toJson(request))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+
+        // Assert confirmCareContextLinking count
+        assertEquals(1, abhaRestClient.confirmCareContextLinking);
+
+        // Assert body contains one patient
+        assertNotNull(abhaRestClient.lastConfirmCareContextLinkingRequest);
+        assertEquals(1, abhaRestClient.lastConfirmCareContextLinkingRequest.getPatient().size());
+        assertNull(abhaRestClient.lastConfirmCareContextLinkingRequest.getError());
+    }
+
+    @Test
+    public void testConfirmCareContextLinkOtpCorrectNotExpiredTwoPatients() throws Exception {
+        // Setup patients
+        Patient patient1 = Patient.builder()
+                .id(TEST_PATIENT_ID)
+                .name("Test Patient 1")
+                .mobileNo("9876543210")
+                .gender("M")
+                .dob(LocalDate.of(1990, 1, 1))
+                .abhaAddress(TEST_ABHA_ADDRESS)
+                .abhaNo("91536782361862")
+                .build();
+        patientDao.insert(patient1).toCompletableFuture().join();
+
+        // Setup user initiated linking with two patients and valid OTP
+        HipWebhookController.InitCareContextLinkRequest initRequest =
+                HipWebhookController.InitCareContextLinkRequest.builder()
+                        .transactionId("txn-123")
+                        .abhaAddress(TEST_ABHA_ADDRESS)
+                        .patient(List.of(
+                                HipWebhookController.InitCareContextLinkRequest.PatientInfo.builder()
+                                        .referenceNumber(TEST_PATIENT_ID)
+                                        .display("Test Patient 1")
+                                        .careContexts(List.of(
+                                                HipWebhookController.InitCareContextLinkRequest.CareContextInfo.builder()
+                                                        .referenceNumber(TEST_APPOINTMENT_ID)
+                                                        .display("Prescription from " + testHealthFacilityID)
+                                                        .build()
+                                        ))
+                                        .hiType("PRESCRIPTION")
+                                        .count(1)
+                                        .build(),
+                                HipWebhookController.InitCareContextLinkRequest.PatientInfo.builder()
+                                        .referenceNumber("test-patient-id-2")
+                                        .display("Test Patient 2")
+                                        .careContexts(List.of(
+                                                HipWebhookController.InitCareContextLinkRequest.CareContextInfo.builder()
+                                                        .referenceNumber("test-appointment-id-2")
+                                                        .display("Prescription from " + testHealthFacilityID)
+                                                        .build()
+                                        ))
+                                        .hiType("PRESCRIPTION")
+                                        .count(1)
+                                        .build()
+                        ))
+                        .build();
+
+        UserInitiatedLinking userInitiatedLinking = UserInitiatedLinking.builder()
+                .transactionId("txn-123")
+                .patientId(TEST_PATIENT_ID)
+                .status("AWAITING_OTP_CONFIRMATION")
+                .linkReferenceNumber("link-ref-123")
+                .otp("123456")
+                .otpExpiryTime(Instant.now().plus(5, ChronoUnit.MINUTES).toEpochMilli())
+                .initLinkRequest(initRequest)
+                .build();
+        userInitiatedLinkingDao.insert(userInitiatedLinking).toCompletableFuture().join();
+
+        // Create confirm request with correct OTP
+        HipWebhookController.ConfirmCareContextLinkRequest request =
+                HipWebhookController.ConfirmCareContextLinkRequest.builder()
+                        .confirmation(HipWebhookController.ConfirmCareContextLinkRequest.Confirmation.builder()
+                                .linkRefNumber("link-ref-123")
+                                .token("123456")
+                                .build())
+                        .build();
+
+        // Execute request
+        handleAsyncProcessing(mockMvc.perform(post("/api/v3/hip/link/care-context/confirm")
+                .header("REQUEST-ID", TEST_REQUEST_ID)
+                .header("TIMESTAMP", Instant.now().toString())
+                .header("X-HIP-ID", testHealthFacilityID)
+                .content(gson.toJson(request))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+
+        // Assert confirmCareContextLinking count
+        assertEquals(1, abhaRestClient.confirmCareContextLinking);
+
+        // Assert body contains two patients
+        assertNotNull(abhaRestClient.lastConfirmCareContextLinkingRequest);
+        assertEquals(2, abhaRestClient.lastConfirmCareContextLinkingRequest.getPatient().size());
+        assertNull(abhaRestClient.lastConfirmCareContextLinkingRequest.getError());
+    }
+
+    @Test
+    public void testConfirmCareContextLinkOtpExpired() throws Exception {
+        // Setup patient
+        Patient patient = Patient.builder()
+                .id(TEST_PATIENT_ID)
+                .name("Test Patient")
+                .mobileNo("9876543210")
+                .gender("M")
+                .dob(LocalDate.of(1990, 1, 1))
+                .abhaAddress(TEST_ABHA_ADDRESS)
+                .abhaNo("91536782361862")
+                .build();
+        patientDao.insert(patient).toCompletableFuture().join();
+
+        // Setup user initiated linking with expired OTP
+        HipWebhookController.InitCareContextLinkRequest initRequest =
+                HipWebhookController.InitCareContextLinkRequest.builder()
+                        .transactionId("txn-123")
+                        .abhaAddress(TEST_ABHA_ADDRESS)
+                        .patient(List.of(
+                                HipWebhookController.InitCareContextLinkRequest.PatientInfo.builder()
+                                        .referenceNumber(TEST_PATIENT_ID)
+                                        .display("Test Patient")
+                                        .careContexts(List.of(
+                                                HipWebhookController.InitCareContextLinkRequest.CareContextInfo.builder()
+                                                        .referenceNumber(TEST_APPOINTMENT_ID)
+                                                        .display("Prescription from " + testHealthFacilityID)
+                                                        .build()
+                                        ))
+                                        .hiType("PRESCRIPTION")
+                                        .count(1)
+                                        .build()
+                        ))
+                        .build();
+
+        UserInitiatedLinking userInitiatedLinking = UserInitiatedLinking.builder()
+                .transactionId("txn-123")
+                .patientId(TEST_PATIENT_ID)
+                .status("AWAITING_OTP_CONFIRMATION")
+                .linkReferenceNumber("link-ref-123")
+                .otp("123456")
+                .otpExpiryTime(Instant.now().minus(5, ChronoUnit.MINUTES).toEpochMilli()) // Expired
+                .initLinkRequest(initRequest)
+                .build();
+        userInitiatedLinkingDao.insert(userInitiatedLinking).toCompletableFuture().join();
+
+        // Create confirm request with correct OTP but expired
+        HipWebhookController.ConfirmCareContextLinkRequest request =
+                HipWebhookController.ConfirmCareContextLinkRequest.builder()
+                        .confirmation(HipWebhookController.ConfirmCareContextLinkRequest.Confirmation.builder()
+                                .linkRefNumber("link-ref-123")
+                                .token("123456")
+                                .build())
+                        .build();
+
+        // Execute request
+        handleAsyncProcessing(mockMvc.perform(post("/api/v3/hip/link/care-context/confirm")
+                .header("REQUEST-ID", TEST_REQUEST_ID)
+                .header("TIMESTAMP", Instant.now().toString())
+                .header("X-HIP-ID", testHealthFacilityID)
+                .content(gson.toJson(request))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+
+        // Assert confirmCareContextLinking count (should still be called with error)
+        assertEquals(1, abhaRestClient.confirmCareContextLinking);
+
+        // Assert body contains error for expired OTP
+        assertNotNull(abhaRestClient.lastConfirmCareContextLinkingRequest);
+        assertNotNull(abhaRestClient.lastConfirmCareContextLinkingRequest.getError());
+        assertEquals("900902", abhaRestClient.lastConfirmCareContextLinkingRequest.getError().getCode());
+        assertEquals("OTP has expired. Please request a new OTP", abhaRestClient.lastConfirmCareContextLinkingRequest.getError().getMessage());
+        assertTrue(abhaRestClient.lastConfirmCareContextLinkingRequest.getPatient().isEmpty());
+    }
+
+    @Test
+    public void testConfirmCareContextLinkOtpWrongNotExpired() throws Exception {
+        // Setup patient
+        Patient patient = Patient.builder()
+                .id(TEST_PATIENT_ID)
+                .name("Test Patient")
+                .mobileNo("9876543210")
+                .gender("M")
+                .dob(LocalDate.of(1990, 1, 1))
+                .abhaAddress(TEST_ABHA_ADDRESS)
+                .abhaNo("91536782361862")
+                .build();
+        patientDao.insert(patient).toCompletableFuture().join();
+
+        // Setup user initiated linking with valid OTP
+        HipWebhookController.InitCareContextLinkRequest initRequest =
+                HipWebhookController.InitCareContextLinkRequest.builder()
+                        .transactionId("txn-123")
+                        .abhaAddress(TEST_ABHA_ADDRESS)
+                        .patient(List.of(
+                                HipWebhookController.InitCareContextLinkRequest.PatientInfo.builder()
+                                        .referenceNumber(TEST_PATIENT_ID)
+                                        .display("Test Patient")
+                                        .careContexts(List.of(
+                                                HipWebhookController.InitCareContextLinkRequest.CareContextInfo.builder()
+                                                        .referenceNumber(TEST_APPOINTMENT_ID)
+                                                        .display("Prescription from " + testHealthFacilityID)
+                                                        .build()
+                                        ))
+                                        .hiType("PRESCRIPTION")
+                                        .count(1)
+                                        .build()
+                        ))
+                        .build();
+
+        UserInitiatedLinking userInitiatedLinking = UserInitiatedLinking.builder()
+                .transactionId("txn-123")
+                .patientId(TEST_PATIENT_ID)
+                .status("AWAITING_OTP_CONFIRMATION")
+                .linkReferenceNumber("link-ref-123")
+                .otp("123456")
+                .otpExpiryTime(Instant.now().plus(5, ChronoUnit.MINUTES).toEpochMilli())
+                .initLinkRequest(initRequest)
+                .build();
+        userInitiatedLinkingDao.insert(userInitiatedLinking).toCompletableFuture().join();
+
+        // Create confirm request with wrong OTP
+        HipWebhookController.ConfirmCareContextLinkRequest request =
+                HipWebhookController.ConfirmCareContextLinkRequest.builder()
+                        .confirmation(HipWebhookController.ConfirmCareContextLinkRequest.Confirmation.builder()
+                                .linkRefNumber("link-ref-123")
+                                .token("654321") // Wrong OTP
+                                .build())
+                        .build();
+
+        // Execute request
+        handleAsyncProcessing(mockMvc.perform(post("/api/v3/hip/link/care-context/confirm")
+                .header("REQUEST-ID", TEST_REQUEST_ID)
+                .header("TIMESTAMP", Instant.now().toString())
+                .header("X-HIP-ID", testHealthFacilityID)
+                .content(gson.toJson(request))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+
+        // Assert confirmCareContextLinking count (should still be called with error)
+        assertEquals(1, abhaRestClient.confirmCareContextLinking);
+
+        // Assert body contains error for wrong OTP
+        assertNotNull(abhaRestClient.lastConfirmCareContextLinkingRequest);
+        assertNotNull(abhaRestClient.lastConfirmCareContextLinkingRequest.getError());
+        assertEquals("900901", abhaRestClient.lastConfirmCareContextLinkingRequest.getError().getCode());
+        assertEquals("Invalid Credentials. Make sure you have provided the correct security credentials", abhaRestClient.lastConfirmCareContextLinkingRequest.getError().getMessage());
+        assertTrue(abhaRestClient.lastConfirmCareContextLinkingRequest.getPatient().isEmpty());
     }
 
     protected ResultActions handleAsyncProcessing(ResultActions resultActions) throws Exception {
