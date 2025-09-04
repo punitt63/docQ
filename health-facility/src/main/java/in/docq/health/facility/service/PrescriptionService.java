@@ -11,12 +11,12 @@ import java.util.concurrent.CompletionStage;
 public class PrescriptionService {
     private final AppointmentService appointmentService;
     private final PrescriptionDAO opdPrescriptionDao;
-    private final CareContextService careContextService;
+    private final HipInitiatedLinkingService hipInitiatedLinkingService;
 
-    public PrescriptionService(AppointmentService appointmentService, PrescriptionDAO opdPrescriptionDao, CareContextService careContextService) {
+    public PrescriptionService(AppointmentService appointmentService, PrescriptionDAO opdPrescriptionDao, HipInitiatedLinkingService hipInitiatedLinkingService) {
         this.appointmentService = appointmentService;
         this.opdPrescriptionDao = opdPrescriptionDao;
-        this.careContextService = careContextService;
+        this.hipInitiatedLinkingService = hipInitiatedLinkingService;
     }
 
     public CompletionStage<Void> create(LocalDate opdDate, String opdID, Integer appointmentID, String content) {
@@ -28,7 +28,7 @@ public class PrescriptionService {
                 .build();
         return appointmentService.get(opdDate, opdID, appointmentID)
                 .thenCompose(appointment -> opdPrescriptionDao.insert(prescription)
-                        .thenCompose(ignore -> careContextService.linkCareContext(appointment)));
+                        .thenCompose(ignore -> hipInitiatedLinkingService.linkCareContext(appointment)));
     }
 
     public CompletionStage<Void> replace(LocalDate opdDate, String opdID, Integer appointmentID, String content) {

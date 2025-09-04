@@ -1,7 +1,7 @@
 package in.docq.health.facility.controller;
 
 import in.docq.health.facility.service.CareContextService;
-import in.docq.health.facility.service.HIPLinkingTokenService;
+import in.docq.health.facility.service.HipInitiatedLinkingService;
 import in.docq.health.facility.service.UserInitiatedLinkingService;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,30 +16,30 @@ import java.util.concurrent.CompletionStage;
 @RequestMapping("/api/v3")
 public class HipWebhookController {
     private final UserInitiatedLinkingService userInitiatedLinkingService;
-    private final CareContextService careContextService;
+    private final HipInitiatedLinkingService hipInitiatedLinkingService;
 
     @Autowired
-    public HipWebhookController(UserInitiatedLinkingService userInitiatedLinkingService, CareContextService careContextService) {
+    public HipWebhookController(UserInitiatedLinkingService userInitiatedLinkingService, HipInitiatedLinkingService hipInitiatedLinkingService) {
         this.userInitiatedLinkingService = userInitiatedLinkingService;
-        this.careContextService = careContextService;
+        this.hipInitiatedLinkingService = hipInitiatedLinkingService;
     }
 
     @PostMapping("/hip/token/on-generate-token")
     public CompletionStage<ResponseEntity<Void>> onGenerateToken(@RequestHeader("X-HIP-ID") String healthFacilityId,
                                                                  @RequestBody OnGenerateTokenRequest request) {
-        return careContextService.onGenerateLinkingToken(healthFacilityId, request)
+        return hipInitiatedLinkingService.onGenerateLinkingToken(healthFacilityId, request)
                 .thenApply(ignore -> ResponseEntity.ok().build());
     }
 
     @PostMapping("/link/on_carecontext")
     public CompletionStage<ResponseEntity<Void>> onLinkCareContext(@RequestBody OnLinkCareContextRequest request) {
-        return careContextService.onLinkCareContext(request)
+        return hipInitiatedLinkingService.onLinkCareContext(request)
                 .thenApply(ignore -> ResponseEntity.ok().build());
     }
 
     @PostMapping("/patients/sms/on-notify")
     public CompletionStage<ResponseEntity<Void>> onSmsNotify(@RequestBody OnSmsNotifyRequest request) {
-        return careContextService.onSmsNotify(request)
+        return hipInitiatedLinkingService.onSmsNotify(request)
                 .thenApply(ignore -> ResponseEntity.ok().build());
     }
 

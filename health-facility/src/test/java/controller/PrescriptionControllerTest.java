@@ -75,6 +75,9 @@ public class PrescriptionControllerTest {
     @Autowired
     private CareContextDao careContextDao;
 
+    @Autowired
+    private HipInitiatedLinkingDao hipInitiatedLinkingDao;
+
     private final String testPatientId = "test-patient-id";
 
     private static Gson gson = new GsonBuilder()
@@ -115,15 +118,16 @@ public class PrescriptionControllerTest {
                 .getResponse()
                 .getContentAsString(), new TypeToken<Prescription>(){}.getType());
         Optional<CareContext> careContext = getCareContext(appointment.getUniqueId());
+        Optional<HipInitiatedLinking> hipInitiatedLinking = getHipInitiatedLinking(appointment.getUniqueId());
         assertEquals(testOPD.getDate(), prescription.getDate());
         assertEquals(appointment.getId(), prescription.getAppointmentID().intValue());
         assertEquals("{}", prescription.getContent());
         assertEquals(1, abhaRestClient.sendDeepLinkNotificationCount);
         assertTrue(careContext.isPresent());
         assertEquals(nonAbhaPatient.getId(), careContext.get().getPatientId());
-        assertNull(careContext.get().getLinkRequestId());
+        assertNull(hipInitiatedLinking.get().getLinkRequestId());
         assertFalse(careContext.get().isLinked());
-        assertFalse(careContext.get().isPatientNotified());
+        assertFalse(hipInitiatedLinking.get().isPatientNotified());
     }
 
     @Test
@@ -150,6 +154,7 @@ public class PrescriptionControllerTest {
                 .getContentAsString(), new TypeToken<Prescription>(){}.getType());
         Optional<HIPLinkingToken> hipLinkingToken = getHIPLinkingToken(testHealthFacilityID, abhaPatient.getId());
         Optional<CareContext> careContext = getCareContext(appointment.getUniqueId());
+        Optional<HipInitiatedLinking> hipInitiatedLinking = getHipInitiatedLinking(appointment.getUniqueId());
         assertEquals(testOPD.getDate(), prescription.getDate());
         assertEquals(appointment.getId(), prescription.getAppointmentID().intValue());
         assertEquals("{}", prescription.getContent());
@@ -157,9 +162,9 @@ public class PrescriptionControllerTest {
         assertTrue(hipLinkingToken.isPresent());
         assertTrue(careContext.isPresent());
         assertEquals(abhaPatient.getId(), careContext.get().getPatientId());
-        assertNull(careContext.get().getLinkRequestId());
+        assertNull(hipInitiatedLinking.get().getLinkRequestId());
         assertFalse(careContext.get().isLinked());
-        assertFalse(careContext.get().isPatientNotified());
+        assertFalse(hipInitiatedLinking.get().isPatientNotified());
     }
 
     @Test
@@ -192,15 +197,16 @@ public class PrescriptionControllerTest {
                 .getResponse()
                 .getContentAsString(), new TypeToken<Prescription>(){}.getType());
         Optional<CareContext> careContext = getCareContext(appointment.getUniqueId());
+        Optional<HipInitiatedLinking> hipInitiatedLinking = getHipInitiatedLinking(appointment.getUniqueId());
         assertEquals(testOPD.getDate(), prescription.getDate());
         assertEquals(appointment.getId(), prescription.getAppointmentID().intValue());
         assertEquals("{}", prescription.getContent());
         assertEquals(1, abhaRestClient.linkCareContextCount);
         assertTrue(careContext.isPresent());
-        assertNotNull(careContext.get().getLinkRequestId());
+        assertNotNull(hipInitiatedLinking.get().getLinkRequestId());
         assertEquals(abhaPatient.getId(), careContext.get().getPatientId());
         assertFalse(careContext.get().isLinked());
-        assertFalse(careContext.get().isPatientNotified());
+        assertFalse(hipInitiatedLinking.get().isPatientNotified());
     }
 
     @Test
@@ -461,5 +467,9 @@ public class PrescriptionControllerTest {
 
     private Optional<CareContext> getCareContext(String appointmentId) {
         return careContextDao.get(appointmentId).toCompletableFuture().join();
+    }
+
+    private Optional<HipInitiatedLinking> getHipInitiatedLinking(String appointmentId) {
+        return hipInitiatedLinkingDao.getByAppointmentId(appointmentId).toCompletableFuture().join();
     }
 }

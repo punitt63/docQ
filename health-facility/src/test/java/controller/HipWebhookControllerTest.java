@@ -6,14 +6,8 @@ import configuration.TestAbhaClientConfiguration;
 import in.docq.abha.rest.client.JSON;
 import in.docq.health.facility.HealthFacilityApplication;
 import in.docq.health.facility.controller.HipWebhookController;
-import in.docq.health.facility.dao.CareContextDao;
-import in.docq.health.facility.dao.HIPLinkingTokenDao;
-import in.docq.health.facility.dao.PatientDao;
-import in.docq.health.facility.dao.UserInitiatedLinkingDao;
-import in.docq.health.facility.model.CareContext;
-import in.docq.health.facility.model.HIPLinkingToken;
-import in.docq.health.facility.model.Patient;
-import in.docq.health.facility.model.UserInitiatedLinking;
+import in.docq.health.facility.dao.*;
+import in.docq.health.facility.model.*;
 import in.docq.health.facility.service.OTPService;
 import org.junit.Before;
 import org.junit.Test;
@@ -71,6 +65,9 @@ public class HipWebhookControllerTest {
     @Autowired
     private TestAbhaClientConfiguration.MockAbhaRestClient abhaRestClient;
 
+    @Autowired
+    private HipInitiatedLinkingDao hipInitiatedLinkingDao;
+
     private static final Gson gson = new GsonBuilder()
             .registerTypeAdapter(LocalDate.class, new JSON.LocalDateTypeAdapter())
             .create();
@@ -100,6 +97,13 @@ public class HipWebhookControllerTest {
 
     @Test
     public void testOnGenerateTokenSuccess() throws Exception {
+        careContextDao.upsert(CareContext.builder()
+                .appointmentID(TEST_APPOINTMENT_ID)
+                .healthFacilityId(testHealthFacilityID)
+                .patientId(TEST_PATIENT_ID)
+                .isLinked(false)
+                .build()).toCompletableFuture().join();
+
         // Create existing HIP linking token
         HIPLinkingToken existingToken = HIPLinkingToken.builder()
                 .healthFacilityId(testHealthFacilityID)
@@ -143,15 +147,18 @@ public class HipWebhookControllerTest {
         HIPLinkingToken updatedToken = hipLinkingTokenDao.getByRequestId(TEST_PATIENT_ID, TEST_REQUEST_ID)
                 .toCompletableFuture().join();
         Optional<CareContext> careContext = getCareContext(updatedToken.getLastTokenRequestAppointmentId());
+        Optional<HipInitiatedLinking> hipInitiatedLinking = getHipInitiatedLinking(updatedToken.getLastTokenRequestAppointmentId());
+
         assertEquals(TEST_LINK_TOKEN, updatedToken.getLastToken());
 
         // Verify care context linking was attempted
         assertEquals(1, abhaRestClient.linkCareContextCount);
         assertTrue(careContext.isPresent());
-        assertNotNull(careContext.get().getLinkRequestId());
+        assertTrue(hipInitiatedLinking.isPresent());
+        assertNotNull(hipInitiatedLinking.get().getLinkRequestId());
         assertEquals(TEST_PATIENT_ID, careContext.get().getPatientId());
         assertFalse(careContext.get().isLinked());
-        assertFalse(careContext.get().isPatientNotified());
+        assertFalse(hipInitiatedLinking.get().isPatientNotified());
     }
 
     @Test
@@ -173,11 +180,12 @@ public class HipWebhookControllerTest {
                 .appointmentID("123")
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
-                .linkRequestId(TEST_REQUEST_ID)
                 .isLinked(false)
-                .isPatientNotified(false)
                 .build();
+
         careContextDao.upsert(careContext).toCompletableFuture().join();
+
+        hipInitiatedLinkingDao.upsert(HipInitiatedLinking.from(careContext).toBuilder().linkRequestId(TEST_REQUEST_ID).build()).toCompletableFuture().join();
 
         // Create request
         HipWebhookController.OnLinkCareContextRequest request =
@@ -196,7 +204,7 @@ public class HipWebhookControllerTest {
                 .andExpect(status().isOk());
 
         // Verify care context was marked as linked
-        Optional<CareContext> updatedCareContext = careContextDao.getByLinkRequestId(TEST_REQUEST_ID)
+        Optional<CareContext> updatedCareContext = careContextDao.get("123")
                 .toCompletableFuture().join();
         assertTrue(updatedCareContext.isPresent());
         assertTrue(updatedCareContext.get().isLinked());
@@ -222,11 +230,10 @@ public class HipWebhookControllerTest {
                 .appointmentID("123")
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
-                .linkRequestId(TEST_REQUEST_ID)
                 .isLinked(false)
-                .isPatientNotified(false)
                 .build();
         careContextDao.upsert(careContext).toCompletableFuture().join();
+        hipInitiatedLinkingDao.upsert(HipInitiatedLinking.from(careContext).toBuilder().linkRequestId(TEST_REQUEST_ID).build()).toCompletableFuture().join();
 
         // Create request with error
         HipWebhookController.OnLinkCareContextRequest request =
@@ -249,7 +256,7 @@ public class HipWebhookControllerTest {
                 .andExpect(status().isOk());
 
         // Verify care context remains unlinked (error should be logged but not processed)
-        Optional<CareContext> updatedCareContext = careContextDao.getByLinkRequestId(TEST_REQUEST_ID)
+        Optional<CareContext> updatedCareContext = careContextDao.get("123")
                 .toCompletableFuture().join();
         assertTrue(updatedCareContext.isPresent());
         assertFalse(updatedCareContext.get().isLinked());
@@ -263,12 +270,10 @@ public class HipWebhookControllerTest {
                 .appointmentID(TEST_APPOINTMENT_ID)
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
-                .linkRequestId(TEST_REQUEST_ID)
                 .isLinked(true)
-                .isPatientNotified(false)
-                .notifyRequestId("notify-request-123")
                 .build();
         careContextDao.upsert(careContext).toCompletableFuture().join();
+        hipInitiatedLinkingDao.upsert(HipInitiatedLinking.from(careContext).toBuilder().linkRequestId(TEST_REQUEST_ID).notifyRequestId("notify-request-123").build()).toCompletableFuture().join();
 
         // Create request
         HipWebhookController.OnSmsNotifyRequest request =
@@ -288,10 +293,10 @@ public class HipWebhookControllerTest {
                 .andExpect(status().isOk());
 
         // Verify patient notification status was updated
-        Optional<CareContext> updatedCareContext = careContextDao.getByNotifyRequestId("notify-request-123")
+        Optional<HipInitiatedLinking> hipInitiatedLinking = hipInitiatedLinkingDao.getByNotifyRequestId("notify-request-123")
                 .toCompletableFuture().join();
-        assertTrue(updatedCareContext.isPresent());
-        assertTrue(updatedCareContext.get().isPatientNotified());
+        assertTrue(hipInitiatedLinking.isPresent());
+        assertTrue(hipInitiatedLinking.get().isPatientNotified());
     }
 
     @Test
@@ -301,12 +306,10 @@ public class HipWebhookControllerTest {
                 .appointmentID(TEST_APPOINTMENT_ID)
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
-                .linkRequestId(TEST_REQUEST_ID)
                 .isLinked(true)
-                .isPatientNotified(false)
-                .notifyRequestId("notify-request-456")
                 .build();
         careContextDao.upsert(careContext).toCompletableFuture().join();
+        hipInitiatedLinkingDao.upsert(HipInitiatedLinking.from(careContext).toBuilder().linkRequestId(TEST_REQUEST_ID).notifyRequestId("notify-request-123").build()).toCompletableFuture().join();
 
         // Create request with error
         HipWebhookController.OnSmsNotifyRequest request =
@@ -327,10 +330,10 @@ public class HipWebhookControllerTest {
                 .andExpect(status().isOk());
 
         // Verify patient notification status remains unchanged
-        Optional<CareContext> updatedCareContext = careContextDao.getByNotifyRequestId("notify-request-456")
+        Optional<HipInitiatedLinking> hipInitiatedLinking = hipInitiatedLinkingDao.getByNotifyRequestId("notify-request-123")
                 .toCompletableFuture().join();
-        assertTrue(updatedCareContext.isPresent());
-        assertFalse(updatedCareContext.get().isPatientNotified());
+        assertTrue(hipInitiatedLinking.isPresent());
+        assertFalse(hipInitiatedLinking.get().isPatientNotified());
     }
 
     @Test
@@ -390,7 +393,6 @@ public class HipWebhookControllerTest {
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
                 .isLinked(false)
-                .isPatientNotified(false)
                 .build();
         careContextDao.upsert(careContext).toCompletableFuture().join();
 
@@ -439,7 +441,6 @@ public class HipWebhookControllerTest {
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
                 .isLinked(false)
-                .isPatientNotified(false)
                 .build();
         careContextDao.upsert(careContext).toCompletableFuture().join();
 
@@ -493,7 +494,6 @@ public class HipWebhookControllerTest {
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
                 .isLinked(false)
-                .isPatientNotified(false)
                 .build();
         careContextDao.upsert(careContext).toCompletableFuture().join();
 
@@ -548,7 +548,6 @@ public class HipWebhookControllerTest {
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
                 .isLinked(false)
-                .isPatientNotified(false)
                 .build();
         careContextDao.upsert(careContext).toCompletableFuture().join();
 
@@ -605,7 +604,6 @@ public class HipWebhookControllerTest {
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
                 .isLinked(false)
-                .isPatientNotified(false)
                 .build();
         careContextDao.upsert(careContext).toCompletableFuture().join();
 
@@ -660,7 +658,6 @@ public class HipWebhookControllerTest {
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
                 .isLinked(false)
-                .isPatientNotified(false)
                 .build();
         careContextDao.upsert(careContext).toCompletableFuture().join();
 
@@ -718,7 +715,6 @@ public class HipWebhookControllerTest {
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
                 .isLinked(false)
-                .isPatientNotified(false)
                 .build();
         careContextDao.upsert(careContext1).toCompletableFuture().join();
 
@@ -727,7 +723,6 @@ public class HipWebhookControllerTest {
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
                 .isLinked(false)
-                .isPatientNotified(false)
                 .build();
         careContextDao.upsert(careContext2).toCompletableFuture().join();
 
@@ -1079,6 +1074,10 @@ public class HipWebhookControllerTest {
 
     private UserInitiatedLinking getUserInitiatedLinking(String transactionId) {
         return userInitiatedLinkingDao.getByTransactionId(transactionId).toCompletableFuture().join();
+    }
+
+    private Optional<HipInitiatedLinking> getHipInitiatedLinking(String appointmentId) {
+        return hipInitiatedLinkingDao.getByAppointmentId(appointmentId).toCompletableFuture().join();
     }
 
     private Optional<UserInitiatedLinking> getUserInitiatedLinkingOptional(String transactionId) {

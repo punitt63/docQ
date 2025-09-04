@@ -37,10 +37,7 @@ public class CareContextDao {
                 " ON CONFLICT (appointment_id) DO UPDATE SET " +
                 "health_facility_id = EXCLUDED.health_facility_id, " +
                 "patient_id = EXCLUDED.patient_id, " +
-                "link_request_id = EXCLUDED.link_request_id, " +
-                "is_linked = EXCLUDED.is_linked, " +
-                "is_patient_notified = EXCLUDED.is_patient_notified, " +
-                "notify_request_id = EXCLUDED.notify_request_id";
+                "is_linked = EXCLUDED.is_linked";
         this.getCareContextQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE appointment_id = ?";
         this.getCareContextByLinkRequestIdQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE link_request_id = ?";
         this.getCareContextByNotifyRequestIdQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE notify_request_id = ?";
@@ -53,10 +50,7 @@ public class CareContextDao {
                         careContext.getAppointmentID(),
                         careContext.getHealthFacilityId(),
                         careContext.getPatientId(),
-                        careContext.getLinkRequestId(),
-                        careContext.isLinked(),
-                        careContext.isPatientNotified(),
-                        careContext.getNotifyRequestId())
+                        careContext.isLinked())
                 .thenAccept(ignore -> {});
     }
 
@@ -65,10 +59,7 @@ public class CareContextDao {
                 .appointmentID(rs.getString(Column.APPOINTMENT_ID.getColumnName()))
                 .healthFacilityId(rs.getString(Column.HEALTH_FACILITY_ID.getColumnName()))
                 .patientId(rs.getString(Column.PATIENT_ID.getColumnName()))
-                .linkRequestId(rs.getString(Column.LINK_REQUEST_ID.getColumnName()))
                 .isLinked(rs.getBoolean(Column.IS_LINKED.getColumnName()))
-                .isPatientNotified(rs.getBoolean(Column.IS_PATIENT_NOTIFIED.getColumnName()))
-                .notifyRequestId(rs.getString(Column.NOTIFY_REQUEST_ID.getColumnName()))
                 .build(), appointmentID);
     }
 
@@ -77,10 +68,7 @@ public class CareContextDao {
                 .appointmentID(rs.getString(Column.APPOINTMENT_ID.getColumnName()))
                 .healthFacilityId(rs.getString(Column.HEALTH_FACILITY_ID.getColumnName()))
                 .patientId(rs.getString(Column.PATIENT_ID.getColumnName()))
-                .linkRequestId(rs.getString(Column.LINK_REQUEST_ID.getColumnName()))
                 .isLinked(rs.getBoolean(Column.IS_LINKED.getColumnName()))
-                .isPatientNotified(rs.getBoolean(Column.IS_PATIENT_NOTIFIED.getColumnName()))
-                .notifyRequestId(rs.getString(Column.NOTIFY_REQUEST_ID.getColumnName()))
                 .build(), requestId);
     }
 
@@ -89,10 +77,7 @@ public class CareContextDao {
                 .appointmentID(rs.getString(Column.APPOINTMENT_ID.getColumnName()))
                 .healthFacilityId(rs.getString(Column.HEALTH_FACILITY_ID.getColumnName()))
                 .patientId(rs.getString(Column.PATIENT_ID.getColumnName()))
-                .linkRequestId(rs.getString(Column.LINK_REQUEST_ID.getColumnName()))
                 .isLinked(rs.getBoolean(Column.IS_LINKED.getColumnName()))
-                .isPatientNotified(rs.getBoolean(Column.IS_PATIENT_NOTIFIED.getColumnName()))
-                .notifyRequestId(rs.getString(Column.NOTIFY_REQUEST_ID.getColumnName()))
                 .build(), requestId);
     }
 
@@ -102,10 +87,7 @@ public class CareContextDao {
                         .appointmentID(rs.getString(Column.APPOINTMENT_ID.getColumnName()))
                         .healthFacilityId(rs.getString(Column.HEALTH_FACILITY_ID.getColumnName()))
                         .patientId(rs.getString(Column.PATIENT_ID.getColumnName()))
-                        .linkRequestId(rs.getString(Column.LINK_REQUEST_ID.getColumnName()))
                         .isLinked(rs.getBoolean(Column.IS_LINKED.getColumnName()))
-                        .isPatientNotified(rs.getBoolean(Column.IS_PATIENT_NOTIFIED.getColumnName()))
-                        .notifyRequestId(rs.getString(Column.NOTIFY_REQUEST_ID.getColumnName()))
                         .build(), patientId, healthFacilityId);
     }
 
@@ -117,10 +99,7 @@ public class CareContextDao {
         APPOINTMENT_ID("appointment_id", false),
         HEALTH_FACILITY_ID("health_facility_id", false),
         PATIENT_ID("patient_id", false),
-        LINK_REQUEST_ID("link_request_id", true),
-        IS_LINKED("is_linked", true),
-        IS_PATIENT_NOTIFIED("is_patient_notified", true),
-        NOTIFY_REQUEST_ID("notify_request_id", true);
+        IS_LINKED("is_linked", true);
 
         @Getter
         private final String columnName;
