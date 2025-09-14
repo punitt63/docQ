@@ -58,11 +58,11 @@ public class TestAbhaClientConfiguration {
         public AbdmUserInitiatedLinking2Request lastLinkUserInitiatedCareContextRequest;
 
         public MockAbhaRestClient() {
-            super(null, null, null);
+            super(null, null, null, null);
         }
 
         public MockAbhaRestClient(ApiClient apiClient, String clientId, String clientSecret) {
-            super(apiClient, clientId, clientSecret);
+            super(apiClient, clientId, clientSecret, null);
         }
 
         @Override
@@ -76,38 +76,38 @@ public class TestAbhaClientConfiguration {
         }
 
         @Override
-        public CompletionStage<Void> sendDeepLinkNotification(String requestId, String timestamp, String xCmId, SendSmsNotificationRequest sendSmsNotificationRequest) {
+        public CompletionStage<Void> sendDeepLinkNotification(String requestId, String timestamp, SendSmsNotificationRequest sendSmsNotificationRequest) {
             sendDeepLinkNotificationCount++;
             return completedFuture(null);
         }
 
         @Override
-        public CompletionStage<Void> generateLinkingToken(String requestId, String timestamp, String xHipId, String xCmId, HIPInitiatedGenerateTokenRequest hipInitiatedGenerateTokenRequest) {
+        public CompletionStage<Void> generateLinkingToken(String requestId, String timestamp, String xHipId, HIPInitiatedGenerateTokenRequest hipInitiatedGenerateTokenRequest) {
             generateLinkingTokenCount++;
             return completedFuture(null);
         }
 
         @Override
-        public CompletionStage<Void> linkHIPInitiatedCareContext(String requestId, String timestamp, String xCmId, String xHipId, String xLinkToken, AbdmHipInitiatedLinkingHip1Request abdmHipInitiatedLinkingHip1Request) {
+        public CompletionStage<Void> linkHIPInitiatedCareContext(String requestId, String timestamp, String xHipId, String xLinkToken, AbdmHipInitiatedLinkingHip1Request abdmHipInitiatedLinkingHip1Request) {
             linkCareContextCount++;
             return completedFuture(null);
         }
 
         @Override
-        public CompletionStage<Void> linkUserInitiatedCareContext(String requestId, String timestamp, String xCmId, String xHiuId, AbdmUserInitiatedLinking2Request request) {
+        public CompletionStage<Void> linkUserInitiatedCareContext(String requestId, String timestamp, String xHiuId, AbdmUserInitiatedLinking2Request request) {
             linkUserInitiatedCareContextCount++;
             lastLinkUserInitiatedCareContextRequest = request;
             return CompletableFuture.completedFuture(null);
         }
 
         @Override
-        public CompletionStage<Void> initiateUserLinking(String requestId, String timestamp, String xCmId, String xHiuId, AbdmUserInitiatedLinking4Request abdmUserInitiatedLinking4Request) {
+        public CompletionStage<Void> initiateUserLinking(String requestId, String timestamp, String xHiuId, AbdmUserInitiatedLinking4Request abdmUserInitiatedLinking4Request) {
             initiateUserLinking++;
             return CompletableFuture.completedFuture(null);
         }
 
         @Override
-        public CompletionStage<Void> confirmCareContextLinking(String requestId, String timestamp, String xCmId, AbdmUserInitiatedLinking6Request abdmUserInitiatedLinking6Request) {
+        public CompletionStage<Void> confirmCareContextLinking(String requestId, String timestamp, AbdmUserInitiatedLinking6Request abdmUserInitiatedLinking6Request) {
             lastConfirmCareContextLinkingRequest = abdmUserInitiatedLinking6Request;
             confirmCareContextLinking++;
             return CompletableFuture.completedFuture(null);

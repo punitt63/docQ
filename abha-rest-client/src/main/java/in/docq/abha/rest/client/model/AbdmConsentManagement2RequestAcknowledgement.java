@@ -28,7 +28,7 @@ public class AbdmConsentManagement2RequestAcknowledgement {
     public static final String SERIALIZED_NAME_CONSENT_ID = "consentId";
     @SerializedName("consentId")
     @Nonnull
-    private UUID consentId;
+    private String consentId;
     public static HashSet<String> openapiFields = new HashSet();
     public static HashSet<String> openapiRequiredFields;
 
@@ -49,17 +49,17 @@ public class AbdmConsentManagement2RequestAcknowledgement {
         this.status = status;
     }
 
-    public AbdmConsentManagement2RequestAcknowledgement consentId(@Nonnull UUID consentId) {
+    public AbdmConsentManagement2RequestAcknowledgement consentId(@Nonnull String consentId) {
         this.consentId = consentId;
         return this;
     }
 
     @Nonnull
-    public UUID getConsentId() {
+    public String getConsentId() {
         return this.consentId;
     }
 
-    public void setConsentId(@Nonnull UUID consentId) {
+    public void setConsentId(@Nonnull String consentId) {
         this.consentId = consentId;
     }
 

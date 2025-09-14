@@ -72,7 +72,7 @@ public class HIPLinkingTokenService {
                         .lastTokenRequestId(requestId)
                         .lastToken(null)
                         .build())
-                .thenCompose(ignore -> abhaRestClient.generateLinkingToken(requestId, Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), healthFacilityID, xCmId,
+                .thenCompose(ignore -> abhaRestClient.generateLinkingToken(requestId, Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), healthFacilityID,
                         new HIPInitiatedGenerateTokenRequest()
                                 .abhaNumber(patient.getAbhaNo())
                                 .abhaAddress(patient.getAbhaAddress())

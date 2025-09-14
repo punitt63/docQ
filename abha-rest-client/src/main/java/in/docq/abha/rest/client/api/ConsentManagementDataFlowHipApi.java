@@ -5,11 +5,15 @@
 
 package in.docq.abha.rest.client.api;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
 
+import com.google.gson.reflect.TypeToken;
 import in.docq.abha.rest.client.model.AbdmConsentManagement2Request;
 import in.docq.abha.rest.client.model.AbdmConsentManagement3Request;
 import in.docq.abha.rest.client.model.AbdmConsentManagement5Request;
@@ -54,7 +58,7 @@ public class ConsentManagementDataFlowHipApi {
         this.localCustomBaseUrl = customBaseUrl;
     }
 
-    public Call abdmConsentManagement2Call(String REQUEST_ID, String TIMESTAMP, String X_CM_ID, AbdmConsentManagement2Request abdmConsentManagement2Request, ApiCallback _callback) throws ApiException {
+    public Call abdmConsentManagement2Call(String token, String REQUEST_ID, String TIMESTAMP, String X_CM_ID, AbdmConsentManagement2Request abdmConsentManagement2Request, ApiCallback _callback) throws ApiException {
         String basePath = null;
         String[] localBasePaths = new String[0];
         if (this.localCustomBaseUrl != null) {
@@ -96,11 +100,15 @@ public class ConsentManagementDataFlowHipApi {
             localVarHeaderParams.put("X-CM-ID", this.localVarApiClient.parameterToString(X_CM_ID));
         }
 
+        if (token != null) {
+            localVarHeaderParams.put("Authorization", "Bearer " + token);
+        }
+
         String[] localVarAuthNames = new String[]{"bearerAuth"};
         return this.localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
-    private Call abdmConsentManagement2ValidateBeforeCall(String REQUEST_ID, String TIMESTAMP, String X_CM_ID, AbdmConsentManagement2Request abdmConsentManagement2Request, ApiCallback _callback) throws ApiException {
+    private Call abdmConsentManagement2ValidateBeforeCall(String token, String REQUEST_ID, String TIMESTAMP, String X_CM_ID, AbdmConsentManagement2Request abdmConsentManagement2Request, ApiCallback _callback) throws ApiException {
         if (REQUEST_ID == null) {
             throw new ApiException("Missing the required parameter 'REQUEST_ID' when calling abdmConsentManagement2(Async)");
         } else if (TIMESTAMP == null) {
@@ -110,23 +118,21 @@ public class ConsentManagementDataFlowHipApi {
         } else if (abdmConsentManagement2Request == null) {
             throw new ApiException("Missing the required parameter 'abdmConsentManagement2Request' when calling abdmConsentManagement2(Async)");
         } else {
-            return this.abdmConsentManagement2Call(REQUEST_ID, TIMESTAMP, X_CM_ID, abdmConsentManagement2Request, _callback);
+            return this.abdmConsentManagement2Call(token, REQUEST_ID, TIMESTAMP, X_CM_ID, abdmConsentManagement2Request, _callback);
         }
     }
 
-    public void abdmConsentManagement2(String REQUEST_ID, String TIMESTAMP, String X_CM_ID, AbdmConsentManagement2Request abdmConsentManagement2Request) throws ApiException {
-        this.abdmConsentManagement2WithHttpInfo(REQUEST_ID, TIMESTAMP, X_CM_ID, abdmConsentManagement2Request);
-    }
-
-    public ApiResponse<Void> abdmConsentManagement2WithHttpInfo(String REQUEST_ID, String TIMESTAMP, String X_CM_ID, AbdmConsentManagement2Request abdmConsentManagement2Request) throws ApiException {
-        Call localVarCall = this.abdmConsentManagement2ValidateBeforeCall(REQUEST_ID, TIMESTAMP, X_CM_ID, abdmConsentManagement2Request, (ApiCallback)null);
-        return this.localVarApiClient.execute(localVarCall);
-    }
-
-    public Call abdmConsentManagement2Async(String REQUEST_ID, String TIMESTAMP, String X_CM_ID, AbdmConsentManagement2Request abdmConsentManagement2Request, ApiCallback<Void> _callback) throws ApiException {
-        Call localVarCall = this.abdmConsentManagement2ValidateBeforeCall(REQUEST_ID, TIMESTAMP, X_CM_ID, abdmConsentManagement2Request, _callback);
-        this.localVarApiClient.executeAsync(localVarCall, _callback);
-        return localVarCall;
+    public CompletionStage<Void> abdmConsentManagement2Async(String token, String REQUEST_ID, String TIMESTAMP, String X_CM_ID, AbdmConsentManagement2Request abdmConsentManagement2Request) {
+        try {
+            FutureApiCallBack<Void> callback = FutureApiCallBack.newCallback();
+            okhttp3.Call localVarCall = abdmConsentManagement2ValidateBeforeCall(token, REQUEST_ID, TIMESTAMP, X_CM_ID, abdmConsentManagement2Request, callback);
+            Type localVarReturnType = new TypeToken<Void>() {
+            }.getType();
+            localVarApiClient.executeAsync(localVarCall, localVarReturnType, callback);
+            return callback.getFuture();
+        } catch (Exception e) {
+            throw new CompletionException(e);
+        }
     }
 
     public Call abdmConsentManagement5Call(String REQUEST_ID, String TIMESTAMP, String X_CM_ID, AbdmConsentManagement5Request abdmConsentManagement5Request, ApiCallback _callback) throws ApiException {

@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -45,11 +46,16 @@ public class AbhaRestClient {
     private final HealthProfessionalSearchApi healthProfessionalSearchApi;
     private final MultipleHrpApiApi multipleHrpApiApi;
     private final Cache<String, String> tokenCache;
+    private final Cache<String, AbdmSessions3200Response> gatewayPublicCertCache;
     private final GatewaySessionApi gatewaySessionApi;
+    private final ConsentManagementDataFlowHipApi consentManagementDataFlowHipApi;
+    private final String xCmId;
 
-    public AbhaRestClient(ApiClient apiClient, String clientId, String clientSecret) {
+    public AbhaRestClient(ApiClient apiClient, String clientId, String clientSecret, String xCmId) {
         this.apiClient = apiClient;
         this.abhaLoginApi = new AbhaLoginApi(apiClient);
+        this.consentManagementDataFlowHipApi = new ConsentManagementDataFlowHipApi(apiClient);
+        this.xCmId = xCmId;
         this.abhaLoginApi.setCustomBaseUrl("https://abhasbx.abdm.gov.in");
         this.abhaCardApi = new AbhaCardApi(apiClient);
         this.abhaEnrollmentViaAadhaarApi = new AbhaEnrollmentViaAadhaarApi(apiClient);
@@ -70,6 +76,12 @@ public class AbhaRestClient {
                 .concurrencyLevel(4)
                 .initialCapacity(1000)
                 .maximumSize(10000)
+                .build();
+        this.gatewayPublicCertCache = CacheBuilder.newBuilder()
+                .concurrencyLevel(4)
+                .initialCapacity(100)
+                .maximumSize(1000)
+                .expireAfterWrite(1, TimeUnit.DAYS)
                 .build();
         //eagerInitiateToken();
     }
@@ -355,33 +367,53 @@ public class AbhaRestClient {
                 });
     }
 
-    public CompletionStage<Void> generateLinkingToken(String requestId, String timestamp, String xHipId, String xCmId, HIPInitiatedGenerateTokenRequest hipInitiatedGenerateTokenRequest) {
+    public CompletionStage<Void> generateLinkingToken(String requestId, String timestamp, String xHipId, HIPInitiatedGenerateTokenRequest hipInitiatedGenerateTokenRequest) {
         return getAccessToken()
                 .thenCompose(token ->  hipInitiatedLinkingApi.generateTokenAsync(token, requestId, timestamp, xHipId, xCmId, hipInitiatedGenerateTokenRequest));
     }
 
-    public  CompletionStage<Void> sendDeepLinkNotification(String requestId, String timestamp, String xCmId, SendSmsNotificationRequest sendSmsNotificationRequest) {
+    public  CompletionStage<Void> sendDeepLinkNotification(String requestId, String timestamp, SendSmsNotificationRequest sendSmsNotificationRequest) {
         return getAccessToken()
                 .thenCompose(token -> hipInitiatedLinkingApi.sendSmsNotificationAsync(token, requestId, timestamp, xCmId, sendSmsNotificationRequest));
     }
 
-    public CompletionStage<Void> linkHIPInitiatedCareContext(String requestId, String timestamp, String xCmId, String xHipId, String xLinkToken, AbdmHipInitiatedLinkingHip1Request abdmHipInitiatedLinkingHip1Request) {
+    public CompletionStage<Void> linkHIPInitiatedCareContext(String requestId, String timestamp, String xHipId, String xLinkToken, AbdmHipInitiatedLinkingHip1Request abdmHipInitiatedLinkingHip1Request) {
         return getAccessToken()
                 .thenCompose(token -> hipInitiatedLinkingApi.linkCareContextAsync(token, requestId, timestamp, xCmId, xHipId, xLinkToken, abdmHipInitiatedLinkingHip1Request));
     }
 
-    public CompletionStage<Void> linkUserInitiatedCareContext(String requestId, String timestamp, String xCmId, String xHiuId, AbdmUserInitiatedLinking2Request abdmUserInitiatedLinking2Request) {
+    public CompletionStage<Void> linkUserInitiatedCareContext(String requestId, String timestamp, String xHiuId, AbdmUserInitiatedLinking2Request abdmUserInitiatedLinking2Request) {
         return getAccessToken()
                 .thenCompose(token -> userInitiatedLinkingHipApi.userInitiatedLinkingAsync(token, requestId, timestamp, xCmId, xHiuId, abdmUserInitiatedLinking2Request));
     }
 
-    public CompletionStage<Void> initiateUserLinking(String requestId, String timestamp, String xCmId, String xHiuId, AbdmUserInitiatedLinking4Request abdmUserInitiatedLinking4Request) {
+    public CompletionStage<Void> initiateUserLinking(String requestId, String timestamp, String xHiuId, AbdmUserInitiatedLinking4Request abdmUserInitiatedLinking4Request) {
         return getAccessToken()
                 .thenCompose(token -> userInitiatedLinkingHipApi.abdmUserInitiatedLinking4Async(token, requestId, timestamp, xCmId, abdmUserInitiatedLinking4Request));
     }
 
-    public CompletionStage<Void> confirmCareContextLinking(String requestId, String timestamp, String xCmId, AbdmUserInitiatedLinking6Request abdmUserInitiatedLinking6Request) {
+    public CompletionStage<Void> confirmCareContextLinking(String requestId, String timestamp, AbdmUserInitiatedLinking6Request abdmUserInitiatedLinking6Request) {
         return getAccessToken()
                 .thenCompose(token -> userInitiatedLinkingHipApi.abdmUserInitiatedLinking6Async(token, requestId, timestamp, xCmId, abdmUserInitiatedLinking6Request));
+    }
+
+    public CompletionStage<Void> sendConsentGrantAcknowledgement(String requestId, String timestamp, AbdmConsentManagement2Request abdmConsentManagement2Request) {
+        return getAccessToken()
+                .thenCompose(token -> consentManagementDataFlowHipApi.abdmConsentManagement2Async(token, requestId, timestamp, xCmId, abdmConsentManagement2Request));
+    }
+
+    public CompletionStage<AbdmSessions3200Response> getGatewayPublicCerts() {
+        return getAccessToken()
+                .thenCompose(token -> {
+                    AbdmSessions3200Response cachedCerts = gatewayPublicCertCache.getIfPresent("gatewayPublicCerts");
+                    if(cachedCerts != null) {
+                        return completedFuture(cachedCerts);
+                    }
+                    return gatewaySessionApi.abdmSessions3Async(token, UUID.randomUUID().toString(),  Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),xCmId)
+                            .thenApply(response -> {
+                                gatewayPublicCertCache.put("gatewayPublicCerts", response);
+                                return response;
+                            });
+                });
     }
 }

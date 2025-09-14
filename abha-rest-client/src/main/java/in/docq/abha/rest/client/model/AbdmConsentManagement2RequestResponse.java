@@ -24,24 +24,24 @@ public class AbdmConsentManagement2RequestResponse {
     public static final String SERIALIZED_NAME_REQUEST_ID = "requestId";
     @SerializedName("requestId")
     @Nonnull
-    private UUID requestId;
+    private String requestId;
     public static HashSet<String> openapiFields = new HashSet();
     public static HashSet<String> openapiRequiredFields;
 
     public AbdmConsentManagement2RequestResponse() {
     }
 
-    public AbdmConsentManagement2RequestResponse requestId(@Nonnull UUID requestId) {
+    public AbdmConsentManagement2RequestResponse requestId(@Nonnull String requestId) {
         this.requestId = requestId;
         return this;
     }
 
     @Nonnull
-    public UUID getRequestId() {
+    public String getRequestId() {
         return this.requestId;
     }
 
-    public void setRequestId(@Nonnull UUID requestId) {
+    public void setRequestId(@Nonnull String requestId) {
         this.requestId = requestId;
     }
 

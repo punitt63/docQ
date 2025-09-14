@@ -90,7 +90,7 @@ public class HipInitiatedLinkingService {
     private CompletionStage<Void> linkCareContextToAbha(String healthFacilityId, String appointmentId, Patient patient, String linkingToken) {
         String requestId = UUID.randomUUID().toString();
         return healthFacilityService.getHealthFacility(healthFacilityId)
-                .thenCompose(healthFacility -> abhaRestClient.linkHIPInitiatedCareContext(requestId, Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), healthFacilityId, xCmId, linkingToken,
+                .thenCompose(healthFacility -> abhaRestClient.linkHIPInitiatedCareContext(requestId, Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), healthFacilityId, linkingToken,
                         new AbdmHipInitiatedLinkingHip1Request()
                                 .abhaNumber(new BigDecimal(patient.getAbhaNo()))
                                 .abhaAddress(patient.getAbhaAddress())
@@ -185,7 +185,6 @@ public class HipInitiatedLinkingService {
         return healthFacilityService.getHealthFacility(hipInitiatedLinking.getHealthFacilityId())
                 .thenCompose(healthFacility -> abhaRestClient.sendDeepLinkNotification(requestId,
                         timestamp,
-                        xCmId,
                         new SendSmsNotificationRequest()
                                 .requestId(requestId)
                                 .timestamp(timestamp)

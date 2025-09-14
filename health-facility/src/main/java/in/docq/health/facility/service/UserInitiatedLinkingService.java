@@ -28,19 +28,17 @@ public class UserInitiatedLinkingService {
     private final CareContextService careContextService;
     private final UserInitiatedLinkingDao userInitiatedLinkingDao;
     private final AbhaRestClient abhaRestClient;
-    private final String xCmId;
     private final OTPService otpService;
 
     public UserInitiatedLinkingService(PatientService patientService,
                                        CareContextService careContextService,
                                        UserInitiatedLinkingDao userInitiatedLinkingDao,
                                        AbhaRestClient abhaRestClient,
-                                       @Value("${x.cm.id}") String xCmId, OTPService otpService) {
+                                       OTPService otpService) {
         this.patientService = patientService;
         this.careContextService = careContextService;
         this.userInitiatedLinkingDao = userInitiatedLinkingDao;
         this.abhaRestClient = abhaRestClient;
-        this.xCmId = xCmId;
         this.otpService = otpService;
     }
 
@@ -55,7 +53,7 @@ public class UserInitiatedLinkingService {
                             .patientId(careContexts.getValue().get(0).getPatientId())
                             .status("AWAITING_LINKING_INITIATION")
                             .build())
-                            .thenCompose(ignore -> abhaRestClient.linkUserInitiatedCareContext(UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), healthFacilityId, xCmId,
+                            .thenCompose(ignore -> abhaRestClient.linkUserInitiatedCareContext(UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), healthFacilityId,
                             new AbdmUserInitiatedLinking2Request()
                                     .transactionId(request.getTransactionId())
                                     .patient(ImmutableList.of(new AbdmUserInitiatedLinking2RequestPatientInner()
@@ -223,7 +221,6 @@ public class UserInitiatedLinkingService {
                                                     abhaRestClient.initiateUserLinking(
                                                             UUID.randomUUID().toString(),
                                                             Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
-                                                            xCmId,
                                                             healthFacilityId,
                                                             new AbdmUserInitiatedLinking4Request()
                                                                     .transactionId(request.getTransactionId())
@@ -260,7 +257,6 @@ public class UserInitiatedLinkingService {
                         return abhaRestClient.confirmCareContextLinking(
                                 requestId,
                                 timestamp,
-                                xCmId,
                                 new AbdmUserInitiatedLinking6Request()
                                         .error(new AbdmUserInitiatedLinking3RequestError()
                                                 .code("900902")
@@ -278,7 +274,6 @@ public class UserInitiatedLinkingService {
                         return abhaRestClient.confirmCareContextLinking(
                                 requestId,
                                 timestamp,
-                                xCmId,
                                 new AbdmUserInitiatedLinking6Request()
                                         .patient(initLinkRequest.getPatient().stream()
                                                 .map(patientInfo -> new AbdmUserInitiatedLinking6RequestPatientInner()
@@ -300,7 +295,6 @@ public class UserInitiatedLinkingService {
                         return abhaRestClient.confirmCareContextLinking(
                                 requestId,
                                 timestamp,
-                                xCmId,
                                 new AbdmUserInitiatedLinking6Request()
                                         .error(new AbdmUserInitiatedLinking3RequestError()
                                                 .code("900901")

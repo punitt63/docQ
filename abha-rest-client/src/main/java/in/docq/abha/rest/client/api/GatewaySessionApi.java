@@ -18,8 +18,10 @@ import in.docq.abha.rest.client.ApiClient;
 import in.docq.abha.rest.client.Configuration;
 
 import in.docq.abha.rest.client.*;
+import in.docq.abha.rest.client.model.AbdmSessions3200Response;
 import in.docq.abha.rest.client.model.ApiHiecmGatewayV3SessionsPost200Response;
 import in.docq.abha.rest.client.model.ApiHiecmGatewayV3SessionsPostRequest;
+import okhttp3.Call;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -234,6 +236,82 @@ public class GatewaySessionApi {
             FutureApiCallBack<ApiHiecmGatewayV3SessionsPost200Response> callBack = FutureApiCallBack.newCallback();
             okhttp3.Call localVarCall = apiHiecmGatewayV3SessionsPostValidateBeforeCall(TIMESTAMP, REQUEST_ID, X_CM_ID, apiHiecmGatewayV3SessionsPostRequest, null);
             Type localVarReturnType = new TypeToken<ApiHiecmGatewayV3SessionsPost200Response>() {
+            }.getType();
+            localVarApiClient.executeAsync(localVarCall, localVarReturnType, callBack);
+            return callBack.getFuture();
+        } catch (Exception e) {
+            throw new CompletionException(e);
+        }
+    }
+
+
+    public Call abdmSessions3Call(String token, String REQUEST_ID, String TIMESTAMP, String X_CM_ID, ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        String[] localBasePaths = new String[0];
+        if (this.localCustomBaseUrl != null) {
+            basePath = this.localCustomBaseUrl;
+        } else if (localBasePaths.length > 0) {
+            basePath = localBasePaths[this.localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+        String localVarPath = "/api/hiecm/gateway/v3/certs";
+        List<Pair> localVarQueryParams = new ArrayList();
+        List<Pair> localVarCollectionQueryParams = new ArrayList();
+        Map<String, String> localVarHeaderParams = new HashMap();
+        Map<String, String> localVarCookieParams = new HashMap();
+        Map<String, Object> localVarFormParams = new HashMap();
+        String[] localVarAccepts = new String[]{"application/json"};
+        String localVarAccept = this.localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        String[] localVarContentTypes = new String[0];
+        String localVarContentType = this.localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        if (REQUEST_ID != null) {
+            localVarHeaderParams.put("REQUEST-ID", this.localVarApiClient.parameterToString(REQUEST_ID));
+        }
+
+        if (TIMESTAMP != null) {
+            localVarHeaderParams.put("TIMESTAMP", this.localVarApiClient.parameterToString(TIMESTAMP));
+        }
+
+        if (X_CM_ID != null) {
+            localVarHeaderParams.put("X-CM-ID", this.localVarApiClient.parameterToString(X_CM_ID));
+        }
+
+        if (token != null) {
+            localVarHeaderParams.put("Authorization", "Bearer " + token);
+        }
+
+        String[] localVarAuthNames = new String[0];
+        return this.localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    private Call abdmSessions3ValidateBeforeCall(String token, String REQUEST_ID, String TIMESTAMP, String X_CM_ID, ApiCallback _callback) throws ApiException {
+        if (REQUEST_ID == null) {
+            throw new ApiException("Missing the required parameter 'REQUEST_ID' when calling abdmSessions3(Async)");
+        } else if (TIMESTAMP == null) {
+            throw new ApiException("Missing the required parameter 'TIMESTAMP' when calling abdmSessions3(Async)");
+        } else if (X_CM_ID == null) {
+            throw new ApiException("Missing the required parameter 'X_CM_ID' when calling abdmSessions3(Async)");
+        } else {
+            return this.abdmSessions3Call(token, REQUEST_ID, TIMESTAMP, X_CM_ID, _callback);
+        }
+    }
+
+    public CompletionStage<AbdmSessions3200Response> abdmSessions3Async(String token, String REQUEST_ID, String TIMESTAMP, String X_CM_ID)  {
+        try {
+            FutureApiCallBack<AbdmSessions3200Response> callBack = FutureApiCallBack.newCallback();
+            okhttp3.Call localVarCall = abdmSessions3Call(token, REQUEST_ID, TIMESTAMP, X_CM_ID, callBack);
+            Type localVarReturnType = new TypeToken<AbdmSessions3200Response>() {
             }.getType();
             localVarApiClient.executeAsync(localVarCall, localVarReturnType, callBack);
             return callBack.getFuture();
