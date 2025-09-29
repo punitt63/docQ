@@ -18,7 +18,7 @@ public class AbdmConsentManagement5RequestAnyOfHiRequest {
     public static final String SERIALIZED_NAME_TRANSACTION_ID = "transactionId";
     @SerializedName("transactionId")
     @Nonnull
-    private UUID transactionId;
+    private String transactionId;
     public static final String SERIALIZED_NAME_SESSION_STATUS = "sessionStatus";
     @SerializedName("sessionStatus")
     @Nonnull
@@ -29,17 +29,17 @@ public class AbdmConsentManagement5RequestAnyOfHiRequest {
     public AbdmConsentManagement5RequestAnyOfHiRequest() {
     }
 
-    public AbdmConsentManagement5RequestAnyOfHiRequest transactionId(@Nonnull UUID transactionId) {
+    public AbdmConsentManagement5RequestAnyOfHiRequest transactionId(@Nonnull String transactionId) {
         this.transactionId = transactionId;
         return this;
     }
 
     @Nonnull
-    public UUID getTransactionId() {
+    public String getTransactionId() {
         return this.transactionId;
     }
 
-    public void setTransactionId(@Nonnull UUID transactionId) {
+    public void setTransactionId(@Nonnull String transactionId) {
         this.transactionId = transactionId;
     }
 

@@ -14,9 +14,12 @@ CREATE TABLE health_information_request (
     transaction_id varchar(100) PRIMARY KEY,
     consent_id varchar(100) NOT NULL,
     request jsonb NOT NULL,
+    status varchar(20) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT now(),
     updated_at TIMESTAMP NOT NULL DEFAULT now()
 );
+
+CREATE INDEX health_information_request_consent_id_idx ON health_information_request (consent_id);
 
 CREATE TRIGGER update_health_information_requests_timestamp
 BEFORE UPDATE ON health_information_request

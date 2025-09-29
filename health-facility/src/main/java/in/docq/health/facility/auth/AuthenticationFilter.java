@@ -91,6 +91,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
                 path.endsWith("/on-notify") ||
                 path.endsWith("/care-context/discover") ||
                 path.endsWith("/care-context/init") ||
-                path.endsWith("/care-context/confirm");
+                path.endsWith("/care-context/confirm") ||
+                path.endsWith("/consent/request/hip/notify");
     }
 }

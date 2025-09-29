@@ -84,7 +84,7 @@ public class AbdmConsentManagement5Request extends AbstractOpenApiSchema {
 
     static {
         schemas.put("AbdmConsentManagement5RequestAnyOf", AbdmConsentManagement5RequestAnyOf.class);
-        schemas.put("AbdmConsentManagement5RequestAnyOf1", AbdmConsentManagement5RequestAnyOf1.class);
+            schemas.put("AbdmConsentManagement5RequestAnyOf1", AbdmConsentManagement5RequestAnyOf1.class);
     }
 
     public static class CustomTypeAdapterFactory implements TypeAdapterFactory {

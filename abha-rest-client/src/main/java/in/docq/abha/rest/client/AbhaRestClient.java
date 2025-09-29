@@ -402,6 +402,21 @@ public class AbhaRestClient {
                 .thenCompose(token -> consentManagementDataFlowHipApi.abdmConsentManagement2Async(token, requestId, timestamp, xCmId, abdmConsentManagement2Request));
     }
 
+    public CompletionStage<Void> healthInfoRequestAcknowledgement(String requestId, String timestamp, AbdmConsentManagement5Request abdmConsentManagement5Request) {
+        return getAccessToken()
+                .thenCompose(token -> consentManagementDataFlowHipApi.abdmConsentManagement5Async(token, requestId, timestamp, xCmId, abdmConsentManagement5Request));
+    }
+
+    public CompletionStage<Void> healthRecordDataTransfer(String dataPushUrl, AbdmConsentManagement6Request abdmConsentManagement6Request) {
+        return getAccessToken()
+                .thenCompose(token -> consentManagementDataFlowHipApi.abdmConsentManagement6Async(token, dataPushUrl, abdmConsentManagement6Request));
+    }
+
+    public CompletionStage<Void> notifyDataTransfer(String requestId, String timestamp, AbdmDataFlow8Request abdmConsentManagement8Request) {
+        return getAccessToken()
+                .thenCompose(token -> consentManagementDataFlowHipApi.abdmDataFlow8Async(token, requestId, timestamp, xCmId, abdmConsentManagement8Request));
+    }
+
     public CompletionStage<AbdmSessions3200Response> getGatewayPublicCerts() {
         return getAccessToken()
                 .thenCompose(token -> {

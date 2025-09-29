@@ -18,24 +18,24 @@ public class AbdmConsentManagement5RequestAnyOfResponse {
     public static final String SERIALIZED_NAME_REQUEST_ID = "requestId";
     @SerializedName("requestId")
     @Nonnull
-    private UUID requestId;
+    private String requestId;
     public static HashSet<String> openapiFields = new HashSet();
     public static HashSet<String> openapiRequiredFields;
 
     public AbdmConsentManagement5RequestAnyOfResponse() {
     }
 
-    public AbdmConsentManagement5RequestAnyOfResponse requestId(@Nonnull UUID requestId) {
+    public AbdmConsentManagement5RequestAnyOfResponse requestId(@Nonnull String requestId) {
         this.requestId = requestId;
         return this;
     }
 
     @Nonnull
-    public UUID getRequestId() {
+    public String getRequestId() {
         return this.requestId;
     }
 
-    public void setRequestId(@Nonnull UUID requestId) {
+    public void setRequestId(@Nonnull String requestId) {
         this.requestId = requestId;
     }
 

@@ -71,7 +71,11 @@ public class CareContextService {
         return careContextDao.getUnlinkedByPatientAndFacility(patientId, healthFacilityId);
     }
 
-    public CompletionStage<Void> upsert(String healthFacilityId, String appointmentId, String patientId, boolean isLinked) {
+    public CompletionStage<List<CareContext>> getLinkedCareContexts(String healthFacilityId, String patientId, Long fromAppointmentTime, Long toAppointmentTime) {
+        return careContextDao.getLinkedByPatientAndFacility(patientId, healthFacilityId, fromAppointmentTime, toAppointmentTime);
+    }
+
+    public CompletionStage<Void> upsert(String healthFacilityId, String appointmentId, String patientId,  boolean isLinked) {
         return careContextDao.upsert(CareContext.builder()
                 .healthFacilityId(healthFacilityId)
                 .appointmentID(appointmentId)

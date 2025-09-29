@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +26,7 @@ public class CareContextDao {
     private final String getCareContextByLinkRequestIdQuery;
     private final String getCareContextByNotifyRequestIdQuery;
     private final String getUnlinkedByPatientAndFacilityQuery;
+    private final String getLinkedByPatientAndFacilityQuery;
 
     private final Gson gson = new Gson();
     private final PostgresDAO postgresDAO;
@@ -43,6 +45,8 @@ public class CareContextDao {
         this.getCareContextByNotifyRequestIdQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE notify_request_id = ?";
         this.getUnlinkedByPatientAndFacilityQuery = "SELECT " + Column.allColumNamesSeparatedByComma() +
                 " FROM " + table + " WHERE patient_id = ? AND health_facility_id = ? AND is_linked = false";
+        this.getLinkedByPatientAndFacilityQuery = "SELECT " + Column.allColumNamesSeparatedByComma() +
+                " FROM " + table + " WHERE patient_id = ? AND health_facility_id = ? AND is_linked = true AND appointment_start_time >= ? AND appointment_start_time <= ?";
     }
 
     public CompletionStage<Void> upsert(CareContext careContext) {
@@ -60,6 +64,7 @@ public class CareContextDao {
                 .healthFacilityId(rs.getString(Column.HEALTH_FACILITY_ID.getColumnName()))
                 .patientId(rs.getString(Column.PATIENT_ID.getColumnName()))
                 .isLinked(rs.getBoolean(Column.IS_LINKED.getColumnName()))
+                .appointmentStartTime(rs.getTimestamp(Column.APPOINTMENT_START_TIME.getColumnName()).getTime())
                 .build(), appointmentID);
     }
 
@@ -69,6 +74,7 @@ public class CareContextDao {
                 .healthFacilityId(rs.getString(Column.HEALTH_FACILITY_ID.getColumnName()))
                 .patientId(rs.getString(Column.PATIENT_ID.getColumnName()))
                 .isLinked(rs.getBoolean(Column.IS_LINKED.getColumnName()))
+                .appointmentStartTime(rs.getTimestamp(Column.APPOINTMENT_START_TIME.getColumnName()).getTime())
                 .build(), requestId);
     }
 
@@ -78,6 +84,7 @@ public class CareContextDao {
                 .healthFacilityId(rs.getString(Column.HEALTH_FACILITY_ID.getColumnName()))
                 .patientId(rs.getString(Column.PATIENT_ID.getColumnName()))
                 .isLinked(rs.getBoolean(Column.IS_LINKED.getColumnName()))
+                .appointmentStartTime(rs.getTimestamp(Column.APPOINTMENT_START_TIME.getColumnName()).getTime())
                 .build(), requestId);
     }
 
@@ -88,7 +95,19 @@ public class CareContextDao {
                         .healthFacilityId(rs.getString(Column.HEALTH_FACILITY_ID.getColumnName()))
                         .patientId(rs.getString(Column.PATIENT_ID.getColumnName()))
                         .isLinked(rs.getBoolean(Column.IS_LINKED.getColumnName()))
+                        .appointmentStartTime(rs.getTimestamp(Column.APPOINTMENT_START_TIME.getColumnName()).getTime())
                         .build(), patientId, healthFacilityId);
+    }
+
+    public CompletionStage<List<CareContext>> getLinkedByPatientAndFacility(String patientId, String healthFacilityId, Long fromAppointmentTime, Long toAppointmentTime) {
+        return postgresDAO.query(dbMetricsGroupName, "getLinkedByPatientAndFacility",
+                getLinkedByPatientAndFacilityQuery, (rs, rowNum) -> CareContext.builder()
+                        .appointmentID(rs.getString(Column.APPOINTMENT_ID.getColumnName()))
+                        .healthFacilityId(rs.getString(Column.HEALTH_FACILITY_ID.getColumnName()))
+                        .patientId(rs.getString(Column.PATIENT_ID.getColumnName()))
+                        .isLinked(rs.getBoolean(Column.IS_LINKED.getColumnName()))
+                        .appointmentStartTime(rs.getTimestamp(Column.APPOINTMENT_START_TIME.getColumnName()).getTime())
+                        .build(), patientId, healthFacilityId, new Timestamp(fromAppointmentTime), new Timestamp(toAppointmentTime));
     }
 
     public CompletionStage<Integer> truncate() {
@@ -99,7 +118,8 @@ public class CareContextDao {
         APPOINTMENT_ID("appointment_id", false),
         HEALTH_FACILITY_ID("health_facility_id", false),
         PATIENT_ID("patient_id", false),
-        IS_LINKED("is_linked", true);
+        IS_LINKED("is_linked", true),
+        APPOINTMENT_START_TIME("appointment_start_time", false);
 
         @Getter
         private final String columnName;

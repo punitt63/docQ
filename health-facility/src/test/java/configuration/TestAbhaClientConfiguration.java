@@ -56,6 +56,10 @@ public class TestAbhaClientConfiguration {
         public int confirmCareContextLinking = 0;
         public AbdmUserInitiatedLinking6Request lastConfirmCareContextLinkingRequest;
         public AbdmUserInitiatedLinking2Request lastLinkUserInitiatedCareContextRequest;
+        public int sendConsentGrantAcknowledgementCount = 0;
+        public int healthInfoRequestAcknowledgementCount = 0;
+        public int getGatewayPublicCertsCount = 0;
+        public AbdmSessions3200Response gatewayPublicKeysResponse;
 
         public MockAbhaRestClient() {
             super(null, null, null, null);
@@ -112,5 +116,24 @@ public class TestAbhaClientConfiguration {
             confirmCareContextLinking++;
             return CompletableFuture.completedFuture(null);
         }
+
+        @Override
+        public CompletionStage<Void> sendConsentGrantAcknowledgement(String requestId, String timestamp, AbdmConsentManagement2Request request) {
+            sendConsentGrantAcknowledgementCount++;
+            return completedFuture(null);
+        }
+
+        @Override
+        public CompletionStage<Void> healthInfoRequestAcknowledgement(String requestId, String timestamp, AbdmConsentManagement5Request request) {
+            healthInfoRequestAcknowledgementCount++;
+            return completedFuture(null);
+        }
+
+        @Override
+        public CompletionStage<AbdmSessions3200Response> getGatewayPublicCerts() {
+            getGatewayPublicCertsCount++;
+            return completedFuture(gatewayPublicKeysResponse);
+        }
+
     }
 }

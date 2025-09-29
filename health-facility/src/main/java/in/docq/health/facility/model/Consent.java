@@ -8,10 +8,10 @@ import java.util.List;
 
 @Builder(toBuilder = true)
 @Getter
-public class ConsentDetail {
+public class Consent {
     private final String schemaVersion;
     private final String consentId;
-    private final Instant createdAt;
+    private final String createdAt;
     private final Patient patient;
     private final List<CareContext> careContexts;
     private final Purpose purpose;
@@ -21,6 +21,7 @@ public class ConsentDetail {
     private final Requester requester;
     private final List<String> hiTypes;
     private final Permission permission;
+    private final String status;
 
     @Builder
     @Getter
@@ -85,15 +86,27 @@ public class ConsentDetail {
     public static class Permission {
         private final String accessMode;
         private final DateRange dateRange;
-        private final Instant dataEraseAt;
+        private final String dataEraseAt;
         private final Frequency frequency;
+
+        public Instant getDataEraseAtInstant() {
+            return dataEraseAt != null ? Instant.parse(dataEraseAt) : null;
+        }
     }
 
     @Builder
     @Getter
     public static class DateRange {
-        private final Instant from;
-        private final Instant to;
+        private final String from;
+        private final String to;
+
+        public Instant getFromAsInstant() {
+            return from != null ? Instant.parse(from) : null;
+        }
+
+        public Instant getToAsInstant() {
+            return to != null ? Instant.parse(to) : null;
+        }
     }
 
     @Builder

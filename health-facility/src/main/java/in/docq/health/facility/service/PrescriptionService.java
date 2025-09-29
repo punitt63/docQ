@@ -5,6 +5,7 @@ import in.docq.health.facility.model.Prescription;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 @Service
@@ -45,5 +46,9 @@ public class PrescriptionService {
     public CompletionStage<Prescription> get(LocalDate opdDate, String opdID, Integer appointmentID) {
         return appointmentService.get(opdDate, opdID, appointmentID)
                 .thenCompose(appointment -> opdPrescriptionDao.get(opdID, appointmentID, java.sql.Date.valueOf(opdDate)));
+    }
+
+    public CompletionStage<List<Prescription>> getPrescriptions(List<PrescriptionDAO.PrescriptionIdentifier> identifiers) {
+        return opdPrescriptionDao.getPrescriptions(identifiers);
     }
 }

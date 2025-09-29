@@ -1,7 +1,7 @@
 package in.docq.health.facility.dao;
 
 import com.google.gson.Gson;
-import in.docq.health.facility.model.ConsentDetail;
+import in.docq.health.facility.model.Consent;
 import in.docq.spring.boot.commons.postgres.PostgresDAO;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,8 +35,8 @@ public class ConsentDao {
         this.updateStatusQuery = "UPDATE " + table + " SET status = ? WHERE id = ?";
     }
 
-    public CompletionStage<Void> insert(String consentId, Object requestObject, String status) {
-        String requestJson = gson.toJson(requestObject);
+    public CompletionStage<Void> insert(String consentId, Consent consent, String status) {
+        String requestJson = gson.toJson(consent);
         return postgresDAO.update(dbMetricsGroupName, "insert", insertQuery,
                         consentId,
                         requestJson,
@@ -44,7 +44,7 @@ public class ConsentDao {
                 .thenAccept(ignore -> {});
     }
 
-    public CompletionStage<Optional<ConsentDetail>> getById(String id) {
+    public CompletionStage<Optional<Consent>> getById(String id) {
         return postgresDAO.queryForOptionalObject(dbMetricsGroupName, "getById",
                 getByIdQuery, this::mapRow, id);
     }
@@ -54,15 +54,22 @@ public class ConsentDao {
                 .thenAccept(ignore -> {});
     }
 
+    public CompletionStage<Void> deleteById(String id) {
+        String deleteQuery = "DELETE FROM " + table + " WHERE id = ?";
+        return postgresDAO.update(dbMetricsGroupName, "deleteById", deleteQuery, id)
+                .thenAccept(ignore -> {});
+    }
+
     public CompletionStage<Integer> truncate() {
         return postgresDAO.update(dbMetricsGroupName, "truncate", "DELETE FROM " + table);
     }
 
-    private ConsentDetail mapRow(ResultSet rs, int rowNum) throws SQLException {
+    private Consent mapRow(ResultSet rs, int rowNum) throws SQLException {
         try {
             String requestJsonStr = rs.getString(Column.CONTENT.getColumnName());
-            ConsentDetail consentDetail = gson.fromJson(requestJsonStr, ConsentDetail.class);
-            return requestJsonStr != null ? consentDetail : null;
+            String status = rs.getString(Column.STATUS.getColumnName());
+            Consent consent = gson.fromJson(requestJsonStr, Consent.class);
+            return consent.toBuilder().status(status).build();
         } catch (Exception e) {
             throw new SQLException("Failed to map consent row", e);
         }
