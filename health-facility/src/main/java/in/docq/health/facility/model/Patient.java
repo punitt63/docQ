@@ -1,5 +1,6 @@
 package in.docq.health.facility.model;
 
+import com.auth0.jwt.JWT;
 import in.docq.health.facility.controller.PatientController;
 import lombok.*;
 
@@ -8,12 +9,12 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import java.security.SecureRandom;
 import java.time.LocalDate;
-import java.util.Base64;
-import java.util.Optional;
+import java.util.*;
 
-@Builder
+@Builder(toBuilder = true)
 @Getter
 public class Patient {
+    private final String id;
     private final String abhaNo;
     private final String abhaAddress;
     private final String name;
@@ -25,18 +26,19 @@ public class Patient {
     private static final int GCM_TAG_LENGTH = 128;
     private static final int AES_KEY_SIZE = 256;
 
-    public String getId() {
-        return Optional.ofNullable(abhaAddress).orElse(mobileNo + "-" + name + "-" + dob);
+    public boolean isAbhaOnboarded() {
+        return Objects.nonNull(abhaAddress);
     }
 
     public static Patient fromRequestBody(PatientController.CreatePatientRequestBody requestBody) {
         return Patient.builder()
-                .abhaNo(requestBody.getAbhaNo())
-                .abhaAddress(requestBody.getAbhaAddress())
+                .id(UUID.randomUUID().toString())
                 .name(requestBody.getName())
                 .mobileNo(requestBody.getMobileNo())
                 .dob(requestBody.getDob())
                 .gender(requestBody.getGender())
+                .abhaAddress(requestBody.getAbhaAddress())
+                .abhaNo(requestBody.getAbhaNo())
                 .build();
     }
 
@@ -107,13 +109,17 @@ public class Patient {
         }
     }
 
+    public int getYearOfBirth() {
+        return dob.getYear();
+    }
+
     public static Patient fromRequestBody(PatientController.ReplacePatientRequestBody requestBody) {
         return Patient.builder()
                 .abhaNo(requestBody.getAbhaNo())
                 .abhaAddress(requestBody.getAbhaAddress())
-                .name(requestBody.getNewName())
-                .mobileNo(requestBody.getNewMobileNo())
-                .dob(requestBody.getNewDob())
+                .name(requestBody.getName())
+                .mobileNo(requestBody.getMobileNo())
+                .dob(requestBody.getDob())
                 .gender(requestBody.getGender())
                 .build();
     }

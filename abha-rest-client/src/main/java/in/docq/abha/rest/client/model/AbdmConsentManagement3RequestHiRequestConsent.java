@@ -1,0 +1,152 @@
+package in.docq.abha.rest.client.model;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import in.docq.abha.rest.client.JSON;
+
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import javax.annotation.Nonnull;
+
+public class AbdmConsentManagement3RequestHiRequestConsent {
+    public static final String SERIALIZED_NAME_ID = "id";
+    @SerializedName("id")
+    @Nonnull
+    private String id;
+    public static HashSet<String> openapiFields = new HashSet();
+    public static HashSet<String> openapiRequiredFields;
+
+    public AbdmConsentManagement3RequestHiRequestConsent() {
+    }
+
+    public AbdmConsentManagement3RequestHiRequestConsent id(@Nonnull String id) {
+        this.id = id;
+        return this;
+    }
+
+    @Nonnull
+    public String getId() {
+        return this.id;
+    }
+
+    public void setId(@Nonnull String id) {
+        this.id = id;
+    }
+
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        } else if (o != null && this.getClass() == o.getClass()) {
+            AbdmConsentManagement3RequestHiRequestConsent abdmConsentManagement3RequestHiRequestConsent = (AbdmConsentManagement3RequestHiRequestConsent)o;
+            return Objects.equals(this.id, abdmConsentManagement3RequestHiRequestConsent.id);
+        } else {
+            return false;
+        }
+    }
+
+    public int hashCode() {
+        return Objects.hash(new Object[]{this.id});
+    }
+
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("class AbdmConsentManagement3RequestHiRequestConsent {\n");
+        sb.append("    id: ").append(this.toIndentedString(this.id)).append("\n");
+        sb.append("}");
+        return sb.toString();
+    }
+
+    private String toIndentedString(Object o) {
+        return o == null ? "null" : o.toString().replace("\n", "\n    ");
+    }
+
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+        if (jsonElement == null && !openapiRequiredFields.isEmpty()) {
+            throw new IllegalArgumentException(String.format("The required field(s) %s in AbdmConsentManagement3RequestHiRequestConsent is not found in the empty JSON string", openapiRequiredFields.toString()));
+        } else {
+            Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+            Iterator var2 = entries.iterator();
+
+            Map.Entry entry;
+            do {
+                if (!var2.hasNext()) {
+                    var2 = openapiRequiredFields.iterator();
+
+                    String requiredField;
+                    do {
+                        if (!var2.hasNext()) {
+                            JsonObject jsonObj = jsonElement.getAsJsonObject();
+                            if (!jsonObj.get("id").isJsonPrimitive()) {
+                                throw new IllegalArgumentException(String.format("Expected the field `id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("id").toString()));
+                            }
+
+                            return;
+                        }
+
+                        requiredField = (String)var2.next();
+                    } while(jsonElement.getAsJsonObject().get(requiredField) != null);
+
+                    throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+                }
+
+                entry = (Map.Entry)var2.next();
+            } while(openapiFields.contains(entry.getKey()));
+
+            throw new IllegalArgumentException(String.format("The field `%s` in the JSON string is not defined in the `AbdmConsentManagement3RequestHiRequestConsent` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+    }
+
+    public static AbdmConsentManagement3RequestHiRequestConsent fromJson(String jsonString) throws IOException {
+        return (AbdmConsentManagement3RequestHiRequestConsent)JSON.getGson().fromJson(jsonString, AbdmConsentManagement3RequestHiRequestConsent.class);
+    }
+
+    public String toJson() {
+        return JSON.getGson().toJson(this);
+    }
+
+    static {
+        openapiFields.add("id");
+        openapiRequiredFields = new HashSet();
+        openapiRequiredFields.add("id");
+    }
+
+    public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+        public CustomTypeAdapterFactory() {
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+            if (!AbdmConsentManagement3RequestHiRequestConsent.class.isAssignableFrom(type.getRawType())) {
+                return null;
+            } else {
+                final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+                final TypeAdapter<AbdmConsentManagement3RequestHiRequestConsent> thisAdapter = gson.getDelegateAdapter(this, TypeToken.get(AbdmConsentManagement3RequestHiRequestConsent.class));
+                return (TypeAdapter<T>) (new TypeAdapter<AbdmConsentManagement3RequestHiRequestConsent>() {
+                    public void write(JsonWriter out, AbdmConsentManagement3RequestHiRequestConsent value) throws IOException {
+                        JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+                        elementAdapter.write(out, obj);
+                    }
+
+                    public AbdmConsentManagement3RequestHiRequestConsent read(JsonReader in) throws IOException {
+                        JsonElement jsonElement = (JsonElement)elementAdapter.read(in);
+                        AbdmConsentManagement3RequestHiRequestConsent.validateJsonElement(jsonElement);
+                        return (AbdmConsentManagement3RequestHiRequestConsent)thisAdapter.fromJsonTree(jsonElement);
+                    }
+                }).nullSafe();
+            }
+        }
+    }
+}
+

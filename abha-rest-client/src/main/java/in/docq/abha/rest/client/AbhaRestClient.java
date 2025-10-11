@@ -13,12 +13,20 @@ import in.docq.abha.rest.client.model.phr.OtpRequestMobile200Response;
 import in.docq.abha.rest.client.model.phr.OtpRequestMobileRequest;
 import in.docq.abha.rest.client.model.phr.*;
 import in.docq.abha.rest.client.utils.RSAEncrypter;
+import in.docq.abha.rest.client.api.GatewaySessionApi;
+import in.docq.abha.rest.client.api.HealthFacilitySearchApi;
+import in.docq.abha.rest.client.api.HealthProfessionalSearchApi;
+import in.docq.abha.rest.client.api.MultipleHrpApiApi;
+import in.docq.abha.rest.client.model.*;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -37,20 +45,28 @@ public class AbhaRestClient {
     private final AbhaEnrollmentViaAadhaarApi abhaEnrollmentViaAadhaarApi;
     private final AbhaAddressVerificationApi abhaAddressVerificationApi;
     private final AbhaProfileApi abhaProfileApi;
-
+    private final HIPInitiatedLinkingApi hipInitiatedLinkingApi;
+    private final UserInitiatedLinkingHipApi userInitiatedLinkingHipApi;
     private final HealthFacilitySearchApi healthFacilitySearchApi;
     private final HealthProfessionalSearchApi healthProfessionalSearchApi;
+    private final MultipleHrpApiApi multipleHrpApiApi;
     private final EnrollmentApiCollectionApi enrollmentApiCollectionApi;
     private final in.docq.abha.rest.client.api.phr.LoginApiCollectionApi loginApiCollectionApi;
     private final in.docq.abha.rest.client.api.phr.ProfileApiCollectionApi profileApiCollectionApi;
     private final AbdmHiecmPatientSharePhrApi abdmHiecmPatientSharePhrApi;
 
     private final Cache<String, String> tokenCache;
+    private final Cache<String, AbdmSessions3200Response> gatewayPublicCertCache;
     private final GatewaySessionApi gatewaySessionApi;
+    private final ConsentManagementDataFlowHipApi consentManagementDataFlowHipApi;
+    private final ConsentManagementDataFlowHiuApi consentManagementDataFlowHiuApi;
+    private final String xCmId;
 
-    public AbhaRestClient(ApiClient apiClient, String clientId, String clientSecret) {
+    public AbhaRestClient(ApiClient apiClient, String clientId, String clientSecret, String xCmId) {
         this.apiClient = apiClient;
         this.abhaLoginApi = new AbhaLoginApi(apiClient);
+        this.consentManagementDataFlowHipApi = new ConsentManagementDataFlowHipApi(apiClient);
+        this.xCmId = xCmId;
         this.abhaLoginApi.setCustomBaseUrl("https://abhasbx.abdm.gov.in");
         this.abhaCardApi = new AbhaCardApi(apiClient);
         this.abhaEnrollmentViaAadhaarApi = new AbhaEnrollmentViaAadhaarApi(apiClient);
@@ -71,12 +87,22 @@ public class AbhaRestClient {
         this.abdmHiecmPatientSharePhrApi.setCustomBaseUrl("https://abhasbx.abdm.gov.in");
 
         this.gatewaySessionApi = new GatewaySessionApi(apiClient);
+        this.multipleHrpApiApi = new MultipleHrpApiApi(apiClient);
+        this.hipInitiatedLinkingApi = new HIPInitiatedLinkingApi(apiClient);
+        this.userInitiatedLinkingHipApi = new UserInitiatedLinkingHipApi(apiClient);
+        this.consentManagementDataFlowHiuApi = new ConsentManagementDataFlowHiuApi(apiClient);
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.tokenCache = CacheBuilder.newBuilder()
                 .concurrencyLevel(4)
                 .initialCapacity(1000)
                 .maximumSize(10000)
+                .build();
+        this.gatewayPublicCertCache = CacheBuilder.newBuilder()
+                .concurrencyLevel(4)
+                .initialCapacity(100)
+                .maximumSize(1000)
+                .expireAfterWrite(1, TimeUnit.DAYS)
                 .build();
         //eagerInitiateToken();
     }
@@ -341,6 +367,115 @@ public class AbhaRestClient {
                                                 .otpValue(RSAEncrypter.encrypt(otp))
                                                 .txnId(txnId)))
                                 .reasons(reasons)));
+    }
+
+    public CompletionStage<Void> registerHFRToBridge(String facilityId, String facilityName) {
+        return getAccessToken()
+                .thenCompose(token -> multipleHrpApiApi.v1MutipleHRPAddUpdateServicesUsingPOSTAsync(token,
+                        new BridgeAddUpdate()
+                                .facilityId(facilityId)
+                                .facilityName(facilityName)
+                                .HRP(List.of(new MultipleHRPRequest().active(true)
+                                        .bridgeId(clientId)
+                                        .hipName(facilityName)
+                                        .type("HFR")
+                                ))))
+                .thenApply(response -> {
+                    if(response.getError() != null) {
+                        throw new ApiException(500, "Failed to register HFR to bridge");
+                    }
+                    return null;
+                });
+    }
+
+    public CompletionStage<Void> generateLinkingToken(String requestId, String timestamp, String xHipId, HIPInitiatedGenerateTokenRequest hipInitiatedGenerateTokenRequest) {
+        return getAccessToken()
+                .thenCompose(token ->  hipInitiatedLinkingApi.generateTokenAsync(token, requestId, timestamp, xHipId, xCmId, hipInitiatedGenerateTokenRequest));
+    }
+
+    public  CompletionStage<Void> sendDeepLinkNotification(String requestId, String timestamp, SendSmsNotificationRequest sendSmsNotificationRequest) {
+        return getAccessToken()
+                .thenCompose(token -> hipInitiatedLinkingApi.sendSmsNotificationAsync(token, requestId, timestamp, xCmId, sendSmsNotificationRequest));
+    }
+
+    public CompletionStage<Void> linkHIPInitiatedCareContext(String requestId, String timestamp, String xHipId, String xLinkToken, AbdmHipInitiatedLinkingHip1Request abdmHipInitiatedLinkingHip1Request) {
+        return getAccessToken()
+                .thenCompose(token -> hipInitiatedLinkingApi.linkCareContextAsync(token, requestId, timestamp, xCmId, xHipId, xLinkToken, abdmHipInitiatedLinkingHip1Request));
+    }
+
+    public CompletionStage<Void> linkUserInitiatedCareContext(String requestId, String timestamp, String xHiuId, AbdmUserInitiatedLinking2Request abdmUserInitiatedLinking2Request) {
+        return getAccessToken()
+                .thenCompose(token -> userInitiatedLinkingHipApi.userInitiatedLinkingAsync(token, requestId, timestamp, xCmId, xHiuId, abdmUserInitiatedLinking2Request));
+    }
+
+    public CompletionStage<Void> initiateUserLinking(String requestId, String timestamp, String xHiuId, AbdmUserInitiatedLinking4Request abdmUserInitiatedLinking4Request) {
+        return getAccessToken()
+                .thenCompose(token -> userInitiatedLinkingHipApi.abdmUserInitiatedLinking4Async(token, requestId, timestamp, xCmId, abdmUserInitiatedLinking4Request));
+    }
+
+    public CompletionStage<Void> confirmCareContextLinking(String requestId, String timestamp, AbdmUserInitiatedLinking6Request abdmUserInitiatedLinking6Request) {
+        return getAccessToken()
+                .thenCompose(token -> userInitiatedLinkingHipApi.abdmUserInitiatedLinking6Async(token, requestId, timestamp, xCmId, abdmUserInitiatedLinking6Request));
+    }
+
+    public CompletionStage<Void> sendConsentGrantAcknowledgement(String requestId, String timestamp, AbdmConsentManagement2Request abdmConsentManagement2Request) {
+        return getAccessToken()
+                .thenCompose(token -> consentManagementDataFlowHipApi.abdmConsentManagement2Async(token, requestId, timestamp, xCmId, abdmConsentManagement2Request));
+    }
+
+    public CompletionStage<Void> healthInfoRequestAcknowledgement(String requestId, String timestamp, AbdmConsentManagement5Request abdmConsentManagement5Request) {
+        return getAccessToken()
+                .thenCompose(token -> consentManagementDataFlowHipApi.abdmConsentManagement5Async(token, requestId, timestamp, xCmId, abdmConsentManagement5Request));
+    }
+
+    public CompletionStage<Void> healthRecordDataTransfer(String dataPushUrl, AbdmConsentManagement6Request abdmConsentManagement6Request) {
+        return getAccessToken()
+                .thenCompose(token -> consentManagementDataFlowHipApi.abdmConsentManagement6Async(token, dataPushUrl, abdmConsentManagement6Request));
+    }
+
+    public CompletionStage<Void> notifyDataTransfer(String requestId, String timestamp, AbdmDataFlow8Request abdmConsentManagement8Request) {
+        return getAccessToken()
+                .thenCompose(token -> consentManagementDataFlowHipApi.abdmDataFlow8Async(token, requestId, timestamp, xCmId, abdmConsentManagement8Request));
+    }
+
+    public CompletionStage<AbdmSessions3200Response> getGatewayPublicCerts() {
+        return getAccessToken()
+                .thenCompose(token -> {
+                    AbdmSessions3200Response cachedCerts = gatewayPublicCertCache.getIfPresent("gatewayPublicCerts");
+                    if(cachedCerts != null) {
+                        return completedFuture(cachedCerts);
+                    }
+                    return gatewaySessionApi.abdmSessions3Async(token, UUID.randomUUID().toString(),  Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),xCmId)
+                            .thenApply(response -> {
+                                gatewayPublicCertCache.put("gatewayPublicCerts", response);
+                                return response;
+                            });
+                });
+    }
+
+    public CompletionStage<Void> sendConsentRequest(String requestId, String timestamp, AbdmConsentManagement1Request abdmConsentManagement1Request) {
+        return getAccessToken()
+                .thenCompose(token -> consentManagementDataFlowHiuApi.abdmConsentManagement1Async(token, requestId, timestamp, xCmId, abdmConsentManagement1Request));
+    }
+
+    public CompletionStage<Void> notifyPatientActionForConsent(String requestId, String timestamp, AbdmConsentManagement3Request2 abdmConsentManagement3Request2) {
+        return getAccessToken()
+                .thenCompose(token -> consentManagementDataFlowHiuApi.abdmConsentManagement3_0Async(token, requestId, timestamp, xCmId, abdmConsentManagement3Request2));
+    }
+
+    public CompletionStage<Void> fetchConsentArtifact(String requestId, String timestamp, String hiuId, AbdmConsentManagement5Request1 abdmConsentManagement5Request1) {
+        return getAccessToken()
+                .thenCompose(token -> consentManagementDataFlowHiuApi.abdmConsentManagement5Async(token, requestId, timestamp, xCmId, hiuId, abdmConsentManagement5Request1));
+    }
+
+    public CompletionStage<Void> sendHealthInfoRequest(String requestId, String timestamp, String hiuId, AbdmDataFlow7Request dataFlow7Request) {
+        return getAccessToken()
+                .thenCompose(token -> consentManagementDataFlowHiuApi.abdmDataFlow7Async(token, requestId, timestamp, xCmId, hiuId, dataFlow7Request));
+    }
+
+    public CompletionStage<Void> notifyHealthInfoTransfer(String requestId, String timestamp, AbdmDataFlow8Request abdmDataFlow8Request) {
+        return getAccessToken()
+                .thenCompose(token -> consentManagementDataFlowHiuApi.abdmDataFlow8Async(token, requestId, timestamp, xCmId, abdmDataFlow8Request));
     }
 
     // phr abha enrol apis

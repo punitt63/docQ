@@ -84,6 +84,7 @@
                             <skipValidateSpec>true</skipValidateSpec>
                             <configOptions>
                                 <async>true</async>
+                                <openApiNullable>false</openApiNullable>
                             </configOptions>
                         </configuration>
                     </execution>

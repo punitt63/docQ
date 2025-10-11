@@ -43,6 +43,10 @@ public class Appointment {
         }
     }
 
+    public String getUniqueId() {
+        return opdDate.toString() + "_" + opdId + "_" + id;
+    }
+
     public boolean isStateChangeAllowed(State finalState) {
         return allowedStateChange
                 .stream()

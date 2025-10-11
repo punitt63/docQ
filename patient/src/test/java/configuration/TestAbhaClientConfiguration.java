@@ -24,11 +24,11 @@ public class TestAbhaClientConfiguration {
     public static class MockAbhaRestClient extends AbhaRestClient {
 
         public MockAbhaRestClient() {
-            super(null, null, null);
+            super(null, null, null, null);
         }
 
         public MockAbhaRestClient(ApiClient apiClient, String clientId, String clientSecret) {
-            super(apiClient, clientId, clientSecret);
+            super(apiClient, clientId, clientSecret, null);
         }
 
         @Override

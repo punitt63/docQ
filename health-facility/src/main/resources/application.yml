@@ -98,3 +98,11 @@ server:
 encryption:
   aes:
     key: vHEyVZcMpQZx+7O2bQ0eUwqTY1AvXg8Whq2mDJK6ClU=
+
+x:
+  cm:
+    id: sbx
+
+app:
+  data-push:
+    base-url: http://localhost:8080

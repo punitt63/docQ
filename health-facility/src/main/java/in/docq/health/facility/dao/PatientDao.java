@@ -11,8 +11,10 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.sql.Date;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
@@ -23,9 +25,10 @@ public class PatientDao {
     private final String table = "patient";
     private final String insertPatientQuery;
     private final String getPatientQuery;
-    private final String insertPatientIfNotExistsQuery;
+    private final String getPatientByIdQuery;
     private final String updatePatientQuery;
-    private final String getPatientsByMobileQuery;
+    private final String listPatientsQuery;
+    private final String getPatientByAbhaAddressQuery;
     private final PostgresDAO postgresDAO;
     private final SecretKey aesEncryptionKey;
 
@@ -36,61 +39,78 @@ public class PatientDao {
         this.insertPatientQuery = "INSERT INTO " + table + "(" + Column.allColumNamesSeparatedByComma() + ")" +
                 " VALUES (" + Column.allColumnValuesSeparatedByComma() + ")";
         this.updatePatientQuery = "UPDATE " + table + " SET " + Column.updateableColumnsSeparatedByComma() +
-                " WHERE " + Column.MOBILE_NO.getColumnName() + " = ? AND " +
-                Column.NAME.getColumnName() + " = ? AND " +
-                Column.DOB.getColumnName() + " = ?";
-        this.getPatientsByMobileQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table +
-                " WHERE " + Column.MOBILE_NO.getColumnName() + " = ?";
+                " WHERE " + Column.ID.getColumnName() + " = ?";
+        this.listPatientsQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table;
+        this.getPatientByAbhaAddressQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table +
+                " WHERE " + Column.ABHA_ADDRESS.getColumnName() + " = ?";
         this.getPatientQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table +
                 " WHERE " + Column.MOBILE_NO.getColumnName() + " = ?" +
                 " AND " + Column.NAME.getColumnName() + " = ?" +
                 " AND " + Column.DOB.getColumnName() + " = ?";
-        this.insertPatientIfNotExistsQuery = "INSERT INTO " + table + "(" + Column.allColumNamesSeparatedByComma() + ")" +
-                " VALUES (" + Column.allColumnValuesSeparatedByComma() + ") ON CONFLICT (" + Column.MOBILE_NO.getColumnName() + ", " + Column.NAME.getColumnName() + ", " + Column.DOB.getColumnName() + ") DO NOTHING";
+        this.getPatientByIdQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table +
+                " WHERE " + Column.ID.getColumnName() + " = ?";
     }
 
     public CompletionStage<Void> insert(Patient patient) {
-        Patient encryptedPatient = patient;
+        Patient encryptedPatient = patient.encrypt(aesEncryptionKey);
         return postgresDAO.update(dbMetricsGroupName, "insert", insertPatientQuery,
-                        encryptedPatient.getAbhaNo(),
-                        encryptedPatient.getAbhaAddress(),
-                        encryptedPatient.getName(),
-                        encryptedPatient.getMobileNo(),
-                        Date.valueOf(encryptedPatient.getDob()),
-                        encryptedPatient.getGender())
+                        patient.getId(),
+                        patient.getAbhaNo(),
+                        patient.getAbhaAddress(),
+                        patient.getName(),
+                        patient.getMobileNo(),
+                        Date.valueOf(patient.getDob()),
+                        patient.getGender())
                 .thenAccept(ignore -> {});
     }
 
-    public CompletionStage<Void> insertIfNotExists(Patient patient) {
-        Patient encryptedPatient = patient;
-        return postgresDAO.update(dbMetricsGroupName, "insertIfNotExists", insertPatientIfNotExistsQuery,
-                        encryptedPatient.getAbhaNo(),
-                        encryptedPatient.getAbhaAddress(),
-                        encryptedPatient.getName(),
-                        encryptedPatient.getMobileNo(),
-                        Date.valueOf(encryptedPatient.getDob()),
-                        encryptedPatient.getGender())
-                .thenAccept(ignore -> {});
-    }
-
-    public CompletionStage<Void> update(String mobileNo, String name, LocalDate dob, Patient newpatient) {
-        Patient encryptedPatient = newpatient.encrypt(aesEncryptionKey);
+    public CompletionStage<Void> update(String id, Patient newpatient) {
         return postgresDAO.update(dbMetricsGroupName, "update", updatePatientQuery,
-                        encryptedPatient.getAbhaNo(),
-                        encryptedPatient.getAbhaAddress(),
-                        encryptedPatient.getName(),
-                        encryptedPatient.getMobileNo(),
-                        Date.valueOf(encryptedPatient.getDob()),
-                        encryptedPatient.getGender(),
-                        mobileNo,
-                        name,
-                        Date.valueOf(dob))
+                        newpatient.getAbhaNo(),
+                        newpatient.getAbhaAddress(),
+                        newpatient.getName(),
+                        newpatient.getMobileNo(),
+                        Date.valueOf(newpatient.getDob()),
+                        newpatient.getGender(),
+                        id)
                 .thenAccept(ignore -> {});
     }
 
-    public CompletionStage<List<Patient>> searchByMobile(String mobileNo) {
-        return postgresDAO.query(dbMetricsGroupName, "getByMobile", getPatientsByMobileQuery,
+    public CompletionStage<List<Patient>> list(String abhaAddress, String mobileNo, LocalDate dob, String gender) {
+        String query = listPatientsQuery;
+        String whereClause = " WHERE ";
+        List<Object> args = new ArrayList<>();
+        if(abhaAddress != null) {
+            whereClause += Column.ABHA_ADDRESS.getColumnName() + " = ?";
+            args.add(abhaAddress);
+        }
+        if(mobileNo != null) {
+            if(!whereClause.equals(" WHERE ")) {
+                whereClause += " AND ";
+            }
+            whereClause += Column.MOBILE_NO.getColumnName() + " = ?";
+            args.add(mobileNo);
+        }
+        if(dob != null) {
+            if(!whereClause.equals(" WHERE ")) {
+                whereClause += " AND ";
+            }
+            whereClause += Column.DOB.getColumnName() + " = ?";
+            args.add(Date.valueOf(dob));
+        }
+        if(gender != null) {
+            if(!whereClause.equals(" WHERE ")) {
+                whereClause += " AND ";
+            }
+            whereClause += Column.GENDER.getColumnName() + " = ?";
+            args.add(gender);
+        }
+        if(!whereClause.equals(" WHERE ")) {
+            query += whereClause;
+        }
+        return postgresDAO.query(dbMetricsGroupName, "list", query,
                 (rs, rowNum) -> Patient.builder()
+                        .id(rs.getString(Column.ID.getColumnName()))
                         .abhaNo(rs.getString(Column.ABHA_NO.getColumnName()))
                         .abhaAddress(rs.getString(Column.ABHA_ADDRESS.getColumnName()))
                         .name(rs.getString(Column.NAME.getColumnName()))
@@ -98,7 +118,35 @@ public class PatientDao {
                         .dob(rs.getDate(Column.DOB.getColumnName()).toLocalDate())
                         .gender(rs.getString(Column.GENDER.getColumnName()))
                         .build(),
-                mobileNo);
+                args.toArray());
+    }
+
+    public CompletionStage<Patient> getByAbhaAddress(String abhaAddress) {
+        return postgresDAO.queryForObject(dbMetricsGroupName, "getByAbhaAddress", getPatientByAbhaAddressQuery,
+                (rs, rowNum) -> Patient.builder()
+                        .id(rs.getString(Column.ID.getColumnName()))
+                        .abhaNo(rs.getString(Column.ABHA_NO.getColumnName()))
+                        .abhaAddress(rs.getString(Column.ABHA_ADDRESS.getColumnName()))
+                        .name(rs.getString(Column.NAME.getColumnName()))
+                        .mobileNo(rs.getString(Column.MOBILE_NO.getColumnName()))
+                        .dob(rs.getDate(Column.DOB.getColumnName()).toLocalDate())
+                        .gender(rs.getString(Column.GENDER.getColumnName()))
+                        .build(),
+                abhaAddress);
+    }
+
+    public CompletionStage<Optional<Patient>> getByAbhaAddressOptional(String abhaAddress) {
+        return postgresDAO.queryForOptionalObject(dbMetricsGroupName, "getByAbhaAddress", getPatientByAbhaAddressQuery,
+                (rs, rowNum) -> Patient.builder()
+                        .id(rs.getString(Column.ID.getColumnName()))
+                        .abhaNo(rs.getString(Column.ABHA_NO.getColumnName()))
+                        .abhaAddress(rs.getString(Column.ABHA_ADDRESS.getColumnName()))
+                        .name(rs.getString(Column.NAME.getColumnName()))
+                        .mobileNo(rs.getString(Column.MOBILE_NO.getColumnName()))
+                        .dob(rs.getDate(Column.DOB.getColumnName()).toLocalDate())
+                        .gender(rs.getString(Column.GENDER.getColumnName()))
+                        .build(),
+                abhaAddress);
     }
 
     public CompletionStage<Patient> search(String mobileNo, String name, LocalDate dob) {
@@ -110,9 +158,22 @@ public class PatientDao {
                         .mobileNo(rs.getString(Column.MOBILE_NO.getColumnName()))
                         .dob(rs.getDate(Column.DOB.getColumnName()).toLocalDate())
                         .gender(rs.getString(Column.GENDER.getColumnName()))
-                        .build()
-                        .decrypt(aesEncryptionKey),
+                        .build(),
                 mobileNo, name, Date.valueOf(dob));
+    }
+
+    public CompletionStage<Patient> get(String id) {
+        return postgresDAO.queryForObject(dbMetricsGroupName, "get", getPatientByIdQuery,
+                (rs, rowNum) -> Patient.builder()
+                        .id(rs.getString(Column.ID.getColumnName()))
+                        .abhaNo(rs.getString(Column.ABHA_NO.getColumnName()))
+                        .abhaAddress(rs.getString(Column.ABHA_ADDRESS.getColumnName()))
+                        .name(rs.getString(Column.NAME.getColumnName()))
+                        .mobileNo(rs.getString(Column.MOBILE_NO.getColumnName()))
+                        .dob(rs.getDate(Column.DOB.getColumnName()).toLocalDate())
+                        .gender(rs.getString(Column.GENDER.getColumnName()))
+                        .build(),
+                id);
     }
 
     public CompletionStage<Integer> truncate() {
@@ -120,6 +181,7 @@ public class PatientDao {
     }
 
     public enum Column {
+        ID("id", false),
         ABHA_NO("abha_no", true),
         ABHA_ADDRESS("abha_address", true),
         NAME("name", true),

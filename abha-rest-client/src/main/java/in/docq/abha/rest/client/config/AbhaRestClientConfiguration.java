@@ -13,9 +13,10 @@ public class AbhaRestClientConfiguration {
     @Bean
     public AbhaRestClient abhaRestClient(@Value("${abha.base.url}") String abhaBaseURL,
                                          @Value("${abha.client.id}") String abhaClientID,
-                                         @Value("${abha.client.secret}") String abhaClientSecret) {
+                                         @Value("${abha.client.secret}") String abhaClientSecret,
+                                         @Value("${x.cm.id}") String xCmId) {
         ApiClient apiClient = new ApiClient(new OkHttpClient());
         apiClient.setBasePath(abhaBaseURL);
-        return new AbhaRestClient(apiClient, abhaClientID, abhaClientSecret);
+        return new AbhaRestClient(apiClient, abhaClientID, abhaClientSecret, xCmId);
     }
 }

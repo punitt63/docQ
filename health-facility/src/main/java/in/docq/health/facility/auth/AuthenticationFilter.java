@@ -83,6 +83,20 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
-        return path.endsWith("/health") || path.endsWith("/prometheus") || path.endsWith("/login");
+        return path.endsWith("/health") ||
+                path.endsWith("/prometheus") ||
+                path.endsWith("/login") ||
+                path.endsWith("/on-generate-token") ||
+                path.endsWith("/on_carecontext") ||
+                path.endsWith("/on-notify") ||
+                path.endsWith("/care-context/discover") ||
+                path.endsWith("/care-context/init") ||
+                path.endsWith("/care-context/confirm") ||
+                path.endsWith("/consent/request/hip/notify") ||
+                path.endsWith("/hip/health-information/request") ||
+                path.endsWith("/hiu/consent/request/on-init") ||
+                path.endsWith("/hiu/consent/request/notify") ||
+                path.endsWith("/hiu/consent/on-fetch") ||
+                path.endsWith("/hiu/health-information/on-request");
     }
 }

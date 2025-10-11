@@ -17,6 +17,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+import static com.google.common.base.Preconditions.checkState;
+
 @RestController
 public class PatientController {
     private final PatientService patientService;
@@ -31,35 +33,30 @@ public class PatientController {
     @GetMapping("/health-facilities/{health-facility-id}/patients")
     @Authorized(resource = "patient", scope = "read")
     public CompletionStage<ResponseEntity<List<Patient>>> searchPatients(@PathVariable("health-facility-id") String healthFacilityID,
-                                                                         @RequestParam("mobile-no") String mobileNo) {
-        return patientService.searchPatients(mobileNo)
-                .thenApply(patients -> patients.stream()
-                        //.map(patient -> patient.decrypt(aesEncryptionKey))
-                        .toList())
+                                                                         @RequestParam(value = "mobile-no", required = false) String mobileNo,
+                                                                         @RequestParam(value = "abha-address", required = false) String abhaAddress,
+                                                                         @RequestParam(value = "dob", required = false) LocalDate dob,
+                                                                         @RequestParam(value = "gender", required = false) String gender) {
+        checkState(abhaAddress != null || mobileNo != null, "mobile-no or abhaAddress is required");
+        return patientService.list(abhaAddress, mobileNo, dob, gender)
                 .thenApply(ResponseEntity::ok);
     }
 
     @PostMapping("/health-facilities/{health-facility-id}/patients")
     @Authorized(resource = "patient", scope = "create")
-    public CompletionStage<ResponseEntity<Void>> createPatient(@PathVariable("health-facility-id") String healthFacilityID,
+    public CompletionStage<ResponseEntity<Patient>> createPatient(@PathVariable("health-facility-id") String healthFacilityID,
                                                                @RequestBody CreatePatientRequestBody createPatientRequestBody) {
         return patientService.createPatient(Patient.fromRequestBody(createPatientRequestBody))
-                .thenApply(ResponseEntity::ok);
+                .thenApply(patient -> ResponseEntity.ok()
+                        .body(patient));
     }
 
-    @PostMapping("/health-facilities/{health-facility-id}/patients/create-if-not-exists")
-    @Authorized(resource = "patient", scope = "create")
-    public CompletionStage<ResponseEntity<Void>> createPatientIfNotExists(@PathVariable("health-facility-id") String healthFacilityID,
-                                                                @RequestBody CreatePatientRequestBody createPatientRequestBody) {
-        return patientService.createPatientIfNotExists(Patient.fromRequestBody(createPatientRequestBody))
-                .thenApply(ResponseEntity::ok);
-    }
-
-    @PutMapping("/health-facilities/{health-facility-id}/patients")
+    @PutMapping("/health-facilities/{health-facility-id}/patients/{patient-id}")
     @Authorized(resource = "patient", scope = "create")
     public CompletionStage<ResponseEntity<Void>> replacePatient(@PathVariable("health-facility-id") String healthFacilityID,
+                                                               @PathVariable("patient-id") String patientId,
                                                                @RequestBody ReplacePatientRequestBody replacePatientRequestBody) {
-        return patientService.replacePatient(replacePatientRequestBody.getOldMobileNo(), replacePatientRequestBody.getOldName(), replacePatientRequestBody.getOldDob(), Patient.fromRequestBody(replacePatientRequestBody))
+        return patientService.replacePatient(patientId, Patient.fromRequestBody(replacePatientRequestBody))
                 .thenApply(ResponseEntity::ok);
     }
 
@@ -77,29 +74,40 @@ public class PatientController {
                 .thenApply(ResponseEntity::ok);
     }
 
+    @PostMapping("/health-facilities/{health-facility-id}/patients/abha-signup/request-otp")
+    @Authorized(resource = "patient", scope = "abha-signup-request-otp")
+    public CompletionStage<ResponseEntity<RequestOtpResponseBody>> requestOtp(@RequestBody AbhaSignupRequestOtpBody requestBody) throws Exception {
+        return patientService.abhaSignupRequestOtp(requestBody.getAadharNumber())
+                .thenApply(ResponseEntity::ok);
+    }
+
+    @PostMapping("/health-facilities/{health-facility-id}/patients/abha-signup/verify-otp")
+    @Authorized(resource = "patient", scope = "abha-signup-verify-otp")
+    public CompletionStage<ResponseEntity<EnrolByAadharResponseBody>> enrolByAadhaar(@RequestBody EnrolByAadharRequestBody enrolByAadharRequestBody) throws Exception {
+        return patientService.enrolByAadhaar(enrolByAadharRequestBody.getAuthMethods(), enrolByAadharRequestBody.getTxnId(), enrolByAadharRequestBody.getOtpValue(), enrolByAadharRequestBody.getMobile())
+                .thenApply(ResponseEntity::ok);
+    }
+
     @Builder
     @Getter
     public static class CreatePatientRequestBody {
-        private String abhaNo;
-        private String abhaAddress;
         private String name;
         private String mobileNo;
         private LocalDate dob;
         private String gender;
+        private String abhaNo;
+        private String abhaAddress;
     }
 
     @Builder
     @Getter
     public static class ReplacePatientRequestBody {
-        private String oldMobileNo;
-        private String newMobileNo;
-        private String oldName;
-        private String newName;
+        private String name;
+        private String mobileNo;
+        private LocalDate dob;
+        private String gender;
         private String abhaNo;
         private String abhaAddress;
-        private LocalDate newDob;
-        private LocalDate oldDob;
-        private String gender;
     }
 
     @Builder
@@ -134,6 +142,12 @@ public class PatientController {
         String message;
         Tokens tokens;
         List<AbhaAccount> accounts;
+    }
+
+    @Builder
+    @Getter
+    public static class AbhaSignupRequestOtpBody {
+        String aadharNumber;
     }
 
     @Builder

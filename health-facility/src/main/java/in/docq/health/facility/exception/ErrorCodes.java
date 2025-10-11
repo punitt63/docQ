@@ -8,7 +8,8 @@ public enum ErrorCodes {
     ACTION_NOT_ALLOWED(400, "action not allowed"),
     APPOINTMENT_NOT_FOUND(404, "appointment not found"),
     STATE_CHANGE_NOT_ALLOWED(400, "state change not allowed"),
-    INTERNAL_SERVER_ERROR(500, "internal server error");
+    INTERNAL_SERVER_ERROR(500, "internal server error"),
+    BAD_REQUEST(400, "bad request");
 
     @Getter
     private String message;
