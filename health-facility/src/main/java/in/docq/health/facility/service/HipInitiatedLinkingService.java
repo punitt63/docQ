@@ -127,7 +127,7 @@ public class HipInitiatedLinkingService {
                             }
                             boolean isLinked = "SUCCESS".equalsIgnoreCase(request.getStatus());
                             return sendPatientNotification(hipInitiatedLinkingOpt.get(), patient)
-                                    .thenCompose(ignore -> careContextService.upsert(hipInitiatedLinkingOpt.get().getHealthFacilityId(), hipInitiatedLinkingOpt.get().getAppointmentId(), hipInitiatedLinkingOpt.get().getPatientId(), isLinked));
+                                    .thenCompose(ignore -> careContextService.update(hipInitiatedLinkingOpt.get().getHealthFacilityId(), hipInitiatedLinkingOpt.get().getAppointmentId(), hipInitiatedLinkingOpt.get().getPatientId(), isLinked));
                         }))
                 .exceptionally(throwable -> {
                     logger.error("Failed to update care context link status for request: {}",

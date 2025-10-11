@@ -75,12 +75,7 @@ public class CareContextService {
         return careContextDao.getLinkedByPatientAndFacility(patientId, healthFacilityId, fromAppointmentTime, toAppointmentTime);
     }
 
-    public CompletionStage<Void> upsert(String healthFacilityId, String appointmentId, String patientId,  boolean isLinked) {
-        return careContextDao.upsert(CareContext.builder()
-                .healthFacilityId(healthFacilityId)
-                .appointmentID(appointmentId)
-                .patientId(patientId)
-                .isLinked(isLinked)
-                .build());
+    public CompletionStage<Void> update(String healthFacilityId, String appointmentId, String patientId,  boolean isLinked) {
+        return careContextDao.update(healthFacilityId, appointmentId, patientId, isLinked);
     }
 }

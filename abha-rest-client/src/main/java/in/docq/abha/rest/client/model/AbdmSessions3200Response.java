@@ -13,6 +13,7 @@ import com.google.gson.stream.JsonWriter;
 import in.docq.abha.rest.client.JSON;
 import com.google.gson.*;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.*;
 import java.util.*;
@@ -70,12 +71,12 @@ public class AbdmSessions3200Response {
 
     public boolean verifySignature(String data, String signatureB64) {
         try {
-            byte[] sigBytes = Base64.getDecoder().decode(signatureB64);
+            byte[] sigBytes = Base64.getUrlDecoder().decode(signatureB64);
             List<PublicKey> publicKeys = getPublicKeys();
             for (PublicKey publicKey : publicKeys) {
                 Signature sig = Signature.getInstance("SHA256withRSA");
                 sig.initVerify(publicKey);
-                sig.update(data.getBytes());
+                sig.update(data.getBytes(StandardCharsets.UTF_8));
                 if (sig.verify(sigBytes)) {
                     return true;
                 }

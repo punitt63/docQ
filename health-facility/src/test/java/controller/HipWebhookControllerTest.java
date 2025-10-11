@@ -102,6 +102,7 @@ public class HipWebhookControllerTest {
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
                 .isLinked(false)
+                .appointmentStartTime( Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond() * 1000)
                 .build()).toCompletableFuture().join();
 
         // Create existing HIP linking token
@@ -181,6 +182,7 @@ public class HipWebhookControllerTest {
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
                 .isLinked(false)
+                .appointmentStartTime( Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond() * 1000)
                 .build();
 
         careContextDao.upsert(careContext).toCompletableFuture().join();
@@ -231,6 +233,7 @@ public class HipWebhookControllerTest {
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
                 .isLinked(false)
+                .appointmentStartTime( Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond() * 1000)
                 .build();
         careContextDao.upsert(careContext).toCompletableFuture().join();
         hipInitiatedLinkingDao.upsert(HipInitiatedLinking.from(careContext).toBuilder().linkRequestId(TEST_REQUEST_ID).build()).toCompletableFuture().join();
@@ -271,6 +274,7 @@ public class HipWebhookControllerTest {
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
                 .isLinked(true)
+                .appointmentStartTime( Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond() * 1000)
                 .build();
         careContextDao.upsert(careContext).toCompletableFuture().join();
         hipInitiatedLinkingDao.upsert(HipInitiatedLinking.from(careContext).toBuilder().linkRequestId(TEST_REQUEST_ID).notifyRequestId("notify-request-123").build()).toCompletableFuture().join();
@@ -307,6 +311,7 @@ public class HipWebhookControllerTest {
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
                 .isLinked(true)
+                .appointmentStartTime( Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond() * 1000)
                 .build();
         careContextDao.upsert(careContext).toCompletableFuture().join();
         hipInitiatedLinkingDao.upsert(HipInitiatedLinking.from(careContext).toBuilder().linkRequestId(TEST_REQUEST_ID).notifyRequestId("notify-request-123").build()).toCompletableFuture().join();
@@ -393,6 +398,7 @@ public class HipWebhookControllerTest {
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
                 .isLinked(false)
+                .appointmentStartTime( Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond() * 1000)
                 .build();
         careContextDao.upsert(careContext).toCompletableFuture().join();
 
@@ -441,6 +447,7 @@ public class HipWebhookControllerTest {
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
                 .isLinked(false)
+                .appointmentStartTime( Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond() * 1000)
                 .build();
         careContextDao.upsert(careContext).toCompletableFuture().join();
 
@@ -494,6 +501,7 @@ public class HipWebhookControllerTest {
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
                 .isLinked(false)
+                .appointmentStartTime( Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond() * 1000)
                 .build();
         careContextDao.upsert(careContext).toCompletableFuture().join();
 
@@ -548,6 +556,7 @@ public class HipWebhookControllerTest {
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
                 .isLinked(false)
+                .appointmentStartTime( Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond() * 1000)
                 .build();
         careContextDao.upsert(careContext).toCompletableFuture().join();
 
@@ -604,6 +613,7 @@ public class HipWebhookControllerTest {
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
                 .isLinked(false)
+                .appointmentStartTime( Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond() * 1000)
                 .build();
         careContextDao.upsert(careContext).toCompletableFuture().join();
 
@@ -658,6 +668,7 @@ public class HipWebhookControllerTest {
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
                 .isLinked(false)
+                .appointmentStartTime( Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond() * 1000)
                 .build();
         careContextDao.upsert(careContext).toCompletableFuture().join();
 
@@ -715,6 +726,7 @@ public class HipWebhookControllerTest {
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
                 .isLinked(false)
+                .appointmentStartTime( Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond() * 1000)
                 .build();
         careContextDao.upsert(careContext1).toCompletableFuture().join();
 
@@ -723,6 +735,7 @@ public class HipWebhookControllerTest {
                 .healthFacilityId(testHealthFacilityID)
                 .patientId(TEST_PATIENT_ID)
                 .isLinked(false)
+                .appointmentStartTime( Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond() * 1000)
                 .build();
         careContextDao.upsert(careContext2).toCompletableFuture().join();
 

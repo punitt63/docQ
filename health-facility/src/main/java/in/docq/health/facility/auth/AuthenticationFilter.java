@@ -92,6 +92,11 @@ public class AuthenticationFilter extends OncePerRequestFilter {
                 path.endsWith("/care-context/discover") ||
                 path.endsWith("/care-context/init") ||
                 path.endsWith("/care-context/confirm") ||
-                path.endsWith("/consent/request/hip/notify");
+                path.endsWith("/consent/request/hip/notify") ||
+                path.endsWith("/hip/health-information/request") ||
+                path.endsWith("/hiu/consent/request/on-init") ||
+                path.endsWith("/hiu/consent/request/notify") ||
+                path.endsWith("/hiu/consent/on-fetch") ||
+                path.endsWith("/hiu/health-information/on-request");
     }
 }

@@ -28,7 +28,7 @@ import java.util.Arrays;
 @Service
 public class DecryptionService {
 
-    public DecryptionResponse decrypt(@RequestBody DecryptionRequest decryptionRequest) throws Exception {
+    public DecryptionResponse decrypt(DecryptionRequest decryptionRequest) throws Exception {
         byte[] xorOfRandom = xorOfRandom(decryptionRequest.getSenderNonce(), decryptionRequest.getReceiverNonce());
         String decryptedData = decrypt(xorOfRandom, decryptionRequest.getReceiverPrivateKey(), decryptionRequest.getSenderPublicKey(), decryptionRequest.getEncryptedData());
         return new DecryptionResponse(decryptedData);

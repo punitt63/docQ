@@ -102,3 +102,7 @@ encryption:
 x:
   cm:
     id: sbx
+
+app:
+  data-push:
+    base-url: http://localhost:8080

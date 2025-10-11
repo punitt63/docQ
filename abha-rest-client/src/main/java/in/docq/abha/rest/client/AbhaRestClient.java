@@ -49,6 +49,7 @@ public class AbhaRestClient {
     private final Cache<String, AbdmSessions3200Response> gatewayPublicCertCache;
     private final GatewaySessionApi gatewaySessionApi;
     private final ConsentManagementDataFlowHipApi consentManagementDataFlowHipApi;
+    private final ConsentManagementDataFlowHiuApi consentManagementDataFlowHiuApi;
     private final String xCmId;
 
     public AbhaRestClient(ApiClient apiClient, String clientId, String clientSecret, String xCmId) {
@@ -70,6 +71,7 @@ public class AbhaRestClient {
         this.multipleHrpApiApi = new MultipleHrpApiApi(apiClient);
         this.hipInitiatedLinkingApi = new HIPInitiatedLinkingApi(apiClient);
         this.userInitiatedLinkingHipApi = new UserInitiatedLinkingHipApi(apiClient);
+        this.consentManagementDataFlowHiuApi = new ConsentManagementDataFlowHiuApi(apiClient);
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.tokenCache = CacheBuilder.newBuilder()
@@ -430,5 +432,30 @@ public class AbhaRestClient {
                                 return response;
                             });
                 });
+    }
+
+    public CompletionStage<Void> sendConsentRequest(String requestId, String timestamp, AbdmConsentManagement1Request abdmConsentManagement1Request) {
+        return getAccessToken()
+                .thenCompose(token -> consentManagementDataFlowHiuApi.abdmConsentManagement1Async(token, requestId, timestamp, xCmId, abdmConsentManagement1Request));
+    }
+
+    public CompletionStage<Void> notifyPatientActionForConsent(String requestId, String timestamp, AbdmConsentManagement3Request2 abdmConsentManagement3Request2) {
+        return getAccessToken()
+                .thenCompose(token -> consentManagementDataFlowHiuApi.abdmConsentManagement3_0Async(token, requestId, timestamp, xCmId, abdmConsentManagement3Request2));
+    }
+
+    public CompletionStage<Void> fetchConsentArtifact(String requestId, String timestamp, String hiuId, AbdmConsentManagement5Request1 abdmConsentManagement5Request1) {
+        return getAccessToken()
+                .thenCompose(token -> consentManagementDataFlowHiuApi.abdmConsentManagement5Async(token, requestId, timestamp, xCmId, hiuId, abdmConsentManagement5Request1));
+    }
+
+    public CompletionStage<Void> sendHealthInfoRequest(String requestId, String timestamp, String hiuId, AbdmDataFlow7Request dataFlow7Request) {
+        return getAccessToken()
+                .thenCompose(token -> consentManagementDataFlowHiuApi.abdmDataFlow7Async(token, requestId, timestamp, xCmId, hiuId, dataFlow7Request));
+    }
+
+    public CompletionStage<Void> notifyHealthInfoTransfer(String requestId, String timestamp, AbdmDataFlow8Request abdmDataFlow8Request) {
+        return getAccessToken()
+                .thenCompose(token -> consentManagementDataFlowHiuApi.abdmDataFlow8Async(token, requestId, timestamp, xCmId, abdmDataFlow8Request));
     }
 }

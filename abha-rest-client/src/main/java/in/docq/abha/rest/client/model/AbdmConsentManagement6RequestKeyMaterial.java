@@ -201,7 +201,7 @@ public class AbdmConsentManagement6RequestKeyMaterial {
         openapiRequiredFields.add("nonce");
     }
 
-    @JsonAdapter(CurveEnum.Adapter.class)
+    @JsonAdapter(CryptoAlgEnum.Adapter.class)
     public static enum CryptoAlgEnum {
         ECDH("ECDH");
 

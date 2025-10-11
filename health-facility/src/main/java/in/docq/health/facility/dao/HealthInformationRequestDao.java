@@ -5,6 +5,7 @@ import in.docq.health.facility.controller.HIPConsentWebhookController;
 import in.docq.health.facility.model.HealthInformationRequest;
 import in.docq.spring.boot.commons.postgres.PostgresDAO;
 import lombok.Getter;
+import org.postgresql.util.PGobject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -51,7 +52,7 @@ public class HealthInformationRequestDao {
         return postgresDAO.update(dbMetricsGroupName, "upsert", upsertQuery,
                         transactionId,
                         consentId,
-                        requestJson,
+                        getJsonbObject(requestJson),
                         status)
                 .thenAccept(ignore -> {});
     }
@@ -91,13 +92,22 @@ public class HealthInformationRequestDao {
         }
     }
 
+    public static Object getJsonbObject(String json) {
+        try {
+            PGobject pGobject = new PGobject();
+            pGobject.setType("jsonb");
+            pGobject.setValue(json);
+            return pGobject;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public enum Column {
         TRANSACTION_ID("transaction_id"),
         CONSENT_ID("consent_id"),
         REQUEST("request"),
-        STATUS("status"),
-        CREATED_AT("created_at"),
-        UPDATED_AT("updated_at");
+        STATUS("status");
 
         @Getter
         private final String columnName;
@@ -114,7 +124,6 @@ public class HealthInformationRequestDao {
 
         public static String allColumnValuesSeparatedByComma() {
             return Arrays.stream(values())
-                    .filter(column -> !column.equals(CREATED_AT) && !column.equals(UPDATED_AT))
                     .map(ignore -> "?")
                     .collect(Collectors.joining(","));
         }

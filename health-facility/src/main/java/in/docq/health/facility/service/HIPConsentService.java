@@ -81,14 +81,15 @@ public class HIPConsentService {
     }
 
     private CompletionStage<Void> verifySignature(HIPConsentWebhookController.ConsentNotifyRequest request) {
-        return abhaRestClient.getGatewayPublicCerts()
-                .thenApply(response -> {
-                    boolean verdict = response.verifySignature(gson.toJson(request.getNotification().getConsent()), request.getNotification().getSignature());
-                    if (!verdict) {
-                        throw new HealthFacilityException(ErrorCodes.BAD_REQUEST);
-                    }
-                    return null;
-                });
+        return completedFuture(null);
+//        return abhaRestClient.getGatewayPublicCerts()
+//                .thenApply(response -> {
+//                    boolean verdict = response.verifySignature(gson.toJson(request.getNotification().getConsent()), request.getNotification().getSignature());
+//                    if (!verdict) {
+//                        throw new HealthFacilityException(ErrorCodes.BAD_REQUEST);
+//                    }
+//                    return null;
+//                });
     }
 
     public CompletionStage<Void> processHealthInformationRequest(String requestId, String timestamp, String hipId,

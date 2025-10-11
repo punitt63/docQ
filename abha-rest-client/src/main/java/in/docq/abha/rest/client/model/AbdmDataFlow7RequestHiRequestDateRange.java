@@ -18,42 +18,42 @@ public class AbdmDataFlow7RequestHiRequestDateRange {
     public static final String SERIALIZED_NAME_FROM = "from";
     @SerializedName("from")
     @Nonnull
-    private OffsetDateTime from;
+    private String from;
     public static final String SERIALIZED_NAME_TO = "to";
     @SerializedName("to")
     @Nonnull
-    private OffsetDateTime to;
+    private String to;
     public static HashSet<String> openapiFields = new HashSet();
     public static HashSet<String> openapiRequiredFields;
 
     public AbdmDataFlow7RequestHiRequestDateRange() {
     }
 
-    public AbdmDataFlow7RequestHiRequestDateRange from(@Nonnull OffsetDateTime from) {
+    public AbdmDataFlow7RequestHiRequestDateRange from(@Nonnull String from) {
         this.from = from;
         return this;
     }
 
     @Nonnull
-    public OffsetDateTime getFrom() {
+    public String getFrom() {
         return this.from;
     }
 
-    public void setFrom(@Nonnull OffsetDateTime from) {
+    public void setFrom(@Nonnull String from) {
         this.from = from;
     }
 
-    public AbdmDataFlow7RequestHiRequestDateRange to(@Nonnull OffsetDateTime to) {
+    public AbdmDataFlow7RequestHiRequestDateRange to(@Nonnull String to) {
         this.to = to;
         return this;
     }
 
     @Nonnull
-    public OffsetDateTime getTo() {
+    public String getTo() {
         return this.to;
     }
 
-    public void setTo(@Nonnull OffsetDateTime to) {
+    public void setTo(@Nonnull String to) {
         this.to = to;
     }
 

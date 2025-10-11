@@ -31,7 +31,7 @@ public class AbdmDataFlow7RequestHiRequestKeyMaterial {
     public static final String SERIALIZED_NAME_NONCE = "nonce";
     @SerializedName("nonce")
     @Nullable
-    private UUID nonce;
+    private String nonce;
     public static HashSet<String> openapiFields = new HashSet();
     public static HashSet<String> openapiRequiredFields;
 
@@ -80,17 +80,17 @@ public class AbdmDataFlow7RequestHiRequestKeyMaterial {
         this.dhPublicKey = dhPublicKey;
     }
 
-    public AbdmDataFlow7RequestHiRequestKeyMaterial nonce(@Nullable UUID nonce) {
+    public AbdmDataFlow7RequestHiRequestKeyMaterial nonce(@Nullable String nonce) {
         this.nonce = nonce;
         return this;
     }
 
     @Nullable
-    public UUID getNonce() {
+    public String getNonce() {
         return this.nonce;
     }
 
-    public void setNonce(@Nullable UUID nonce) {
+    public void setNonce(@Nullable String nonce) {
         this.nonce = nonce;
     }
 

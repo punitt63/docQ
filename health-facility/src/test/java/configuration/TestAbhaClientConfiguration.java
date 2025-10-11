@@ -1,5 +1,6 @@
 package configuration;
 
+import com.sun.xml.xsom.impl.scd.Iterators;
 import in.docq.abha.rest.client.AbhaRestClient;
 import in.docq.abha.rest.client.ApiClient;
 import in.docq.abha.rest.client.model.*;
@@ -10,6 +11,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -46,8 +49,14 @@ public class TestAbhaClientConfiguration {
 
     public static class MockAbhaRestClient extends AbhaRestClient {
         public static String testHealthFacilityID = "IN2310020040";
+        public static String testSecondHealthFacilityID = "IN2310020041";
+        public static String testThirdHealthFacilityID = "IN2310020019";
         public static String testHealthFacilityManagerID = "test-fm-id";
+        public static String testSecondHealthFacilityManagerID = "test-second-fm-id";
+        public static String testThirdHealthFacilityManagerID = "test-third-fm-id";
         public static String testDoctorID = "test-doctor-id";
+        public static String testSecondDoctorID = "test-doctor-id-2";
+        public static String testThirdDoctorID = "test-doctor-id-3";
         public int sendDeepLinkNotificationCount;
         public int generateLinkingTokenCount;
         public int linkCareContextCount;
@@ -59,6 +68,10 @@ public class TestAbhaClientConfiguration {
         public int sendConsentGrantAcknowledgementCount = 0;
         public int healthInfoRequestAcknowledgementCount = 0;
         public int getGatewayPublicCertsCount = 0;
+        public int sendConsentRequestCount = 0;
+        public int fetchConsentRequestCount = 0;
+        public int sendHealthInfoRequestCount = 0;
+        public Map<String, AbdmDataFlow7Request> sendHealthInfoRequestMap = new HashMap<>();
         public AbdmSessions3200Response gatewayPublicKeysResponse;
 
         public MockAbhaRestClient() {
@@ -71,7 +84,10 @@ public class TestAbhaClientConfiguration {
 
         @Override
         public CompletionStage<SearchFacilitiesData> getHealthFacility(String facilityID) {
-            return completedFuture(new SearchFacilitiesData().facilityId("IN2310020040"));
+            if(facilityID.equals(testHealthFacilityID) || facilityID.equals(testSecondHealthFacilityID) || facilityID.equals(testThirdHealthFacilityID)) {
+                return completedFuture(new SearchFacilitiesData().facilityId(facilityID));
+            }
+            return completedFuture(null);
         }
 
         @Override
@@ -135,5 +151,27 @@ public class TestAbhaClientConfiguration {
             return completedFuture(gatewayPublicKeysResponse);
         }
 
+        @Override
+        public CompletionStage<Void> sendConsentRequest(String requestId, String timestamp, AbdmConsentManagement1Request request) {
+            sendConsentRequestCount++;
+            return completedFuture(null);
+        }
+
+        @Override
+        public CompletionStage<Void> fetchConsentArtifact(String requestId, String timestamp, String hiuId, AbdmConsentManagement5Request1 abdmConsentManagement5Request1) {
+            fetchConsentRequestCount++;
+            return completedFuture(null);
+        }
+
+        @Override
+        public CompletionStage<Void> sendHealthInfoRequest(String requestId, String timestamp, String hiuId, AbdmDataFlow7Request dataFlow7Request) {
+            sendHealthInfoRequestCount++;
+            sendHealthInfoRequestMap.put(dataFlow7Request.getHiRequest().getConsent().getId(), dataFlow7Request);
+            return completedFuture(null);
+        }
+
+        public AbdmDataFlow7Request getStoredHealthInfoRequest(String consentArtifactId) {
+            return sendHealthInfoRequestMap.get(consentArtifactId);
+        }
     }
 }

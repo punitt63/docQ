@@ -27,6 +27,7 @@ public class CareContextDao {
     private final String getCareContextByNotifyRequestIdQuery;
     private final String getUnlinkedByPatientAndFacilityQuery;
     private final String getLinkedByPatientAndFacilityQuery;
+    private final String updateCareContextQuery;
 
     private final Gson gson = new Gson();
     private final PostgresDAO postgresDAO;
@@ -40,6 +41,7 @@ public class CareContextDao {
                 "health_facility_id = EXCLUDED.health_facility_id, " +
                 "patient_id = EXCLUDED.patient_id, " +
                 "is_linked = EXCLUDED.is_linked";
+        this.updateCareContextQuery = "UPDATE " + table + " SET is_linked = ? WHERE appointment_id = ? AND health_facility_id = ? AND patient_id = ?";
         this.getCareContextQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE appointment_id = ?";
         this.getCareContextByLinkRequestIdQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE link_request_id = ?";
         this.getCareContextByNotifyRequestIdQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE notify_request_id = ?";
@@ -54,7 +56,17 @@ public class CareContextDao {
                         careContext.getAppointmentID(),
                         careContext.getHealthFacilityId(),
                         careContext.getPatientId(),
-                        careContext.isLinked())
+                        careContext.isLinked(),
+                        new Timestamp(careContext.getAppointmentStartTime()))
+                .thenAccept(ignore -> {});
+    }
+
+    public CompletionStage<Void> update(String healthFacilityId, String appointmentId, String patientId,  boolean isLinked) {
+        return postgresDAO.update(dbMetricsGroupName, "update", updateCareContextQuery,
+                        isLinked,
+                        appointmentId,
+                        healthFacilityId,
+                        patientId)
                 .thenAccept(ignore -> {});
     }
 
