@@ -51,19 +51,19 @@ abha:
     url: https://dev.abdm.gov.in
 
 keycloak:
-  realm: patient
+  realm: health-facility
   jwks:
-    cert: /realms/patient/protocol/openid-connect/certs
+    cert: /realms/health-facility/protocol/openid-connect/certs
   base:
     url: http://localhost:8080
   backend:
     client:
       id: patient-backend-app
-      secret: bUKD3e6IZDFsAITkiR5ihIoYnIgSEfxU
+      secret: 3G1Pp9ZmEGabFBchTTyXfuwZKLto8a4G
   desktop:
     client:
       id: patient-mobile-app
-      secret: 8pF6j0OppwY532hE5hIe3PwNfqCSO3VE
+      secret: 1OadpENrgZprruUrOOy014AoiNfu3jom
   http:
     max:
       idle:
@@ -76,3 +76,7 @@ keycloak:
       seconds: 20
 server:
   port: 9098
+
+health-facility:
+  service:
+    url: http://localhost:9097

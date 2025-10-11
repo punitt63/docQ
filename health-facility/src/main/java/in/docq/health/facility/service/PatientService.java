@@ -34,6 +34,10 @@ public class PatientService {
         return patientDao.insert(patient);
     }
 
+    public CompletionStage<Void> createPatientIfNotExists(Patient patient) {
+        return patientDao.insertIfNotExists(patient);
+    }
+
     public CompletionStage<Void> replacePatient(String mobileNo, String oldName, LocalDate oldDob, Patient newPatient) {
         return patientDao.search(mobileNo, oldName, oldDob)
                 .thenCompose(ignore -> patientDao.update(mobileNo, oldName, oldDob, newPatient));

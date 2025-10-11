@@ -3,7 +3,6 @@ package configuration;
 import in.docq.abha.rest.client.AbhaRestClient;
 import in.docq.abha.rest.client.ApiClient;
 import in.docq.abha.rest.client.model.SearchFacilitiesData;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -25,6 +24,10 @@ public class TestAbhaClientConfiguration {
         public static String testHealthFacilityID = "IN2310020040";
         public static String testHealthFacilityManagerID = "test-fm-id";
         public static String testDoctorID = "test-doctor-id";
+        public static int testStateCode = 29;
+        public static int testDistrictCode = 525;
+        public static String testFMSpeciality = "Facility Manager";
+        public static String testDoctorSpeciality = "General Physician";
 
         public MockAbhaRestClient() {
             super(null, null, null);

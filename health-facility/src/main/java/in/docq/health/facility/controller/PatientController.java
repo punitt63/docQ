@@ -34,7 +34,7 @@ public class PatientController {
                                                                          @RequestParam("mobile-no") String mobileNo) {
         return patientService.searchPatients(mobileNo)
                 .thenApply(patients -> patients.stream()
-                        .map(patient -> patient.decrypt(aesEncryptionKey))
+                        //.map(patient -> patient.decrypt(aesEncryptionKey))
                         .toList())
                 .thenApply(ResponseEntity::ok);
     }
@@ -44,6 +44,14 @@ public class PatientController {
     public CompletionStage<ResponseEntity<Void>> createPatient(@PathVariable("health-facility-id") String healthFacilityID,
                                                                @RequestBody CreatePatientRequestBody createPatientRequestBody) {
         return patientService.createPatient(Patient.fromRequestBody(createPatientRequestBody))
+                .thenApply(ResponseEntity::ok);
+    }
+
+    @PostMapping("/health-facilities/{health-facility-id}/patients/create-if-not-exists")
+    @Authorized(resource = "patient", scope = "create")
+    public CompletionStage<ResponseEntity<Void>> createPatientIfNotExists(@PathVariable("health-facility-id") String healthFacilityID,
+                                                                @RequestBody CreatePatientRequestBody createPatientRequestBody) {
+        return patientService.createPatientIfNotExists(Patient.fromRequestBody(createPatientRequestBody))
                 .thenApply(ResponseEntity::ok);
     }
 
@@ -69,23 +77,11 @@ public class PatientController {
                 .thenApply(ResponseEntity::ok);
     }
 
-    @PostMapping("/health-facilities/{health-facility-id}/patients/abha-signup/request-otp")
-    @Authorized(resource = "patient", scope = "abha-signup-request-otp")
-    public CompletionStage<ResponseEntity<RequestOtpResponseBody>> requestOtp(@RequestBody AbhaSignupRequestOtpBody requestBody) throws Exception {
-        return patientService.abhaSignupRequestOtp(requestBody.getAadharNumber())
-                .thenApply(ResponseEntity::ok);
-    }
-
-    @PostMapping("/health-facilities/{health-facility-id}/patients/abha-signup/verify-otp")
-    @Authorized(resource = "patient", scope = "abha-signup-verify-otp")
-    public CompletionStage<ResponseEntity<EnrolByAadharResponseBody>> enrolByAadhaar(@RequestBody EnrolByAadharRequestBody enrolByAadharRequestBody) throws Exception {
-        return patientService.enrolByAadhaar(enrolByAadharRequestBody.getAuthMethods(), enrolByAadharRequestBody.getTxnId(), enrolByAadharRequestBody.getOtpValue(), enrolByAadharRequestBody.getMobile())
-                .thenApply(ResponseEntity::ok);
-    }
-
     @Builder
     @Getter
     public static class CreatePatientRequestBody {
+        private String abhaNo;
+        private String abhaAddress;
         private String name;
         private String mobileNo;
         private LocalDate dob;
@@ -138,12 +134,6 @@ public class PatientController {
         String message;
         Tokens tokens;
         List<AbhaAccount> accounts;
-    }
-
-    @Builder
-    @Getter
-    public static class AbhaSignupRequestOtpBody {
-        String aadharNumber;
     }
 
     @Builder

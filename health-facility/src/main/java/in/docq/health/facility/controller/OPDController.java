@@ -97,7 +97,7 @@ public class OPDController {
             LocalDate start = LocalDate.parse(startDate);
             LocalDate end = LocalDate.parse(endDate);
             checkState(start.isAfter(currentDate), "start Date should be At least Tomorrow");
-            checkState(!end.isBefore(start.plusYears(1)), "End Date should be Maximum One Year From Start");
+            checkState(end.isBefore(start.plusYears(1)), "End Date should be Maximum One Year From Start");
         }
 
         public LocalDate getStartDateAsLocalDate() {

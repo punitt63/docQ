@@ -14,6 +14,8 @@ import org.keycloak.representations.idm.*;
 import org.keycloak.representations.idm.authorization.DecisionStrategy;
 import org.keycloak.representations.idm.authorization.PolicyRepresentation;
 import org.keycloak.representations.idm.authorization.ResourceRepresentation;
+import org.keycloak.representations.idm.authorization.RolePolicyRepresentation;
+import org.keycloak.representations.idm.authorization.ScopePermissionRepresentation;
 import org.keycloak.representations.idm.authorization.ScopeRepresentation;
 import org.springframework.core.io.ClassPathResource;
 
@@ -32,6 +34,7 @@ public class RolesToResourcesMapper {
 
     private static final String HEALTH_FACILITY_REALM = "health-facility";
     private static final String HEALTH_FACILITY_BACKEND_APP_ID = "de51cfc8-70d2-41c8-b251-2e93861fc311";
+    private static final String PATIENT_BACKEND_APP_ID = "ae51cfc8-70d2-41c8-b251-2e93861fc313";
     private static final Map<String, ResourceRepresentation> cachedResources = new HashMap<>();
     private static final Map<String, ScopeRepresentation> cachedScopes = new HashMap<>();
     // Configuration model classes
@@ -89,6 +92,9 @@ public class RolesToResourcesMapper {
 
                 // Create scope-based permissions for each resource-scope pair
                 createScopePermissions(keycloak, config.roleResourceMappings, rolePolicies);
+
+                // Configure patient backend app permissions
+                configurePatientBackendPermissions(keycloak, config.roleResourceMappings);
 
                 createAdminUser(keycloak);
 
@@ -497,6 +503,108 @@ public class RolesToResourcesMapper {
             System.out.println("Scope permissions created successfully");
         } catch (Exception e) {
             System.err.println("Error creating scope permissions: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private static void configurePatientBackendPermissions(Keycloak keycloak, List<RoleResourceMapping> roleMappings) {
+        RealmResource realmResource = keycloak.realm(HEALTH_FACILITY_REALM);
+
+        try {
+            System.out.println("Configuring patient backend app permissions...");
+
+            // Get the health-facility-backend-app client (where authorization resources are defined)
+            AuthorizationResource authzResource = realmResource.clients()
+                    .get(HEALTH_FACILITY_BACKEND_APP_ID)
+                    .authorization();
+
+            // Get patient backend app service account user
+            UserRepresentation patientServiceAccount = realmResource.clients()
+                    .get(PATIENT_BACKEND_APP_ID)
+                    .getServiceAccountUser();
+
+            System.out.println("Patient Backend Service Account User ID: " + patientServiceAccount.getId());
+
+            // Find the patient-backend-service role mapping from configuration
+            RoleResourceMapping patientBackendMapping = roleMappings.stream()
+                    .filter(mapping -> "patient-backend-service".equals(mapping.role))
+                    .findFirst()
+                    .orElse(null);
+
+            if (patientBackendMapping == null) {
+                System.err.println("No patient-backend-service role mapping found in configuration");
+                return;
+            }
+
+            // Create role-based policy for patient backend service
+            String policyName = "Patient Backend Service Policy";
+            try {
+                authzResource.policies().role().findByName(policyName);
+                System.out.println("Policy " + policyName + " already exists");
+            } catch (Exception e) {
+                // Get the patient-backend-service role
+                RoleRepresentation patientBackendRole = realmResource.roles().get("patient-backend-service").toRepresentation();
+
+                RolePolicyRepresentation policy = new RolePolicyRepresentation();
+                policy.setName(policyName);
+                policy.setDescription("Policy for patient backend service to access resources");
+                policy.setDecisionStrategy(DecisionStrategy.UNANIMOUS);
+                policy.setLogic(org.keycloak.representations.idm.authorization.Logic.POSITIVE);
+
+                // Configure the policy to include the patient backend role
+                policy.addRole(patientBackendRole.getName(), false);
+
+                authzResource.policies().role().create(policy);
+                System.out.println("Created policy: " + policyName);
+            }
+
+            // Create permissions for each resource-scope pair in the patient backend mapping
+            for (ResourceMapping resourceMapping : patientBackendMapping.resourceMappings) {
+                String resourceName = resourceMapping.name;
+
+                for (String scopeName : resourceMapping.scopes) {
+                    System.out.println("Creating patient backend permission for resource: " + resourceName + ", scope: " + scopeName);
+
+                    // Find resource by name
+                    ResourceRepresentation resource = cachedResources.get(resourceName);
+                    if (resource == null) {
+                        System.err.println("Resource " + resourceName + " not found, skipping");
+                        continue;
+                    }
+
+                    // Find scope by name
+                    ScopeRepresentation scope = cachedScopes.get(scopeName);
+                    if (scope == null) {
+                        System.err.println("Scope " + scopeName + " not found, skipping");
+                        continue;
+                    }
+
+                    // Create scope-based permission for patient backend service
+                    String permissionName = "Patient Backend " + resourceName + " " + scopeName + " Permission";
+                    try {
+                        authzResource.permissions().scope().findByName(permissionName);
+                        System.out.println("Permission " + permissionName + " already exists");
+                    } catch (Exception e) {
+                        ScopePermissionRepresentation permission = new ScopePermissionRepresentation();
+                        permission.setName(permissionName);
+                        permission.setDescription("Allows patient backend service to " + scopeName + " " + resourceName + " resources");
+                        permission.setDecisionStrategy(DecisionStrategy.UNANIMOUS);
+                        permission.setLogic(org.keycloak.representations.idm.authorization.Logic.POSITIVE);
+                        
+                        permission.setResources(Collections.singleton(resource.getId()));
+                        permission.setScopes(Collections.singleton(scope.getId()));
+                        permission.setPolicies(Collections.singleton(policyName));
+
+                        authzResource.permissions().scope().create(permission);
+                        System.out.println("Created permission: " + permissionName);
+                    }
+                }
+            }
+
+            System.out.println("Successfully configured patient backend app permissions");
+
+        } catch (Exception e) {
+            System.err.println("Error configuring patient backend permissions: " + e.getMessage());
             e.printStackTrace();
         }
     }

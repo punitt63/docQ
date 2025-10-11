@@ -31,6 +31,8 @@ public class Patient {
 
     public static Patient fromRequestBody(PatientController.CreatePatientRequestBody requestBody) {
         return Patient.builder()
+                .abhaNo(requestBody.getAbhaNo())
+                .abhaAddress(requestBody.getAbhaAddress())
                 .name(requestBody.getName())
                 .mobileNo(requestBody.getMobileNo())
                 .dob(requestBody.getDob())

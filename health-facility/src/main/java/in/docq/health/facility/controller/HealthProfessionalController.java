@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 @RestController
@@ -61,19 +62,38 @@ public class HealthProfessionalController {
         return healthProfessionalService.get(healthFacilityID, healthFacilityProfessionalID)
                 .thenApply(ResponseEntity::ok)
                 .exceptionally(throwable -> {
-                    throwable = throwable.getCause();
-                    if (throwable instanceof HealthProfessionalNotFound) {
-                        return (ResponseEntity<HealthProfessional>) ResponseEntity.notFound();
+                    Throwable cause = throwable.getCause();
+                    if (cause instanceof HealthProfessionalNotFound) {
+                        return ResponseEntity.notFound().build();
                     }
-                    return (ResponseEntity<HealthProfessional>) ResponseEntity.internalServerError();
+                    return ResponseEntity.internalServerError().build();
                 });
+    }
+
+    @GetMapping("/search")
+    public CompletionStage<ResponseEntity<List<HealthProfessional>>> listHealthProfessionals(
+            @RequestParam("state-code") int stateCode,
+            @RequestParam("district-code") int districtCode,
+            @RequestParam(value = "speciality", required = false) String speciality) {
+        return healthProfessionalService
+                .listByStateDistrictAndSpeciality(stateCode, districtCode, Optional.ofNullable(speciality))
+                .thenApply(ResponseEntity::ok);
     }
 
     @Builder
     @Getter
     public static class OnBoardHealthProfessionalRequestBody {
         private final String healthProfessionalID;
+        private final String healthProfessionalName;
         private final HealthProfessionalType type;
+        private final int stateCode;
+        private final int districtCode;
+        private final String healthFacilityName;
+        private final String address;
+        private final String pincode;
+        private final Double latitude;
+        private final Double longitude;
+        private final String speciality;
         private final String password;
     }
 

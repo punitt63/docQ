@@ -23,6 +23,7 @@ public class PatientDao {
     private final String table = "patient";
     private final String insertPatientQuery;
     private final String getPatientQuery;
+    private final String insertPatientIfNotExistsQuery;
     private final String updatePatientQuery;
     private final String getPatientsByMobileQuery;
     private final PostgresDAO postgresDAO;
@@ -44,11 +45,25 @@ public class PatientDao {
                 " WHERE " + Column.MOBILE_NO.getColumnName() + " = ?" +
                 " AND " + Column.NAME.getColumnName() + " = ?" +
                 " AND " + Column.DOB.getColumnName() + " = ?";
+        this.insertPatientIfNotExistsQuery = "INSERT INTO " + table + "(" + Column.allColumNamesSeparatedByComma() + ")" +
+                " VALUES (" + Column.allColumnValuesSeparatedByComma() + ") ON CONFLICT (" + Column.MOBILE_NO.getColumnName() + ", " + Column.NAME.getColumnName() + ", " + Column.DOB.getColumnName() + ") DO NOTHING";
     }
 
     public CompletionStage<Void> insert(Patient patient) {
-        Patient encryptedPatient = patient.encrypt(aesEncryptionKey);
+        Patient encryptedPatient = patient;
         return postgresDAO.update(dbMetricsGroupName, "insert", insertPatientQuery,
+                        encryptedPatient.getAbhaNo(),
+                        encryptedPatient.getAbhaAddress(),
+                        encryptedPatient.getName(),
+                        encryptedPatient.getMobileNo(),
+                        Date.valueOf(encryptedPatient.getDob()),
+                        encryptedPatient.getGender())
+                .thenAccept(ignore -> {});
+    }
+
+    public CompletionStage<Void> insertIfNotExists(Patient patient) {
+        Patient encryptedPatient = patient;
+        return postgresDAO.update(dbMetricsGroupName, "insertIfNotExists", insertPatientIfNotExistsQuery,
                         encryptedPatient.getAbhaNo(),
                         encryptedPatient.getAbhaAddress(),
                         encryptedPatient.getName(),

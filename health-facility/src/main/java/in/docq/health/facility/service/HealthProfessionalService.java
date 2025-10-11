@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 @Service
@@ -64,17 +65,34 @@ public class HealthProfessionalService {
     public CompletionStage<Void> onBoard(String healthFacilityID, HealthProfessionalController.OnBoardHealthProfessionalRequestBody onBoardHealthProfessionalRequestBody) {
         HealthProfessional healthProfessional = HealthProfessional.builder()
                 .id(onBoardHealthProfessionalRequestBody.getHealthProfessionalID())
+                .healthProfessionalName(onBoardHealthProfessionalRequestBody.getHealthProfessionalName())
                 .healthFacilityID(healthFacilityID)
+                .healthFacilityName(onBoardHealthProfessionalRequestBody.getHealthFacilityName())
                 .type(onBoardHealthProfessionalRequestBody.getType())
                 .build();
-        return abhaRestClient.getHealthFacility(healthFacilityID)
-                .thenCompose(ignore -> abhaRestClient.getHealthProfessionalExists(onBoardHealthProfessionalRequestBody.getHealthProfessionalID()))
-                .thenCompose(ignore -> backendKeyCloakRestClient.createUserIfNotExists(healthProfessional.getKeyCloakUserName(), onBoardHealthProfessionalRequestBody.getPassword(), List.of(healthProfessional.getKeycloakRole())))
+        return backendKeyCloakRestClient.createUserIfNotExists(healthProfessional.getKeyCloakUserName(), onBoardHealthProfessionalRequestBody.getPassword(), List.of(healthProfessional.getKeycloakRole()))
                 .thenCompose(ignore -> backendKeyCloakRestClient.mapRealmRole(healthProfessional.getKeyCloakUserName(), healthProfessional.getKeycloakRole()))
-                .thenCompose(ignore -> healthProfessionalDao.insert(healthFacilityID, onBoardHealthProfessionalRequestBody.getHealthProfessionalID(), healthProfessional.getType()));
+                .thenCompose(ignore -> healthProfessionalDao.insert(
+                        healthFacilityID,
+                        onBoardHealthProfessionalRequestBody.getHealthFacilityName(),
+                        onBoardHealthProfessionalRequestBody.getHealthProfessionalID(),
+                        onBoardHealthProfessionalRequestBody.getHealthProfessionalName(),
+                        healthProfessional.getType(),
+                        onBoardHealthProfessionalRequestBody.getStateCode(),
+                        onBoardHealthProfessionalRequestBody.getDistrictCode(),
+                        onBoardHealthProfessionalRequestBody.getSpeciality(),
+                        onBoardHealthProfessionalRequestBody.getAddress(),
+                        onBoardHealthProfessionalRequestBody.getPincode(),
+                        onBoardHealthProfessionalRequestBody.getLatitude(),
+                        onBoardHealthProfessionalRequestBody.getLongitude()
+                ));
     }
 
     public CompletionStage<HealthProfessional> get(String healthFacilityID, String healthProfessionalID) {
         return healthProfessionalDao.get(healthFacilityID, healthProfessionalID);
+    }
+
+    public CompletionStage<List<HealthProfessional>> listByStateDistrictAndSpeciality(int stateCode, int districtCode, Optional<String> speciality) {
+        return healthProfessionalDao.listByStateAndDistrict(stateCode, districtCode, speciality);
     }
 }

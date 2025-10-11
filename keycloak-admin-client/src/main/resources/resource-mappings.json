@@ -88,6 +88,15 @@
           "scopes" : ["read"]
         }
       ]
+    },
+    {
+      "role" : "patient-backend-service",
+      "resource-mappings" : [
+        {
+          "name" : "appointment",
+          "scopes" : ["create", "read", "cancel"]
+        }
+      ]
     }
   ]
 }

@@ -6,7 +6,12 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import in.docq.abha.rest.client.api.*;
+import in.docq.abha.rest.client.api.phr.EnrollmentApiCollectionApi;
+import in.docq.abha.rest.client.api.phr.AbdmHiecmPatientSharePhrApi;
 import in.docq.abha.rest.client.model.*;
+import in.docq.abha.rest.client.model.phr.OtpRequestMobile200Response;
+import in.docq.abha.rest.client.model.phr.OtpRequestMobileRequest;
+import in.docq.abha.rest.client.model.phr.*;
 import in.docq.abha.rest.client.utils.RSAEncrypter;
 
 import java.time.Instant;
@@ -35,6 +40,11 @@ public class AbhaRestClient {
 
     private final HealthFacilitySearchApi healthFacilitySearchApi;
     private final HealthProfessionalSearchApi healthProfessionalSearchApi;
+    private final EnrollmentApiCollectionApi enrollmentApiCollectionApi;
+    private final in.docq.abha.rest.client.api.phr.LoginApiCollectionApi loginApiCollectionApi;
+    private final in.docq.abha.rest.client.api.phr.ProfileApiCollectionApi profileApiCollectionApi;
+    private final AbdmHiecmPatientSharePhrApi abdmHiecmPatientSharePhrApi;
+
     private final Cache<String, String> tokenCache;
     private final GatewaySessionApi gatewaySessionApi;
 
@@ -51,6 +61,15 @@ public class AbhaRestClient {
         this.abhaProfileApi.setCustomBaseUrl("https://abhasbx.abdm.gov.in");
         this.healthFacilitySearchApi = new HealthFacilitySearchApi(apiClient);
         this.healthProfessionalSearchApi = new HealthProfessionalSearchApi(apiClient);
+        this.enrollmentApiCollectionApi = new EnrollmentApiCollectionApi(apiClient);
+        this.enrollmentApiCollectionApi.setCustomBaseUrl("https://abhasbx.abdm.gov.in");
+        this.loginApiCollectionApi = new in.docq.abha.rest.client.api.phr.LoginApiCollectionApi(apiClient);
+        this.loginApiCollectionApi.setCustomBaseUrl("https://abhasbx.abdm.gov.in");
+        this.profileApiCollectionApi = new in.docq.abha.rest.client.api.phr.ProfileApiCollectionApi(apiClient);
+        this.profileApiCollectionApi.setCustomBaseUrl("https://abhasbx.abdm.gov.in");
+        this.abdmHiecmPatientSharePhrApi = new AbdmHiecmPatientSharePhrApi(apiClient);
+        this.abdmHiecmPatientSharePhrApi.setCustomBaseUrl("https://abhasbx.abdm.gov.in");
+
         this.gatewaySessionApi = new GatewaySessionApi(apiClient);
         this.clientId = clientId;
         this.clientSecret = clientSecret;
@@ -94,7 +113,7 @@ public class AbhaRestClient {
                         .clientId(clientId)
                         .clientSecret(clientSecret)
                         .grantType(accessTokenGrantType);
-        return gatewaySessionApi.apiHiecmGatewayV3SessionsPostAsync(Instant.now().toString(), UUID.randomUUID().toString(), "sbx", apiHiecmGatewayV3SessionsPostRequest)
+        return gatewaySessionApi.apiHiecmGatewayV3SessionsPostAsync(Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), UUID.randomUUID().toString(), "sbx", apiHiecmGatewayV3SessionsPostRequest)
                 .thenAccept(response -> {
                     tokenCache.put(accessTokenCacheKey, response.getAccessToken());
                     tokenCache.put(refreshTokenCacheKey, response.getRefreshToken());
@@ -120,7 +139,7 @@ public class AbhaRestClient {
                         .clientSecret(clientSecret)
                         .grantType(refreshTokenGrantType)
                         .refreshToken(getCachedRefreshToken());
-        return gatewaySessionApi.apiHiecmGatewayV3SessionsPostAsync(Instant.now().toString(), UUID.randomUUID().toString(), "sbx", apiHiecmGatewayV3SessionsPostRequest)
+        return gatewaySessionApi.apiHiecmGatewayV3SessionsPostAsync(Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), UUID.randomUUID().toString(), "sbx", apiHiecmGatewayV3SessionsPostRequest)
                 .thenAccept(response -> {
                     tokenCache.put(accessTokenCacheKey, response.getAccessToken());
                     tokenCache.put(refreshTokenCacheKey, response.getRefreshToken());
@@ -149,7 +168,7 @@ public class AbhaRestClient {
 
     public CompletionStage<AbhaApiV3EnrollmentRequestOtpPost200Response> abhaEnrollmentRequestOtp(String aadharNumber) {
         return getAccessToken()
-                .thenCompose(token -> abhaEnrollmentViaAadhaarApi.abhaApiV3EnrollmentRequestOtpPostAsync(token, UUID.randomUUID().toString(), Instant.now().toString(),
+                .thenCompose(token -> abhaEnrollmentViaAadhaarApi.abhaApiV3EnrollmentRequestOtpPostAsync(token, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
                         new AbhaApiV3EnrollmentRequestOtpPostRequest()
                                 .scope(List.of("abha-enrol"))
                                 .loginHint("aadhaar")
@@ -166,7 +185,7 @@ public class AbhaRestClient {
                         .txnId(txnId)));
         return getAccessToken().thenCompose(token -> {
             try {
-                return abhaEnrollmentViaAadhaarApi.abhaApiV3EnrollmentEnrolByAadhaarPostAsyncCall(Instant.now().toString(), UUID.randomUUID().toString(), null, token,
+                return abhaEnrollmentViaAadhaarApi.abhaApiV3EnrollmentEnrolByAadhaarPostAsyncCall(Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), UUID.randomUUID().toString(), null, token,
                         new AbhaApiV3EnrollmentEnrolByAadhaarPostRequest()
                                 .authData(abhaApiV3EnrollmentEnrolByAadhaarPostRequestAuthData)
                                 .consent(new AbhaApiV3EnrollmentEnrolByAadhaarPostRequestConsent().code("abha-enrollment").version("1.4")));
@@ -184,7 +203,7 @@ public class AbhaRestClient {
     public CompletionStage<AbhaApiV3EnrollmentEnrolAbhaAddressPost200Response> enrolAbhaAddress(String txnId, String abhaAddress, String preferred) {
         return getAccessToken().thenCompose(token -> {
             try {
-                return abhaEnrollmentViaAadhaarApi.abhaApiV3EnrollmentEnrolAbhaAddressPostAsyncCall(token, UUID.randomUUID().toString(), Instant.now().toString(),
+                return abhaEnrollmentViaAadhaarApi.abhaApiV3EnrollmentEnrolAbhaAddressPostAsyncCall(token, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
                         new AbhaApiV3EnrollmentEnrolAbhaAddressPostRequest()
                                 .txnId(txnId)
                                 .abhaAddress(abhaAddress)
@@ -199,7 +218,7 @@ public class AbhaRestClient {
         return getAccessToken()
                 .thenCompose(token -> {
                     try {
-                        return abhaLoginApi.abhaApiV3ProfileLoginRequestOtpPostAsyncCall(token, UUID.randomUUID().toString(), Instant.now().toString(),
+                        return abhaLoginApi.abhaApiV3ProfileLoginRequestOtpPostAsyncCall(token, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
                                 new AbhaApiV3ProfileLoginRequestOtpPostRequest()
                                         .scope(scopes)
                                         .loginHint(loginHint)
@@ -215,7 +234,7 @@ public class AbhaRestClient {
         return getAccessToken()
                 .thenCompose(token -> {
                     try {
-                        return abhaLoginApi.abhaApiV3ProfileLoginVerifyPostAsyncCall(token, UUID.randomUUID().toString(), Instant.now().toString(),
+                        return abhaLoginApi.abhaApiV3ProfileLoginVerifyPostAsyncCall(token, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
                                 new AbhaApiV3ProfileLoginVerifyPostRequest()
                                         .scope(scopes)
                                         .authData(new AbhaApiV3ProfileLoginVerifyPostRequestAuthData()
@@ -233,7 +252,7 @@ public class AbhaRestClient {
         return getAccessToken()
                 .thenCompose(token -> {
                     try {
-                        return abhaLoginApi.abhaApiV3ProfileLoginVerifyUserPostAsyncCall(token, tToken, UUID.randomUUID().toString(), Instant.now().toString(),
+                        return abhaLoginApi.abhaApiV3ProfileLoginVerifyUserPostAsyncCall(token, tToken, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
                                 new AbhaApiV3ProfileLoginVerifyUserPostRequest()
                                         .abHANumber(abhaNumber)
                                         .txnId(txnId));
@@ -293,17 +312,17 @@ public class AbhaRestClient {
 
     public CompletionStage<AbhaApiV3PhrWebLoginProfileAbhaProfileGet200Response> getAbhaAddressProfile(String xToken) {
         return getAccessToken()
-                .thenCompose(token -> abhaAddressVerificationApi.abhaApiV3PhrWebLoginProfileAbhaProfileGetAsyncCall(token, xToken, UUID.randomUUID().toString(), Instant.now().toString()));
+                .thenCompose(token -> abhaAddressVerificationApi.abhaApiV3PhrWebLoginProfileAbhaProfileGetAsyncCall(token, xToken, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString()));
     }
 
     public CompletionStage<String> getAbhaCard(String xToken) {
         return getAccessToken()
-                .thenCompose(token -> abhaAddressVerificationApi.abhaApiV3PhrWebLoginProfileAbhaPhrCardGetAsyncCall(token, xToken, UUID.randomUUID().toString(), Instant.now().toString()));
+                .thenCompose(token -> abhaAddressVerificationApi.abhaApiV3PhrWebLoginProfileAbhaPhrCardGetAsyncCall(token, xToken, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString()));
     }
 
     public CompletionStage<AbhaApiV3ProfileAccountRequestOtpPost200Response> abhaDeletionRequestOtp(String xToken, List<String> scopes, String loginHint, String loginId, String otpSystem) {
         return getAccessToken()
-                .thenCompose(token -> abhaProfileApi.abhaApiV3ProfileAccountRequestOtpPostAsyncCall(token, xToken, UUID.randomUUID().toString(), Instant.now().toString(),
+                .thenCompose(token -> abhaProfileApi.abhaApiV3ProfileAccountRequestOtpPostAsyncCall(token, xToken, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
                         new AbhaApiV3ProfileAccountRequestOtpPostRequest()
                                 .scope(scopes)
                                 .loginHint(loginHint)
@@ -313,7 +332,7 @@ public class AbhaRestClient {
 
     public CompletionStage<AbhaApiV3ProfileAccountVerifyPost200Response> abhaDeletionVerifyOtp(String xToken, List<String> scopes, List<String> authMethods, String txnId, String otp, List<String> reasons) {
         return getAccessToken()
-                .thenCompose(token -> abhaProfileApi.abhaApiV3ProfileAccountVerifyPostAsyncCall(token, xToken, UUID.randomUUID().toString(), Instant.now().toString(),
+                .thenCompose(token -> abhaProfileApi.abhaApiV3ProfileAccountVerifyPostAsyncCall(token, xToken, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
                         new AbhaApiV3ProfileAccountVerifyPostRequest()
                                 .scope(scopes)
                                 .authData(new AbhaApiV3ProfileAccountVerifyPostRequestAuthData()
@@ -323,4 +342,321 @@ public class AbhaRestClient {
                                                 .txnId(txnId)))
                                 .reasons(reasons)));
     }
+
+    // phr abha enrol apis
+
+    public CompletionStage<OtpRequestMobile200Response> otpRequestMobile(String aadharNumber) {
+        return getAccessToken()
+                .thenCompose(token -> enrollmentApiCollectionApi.otpRequestMobileAsyncCall(token, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
+                        new OtpRequestMobileRequest()
+                                .scope(List.of("abha-login", "mobile-verify"))
+                                .loginHint("mobile-number")
+                                .loginId(RSAEncrypter.encrypt(aadharNumber))
+                                .otpSystem("abdm")));
+    }
+
+    public CompletionStage<OtpVerifyMobile200Response> verifyMobileOtpPhr(List<String> scopes, List<String> authMethods, String txnId, String otp) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return enrollmentApiCollectionApi.otpVerifyMobileAsyncCall(token, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), new OtpVerifyMobileRequest()
+                        .scope(scopes)
+                        .authData(new OtpVerifyMobileRequestAuthData()
+                                .authMethods(authMethods)
+                                .otp(new OtpVerifyMobileRequestAuthDataOtp()
+                                        .otpValue(RSAEncrypter.encrypt(otp))
+                                        .txnId(txnId))));
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletionStage<SuggestionApi200Response> getAbhaAddressSuggestionsPhr(String dayOfBirth, String firstName, String lastName, String monthOfBirth, String yearOfBirth, String txnId) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return enrollmentApiCollectionApi.suggestionApiAsyncCall(token, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), new SuggestionApiRequest()
+                        .dayOfBirth(dayOfBirth)
+                        .firstName(firstName)
+                        .lastName(lastName)
+                        .monthOfBirth(monthOfBirth)
+                        .yearOfBirth(yearOfBirth)
+                        .txnId(txnId));
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletionStage<Void> isAbhaAddressExists(String abhaAddress) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return enrollmentApiCollectionApi.isexistsApiAsyncCall(token, abhaAddress, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString());
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletionStage<EnrollAbhaAddress200Response> enrollAbhaAddressPhr(PhrDetails phrDetails, String txnId) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return enrollmentApiCollectionApi.enrollAbhaAddressAsyncCall(token, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), new EnrollAbhaAddressRequest()
+                        .phrDetails(new EnrollAbhaAddressRequestPhrDetails()
+                                .abhaAddress(phrDetails.getAbhaAddress())
+                                .address(phrDetails.getAddress())
+                                .districtCode(phrDetails.getDistrictCode())
+                                .districtName(phrDetails.getDistrictName())
+                                .email(phrDetails.getEmail())
+                                .firstName(phrDetails.getFirstName())
+                                .gender(phrDetails.getGender())
+                                .lastName(phrDetails.getLastName())
+                                .middleName(phrDetails.getMiddleName())
+                                .mobile(phrDetails.getMobile())
+                                .monthOfBirth(phrDetails.getMonthOfBirth())
+                                .password(phrDetails.getPassword())
+                                .pinCode(phrDetails.getPinCode())
+                                .stateCode(phrDetails.getStateCode())
+                                .stateName(phrDetails.getStateName())
+                                .yearOfBirth(phrDetails.getYearOfBirth()))
+                        .txnId(txnId));
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    // phr login apis
+
+    public CompletionStage<SearchAuthMethodsAbhaaddress200Response> searchAuthMethodsByAbhaAddress(String abhaAddress) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return loginApiCollectionApi.searchAuthMethodsAbhaaddressAsyncCall(token, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
+                        new SearchAuthMethodsAbhaaddressRequest().abhaAddress(abhaAddress));
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletionStage<OtpRequestMobileLogin200Response> loginRequestOtpForLogin(List<String> scopes, String loginHint, String loginId, String otpSystem) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return loginApiCollectionApi.otpRequestMobileLoginAsyncCall(token, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
+                        new OtpRequestMobileLoginRequest()
+                                .scope(scopes)
+                                .loginHint(loginHint)
+                                .loginId(RSAEncrypter.encrypt(loginId))
+                                .otpSystem(otpSystem));
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletionStage<LoginOtpVerifyMobile200Response> loginVerifyMobileOtp(List<String> scopes, List<String> authMethods, String txnId, String otp) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return loginApiCollectionApi.loginOtpVerifyMobileAsyncCall(token, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
+                        new OtpVerifyMobileRequest()
+                                .scope(scopes)
+                                .authData(new OtpVerifyMobileRequestAuthData()
+                                        .authMethods(authMethods)
+                                        .otp(new OtpVerifyMobileRequestAuthDataOtp()
+                                                .otpValue(RSAEncrypter.encrypt(otp))
+                                                .txnId(txnId))));
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletionStage<VerifyUser200Response> loginVerifyUser(String abhaAddress, String txnId, String tToken) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return loginApiCollectionApi.verifyUserAsyncCall(token, tToken, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
+                        new VerifyUserRequest()
+                                .txnId(txnId)
+                                .abhaAddress(abhaAddress));
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    // profile apis (phr)
+
+    public CompletionStage<DeLinkRequest200Response> deLinkAbhaProfile(String xToken, String transactionId) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return profileApiCollectionApi.deLinkRequestAsyncCall(token, xToken, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
+                        new DeLinkRequestRequest().action("DE_LINK").transactionId(transactionId));
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletionStage<byte[]> getPhrCard(String xToken) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return profileApiCollectionApi.getPhrCardAsyncCall(token, xToken, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString());
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletionStage<GetProfile200Response> getProfile(String xToken) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return profileApiCollectionApi.getProfileAsyncCall(token, xToken, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString());
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletionStage<byte[]> getQrCode(String xToken) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return profileApiCollectionApi.getQrCodeAsyncCall(token, xToken, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString());
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletionStage<LinkRequest200Response> linkAbhaProfile(String xToken, String transactionId) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return profileApiCollectionApi.linkRequestAsyncCall(token, xToken, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
+                        new LinkRequestRequest().action("LINK").transactionId(transactionId));
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletionStage<Logout200Response> logout(String xToken) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return profileApiCollectionApi.logoutAsyncCall(token, xToken, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString());
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletionStage<RefreshToken200Response> refreshProfileToken(String rToken) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return profileApiCollectionApi.refreshTokenAsyncCall(token, rToken, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString());
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletionStage<OtpRequestMobile200Response> sendUpdateEmailOtp(String xToken, String email, String txnId) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return profileApiCollectionApi.sendOtpUpdateEmailAsyncCall(token, xToken, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
+                        new SendOtpUpdateEmailRequest()
+                                .scope(List.of("email-verify"))
+                                .loginHint("email")
+                                .loginId(RSAEncrypter.encrypt(email))
+                                .otpSystem("abdm"));
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletionStage<VerifyOtpUpdateEmail200Response> verifyUpdateEmailOtp(String xToken, String otp, String txnId) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return profileApiCollectionApi.verifyOtpUpdateEmailAsyncCall(token, xToken, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
+                        new VerifyOtpUpdateEmailRequest()
+                                .scope(List.of("email-verify"))
+                                .authData(new OtpVerifyMobileRequestAuthData()
+                                        .authMethods(List.of("OTP"))
+                                        .otp(new OtpVerifyMobileRequestAuthDataOtp()
+                                                .otpValue(RSAEncrypter.encrypt(otp))
+                                                .txnId(txnId))));
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletionStage<SwitchProfile200Response> switchProfile(String xToken) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return profileApiCollectionApi.switchProfileAsyncCall(token, xToken, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString());
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletionStage<UpdateProfile200Response> updateProfile(String xToken, String email, String firstName, String lastName) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return profileApiCollectionApi.updateProfileAsyncCall(token, xToken, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
+                        new UpdateProfileRequest()
+                                .email(email)
+                                .firstName(firstName)
+                                .lastName(lastName));
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletionStage<OtpVerifyMobile200ResponseTokens> verifyUserForSwitch(String tToken, String txnId, String otp) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return profileApiCollectionApi.verifyUserSwitchProfileAsyncCall(token, tToken, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
+                        new VerifyUserRequest().txnId(txnId) /* request shape per API */);
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    // AbdmHiecmPatientSharePhrApi wrapper methods
+
+    public CompletionStage<Void> abdmPatientShareHip1(String xCmId, String xHiuId, String xAuthToken, AbdmPatientShareHip1Request request) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return abdmHiecmPatientSharePhrApi.abdmPatientShareHip1AsyncCall(token, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
+                        xCmId, xHiuId, xAuthToken, request);
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletionStage<Void> profileShare2(String xHiuId, PatientShare2Request request) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return abdmHiecmPatientSharePhrApi.profileShare2AsyncCall(token, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
+                        xHiuId, request);
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletionStage<ProfileShare3200Response> profileShare3(String xCmId, String xAuthToken, String limit) {
+        return getAccessToken().thenCompose(token -> {
+            try {
+                return abdmHiecmPatientSharePhrApi.profileShare3AsyncCall(token, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
+                        xCmId, xAuthToken, limit);
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
 }

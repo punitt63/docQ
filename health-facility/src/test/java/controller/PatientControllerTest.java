@@ -67,6 +67,8 @@ public class PatientControllerTest {
 
         // Create patient
         PatientController.CreatePatientRequestBody createPatientRequestBody = PatientController.CreatePatientRequestBody.builder()
+                .abhaNo("1234-5678-9011")
+                .abhaAddress("patient@abdm")
                 .name("Test Patient")
                 .mobileNo("9876543210")
                 .dob(LocalDate.of(1990, 1, 1))
@@ -104,6 +106,8 @@ public class PatientControllerTest {
 
         // Create initial patient
         PatientController.CreatePatientRequestBody createPatientRequestBody = PatientController.CreatePatientRequestBody.builder()
+                .abhaNo("1234-5678-9012")
+                .abhaAddress("patient@abdm")
                 .name("Initial Patient")
                 .mobileNo("9876543210")
                 .dob(LocalDate.of(1990, 1, 1))
