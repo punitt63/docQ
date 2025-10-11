@@ -19,6 +19,10 @@
     {
       "name" : "patient",
       "scopes" : ["read", "create", "update", "abha-login-request-otp", "abha-login-verify-otp", "abha-login-verify-otp-status"]
+    },
+    {
+      "name" : "consent",
+      "scopes" : ["create", "read"]
     }
   ],
   "role-resource-mappings" : [
@@ -40,6 +44,10 @@
         {
           "name" : "prescription",
           "scopes" : ["create", "read", "update"]
+        },
+        {
+          "name" : "consent",
+          "scopes" : ["create", "read"]
         }
       ]
     },
@@ -86,6 +94,10 @@
         {
           "name" : "patient",
           "scopes" : ["read"]
+        },
+        {
+          "name" : "consent",
+          "scopes" : ["create", "read"]
         }
       ]
     }

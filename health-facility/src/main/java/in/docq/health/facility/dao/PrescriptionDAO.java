@@ -3,6 +3,7 @@ package in.docq.health.facility.dao;
 import com.google.gson.Gson;
 import in.docq.health.facility.model.Prescription;
 import in.docq.spring.boot.commons.postgres.PostgresDAO;
+import lombok.Builder;
 import lombok.Getter;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
@@ -12,9 +13,13 @@ import org.springframework.stereotype.Component;
 
 import java.sql.Date;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
+
+import static java.util.concurrent.CompletableFuture.completedFuture;
 
 @Component
 public class PrescriptionDAO {
@@ -52,6 +57,36 @@ public class PrescriptionDAO {
                 .date(rs.getDate(Column.OPD_DATE.getColumnName()).toLocalDate())
                 .content(rs.getString(Column.CONTENT.getColumnName()))
                 .build(), opdDate, opdID, appointmentID);
+    }
+
+    public CompletionStage<List<Prescription>> getPrescriptions(List<PrescriptionIdentifier> identifiers) {
+        if (identifiers.isEmpty()) {
+            return completedFuture(List.of());
+        }
+
+        String placeholders = identifiers.stream()
+                .map(ignore -> "(?, ?, ?)")
+                .collect(Collectors.joining(","));
+
+        String query = "SELECT " + Column.allColumNamesSeparatedByComma() +
+                " FROM " + table +
+                " WHERE (opd_date, opd_id, appointment_id) IN (" + placeholders + ")";
+
+        Object[] params = identifiers.stream()
+                .flatMap(id -> List.of(
+                        Date.valueOf(id.getOpdDate()),
+                        id.getOpdId(),
+                        id.getAppointmentId()
+                ).stream())
+                .toArray();
+
+        return postgresDAO.query(dbMetricsGroupName, "getPrescriptionsForIdentifiers",
+                query, (rs, rowNum) -> Prescription.builder()
+                        .opdID(rs.getString(Column.OPD_ID.getColumnName()))
+                        .appointmentID(rs.getInt(Column.APPOINTMENT_ID.getColumnName()))
+                        .date(rs.getDate(Column.OPD_DATE.getColumnName()).toLocalDate())
+                        .content(rs.getString(Column.CONTENT.getColumnName()))
+                        .build(), params);
     }
 
     public static Object getJsonbObject(String json) {
@@ -96,5 +131,13 @@ public class PrescriptionDAO {
                     .map(ignore -> "?")
                     .collect(Collectors.joining(","));
         }
+    }
+
+    @Builder
+    @Getter
+    public static class PrescriptionIdentifier {
+        private final LocalDate opdDate;
+        private final String opdId;
+        private final Integer appointmentId;
     }
 }

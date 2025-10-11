@@ -110,26 +110,25 @@ public class PatientControllerTest {
                 .gender("M")
                 .build();
 
-        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/patients")
+        Patient patient = gson.fromJson(handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/patients")
                 .header("Authorization", "Bearer " + facilityManagerToken)
                 .content(gson.toJson(createPatientRequestBody))
                 .contentType(MediaType.APPLICATION_JSON)))
-                .andExpect(status().isOk());
+                .andReturn()
+                .getResponse()
+                .getContentAsString(), Patient.class);
 
         // Replace patient with ABHA details
         PatientController.ReplacePatientRequestBody replacePatientRequestBody = PatientController.ReplacePatientRequestBody.builder()
-                .oldName("Initial Patient")
-                .oldMobileNo("9876543210")
-                .oldDob(LocalDate.of(1990, 1, 1))
-                .newName("Updated Patient")
-                .newMobileNo("9876543211")
-                .newDob(LocalDate.of(1990, 1, 2))
+                .name("Updated Patient")
+                .mobileNo("9876543211")
+                .dob(LocalDate.of(1990, 1, 2))
                 .abhaNo("1234-5678-9012")
                 .abhaAddress("patient@abdm")
                 .gender("F")
                 .build();
 
-        handleAsyncProcessing(mockMvc.perform(put("/health-facilities/" + testHealthFacilityID + "/patients")
+        handleAsyncProcessing(mockMvc.perform(put("/health-facilities/" + testHealthFacilityID + "/patients/" + patient.getId())
                 .header("Authorization", "Bearer " + facilityManagerToken)
                 .content(gson.toJson(replacePatientRequestBody))
                 .contentType(MediaType.APPLICATION_JSON)))

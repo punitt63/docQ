@@ -2,7 +2,7 @@ CREATE TABLE appointment (
     id INT NOT NULL,
     opd_date DATE NOT NULL,
     opd_id varchar(40) NOT NULL,
-    patient_id varchar(40) NOT NULL,
+    patient_id varchar(100) NOT NULL,
     state VARCHAR(20) NOT NULL,
     cancellation_reason TEXT,
     priority INT DEFAULT 0,

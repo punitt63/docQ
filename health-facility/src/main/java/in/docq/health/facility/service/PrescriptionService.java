@@ -5,16 +5,19 @@ import in.docq.health.facility.model.Prescription;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 @Service
 public class PrescriptionService {
     private final AppointmentService appointmentService;
     private final PrescriptionDAO opdPrescriptionDao;
+    private final HipInitiatedLinkingService hipInitiatedLinkingService;
 
-    public PrescriptionService(AppointmentService appointmentService, PrescriptionDAO opdPrescriptionDao) {
+    public PrescriptionService(AppointmentService appointmentService, PrescriptionDAO opdPrescriptionDao, HipInitiatedLinkingService hipInitiatedLinkingService) {
         this.appointmentService = appointmentService;
         this.opdPrescriptionDao = opdPrescriptionDao;
+        this.hipInitiatedLinkingService = hipInitiatedLinkingService;
     }
 
     public CompletionStage<Void> create(LocalDate opdDate, String opdID, Integer appointmentID, String content) {
@@ -25,7 +28,8 @@ public class PrescriptionService {
                 .content(content)
                 .build();
         return appointmentService.get(opdDate, opdID, appointmentID)
-                .thenCompose(appointment -> opdPrescriptionDao.insert(prescription));
+                .thenCompose(appointment -> opdPrescriptionDao.insert(prescription)
+                        .thenCompose(ignore -> hipInitiatedLinkingService.linkCareContext(appointment)));
     }
 
     public CompletionStage<Void> replace(LocalDate opdDate, String opdID, Integer appointmentID, String content) {
@@ -42,5 +46,9 @@ public class PrescriptionService {
     public CompletionStage<Prescription> get(LocalDate opdDate, String opdID, Integer appointmentID) {
         return appointmentService.get(opdDate, opdID, appointmentID)
                 .thenCompose(appointment -> opdPrescriptionDao.get(opdID, appointmentID, java.sql.Date.valueOf(opdDate)));
+    }
+
+    public CompletionStage<List<Prescription>> getPrescriptions(List<PrescriptionDAO.PrescriptionIdentifier> identifiers) {
+        return opdPrescriptionDao.getPrescriptions(identifiers);
     }
 }
