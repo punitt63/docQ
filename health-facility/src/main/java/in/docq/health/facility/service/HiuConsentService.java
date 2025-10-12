@@ -10,8 +10,6 @@ import in.docq.health.facility.fidelius.keys.KeyMaterial;
 import in.docq.health.facility.fidelius.keys.KeysService;
 import in.docq.health.facility.model.ConsentHealthRecord;
 import in.docq.health.facility.model.ConsentRequest;
-import lombok.Builder;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,8 +22,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 import in.docq.health.facility.fidelius.decryption.DecryptionService;
-import in.docq.health.facility.fidelius.decryption.DecryptionRequest;
-import in.docq.health.facility.fidelius.decryption.DecryptionResponse;
 import in.docq.abha.rest.client.model.AbdmDataFlow8Request;
 import in.docq.abha.rest.client.model.AbdmDataFlow8RequestNotification;
 import in.docq.abha.rest.client.model.AbdmDataFlow8RequestNotificationNotifier;
@@ -356,13 +352,16 @@ public class HiuConsentService {
                         throw new RuntimeException("No key material found: " + transactionId);
                     }
 
-                    List<DecryptedEntry> decryptedHealthRecords = decryptEntries(
-                            request.getEntries(), storedKeyMaterial, request.getKeyMaterial());
+                    consentHealthRecord.add(request, decryptionService);
+
                     // 3. Update health_records column
-                    JsonObject healthRecordsJson = createHealthRecordsJson(decryptedHealthRecords);
-                    return consentHealthRecordDao.updateHealthRecords(consentHealthRecord.getConsentId(), healthRecordsJson)
-                            .thenCompose(ignore -> consentHealthRecordDao.updateStatus(consentHealthRecord.getConsentId(), ConsentHealthRecord.Status.TRANSFERRED))
-                            .thenCompose(ignore -> notifyHealthInfoTransferSuccess(consentHealthRecord, transactionId, request.getEntries()))
+                    return consentHealthRecordDao.updateHealthRecordsAndStatus(consentHealthRecord)
+                            .thenCompose(ignore -> {
+                                if (consentHealthRecord.isTransferComplete()) {
+                                    return notifyHealthInfoTransferSuccess(consentHealthRecord);
+                                }
+                                return completedFuture(null);
+                            })
                             .exceptionally(ex -> {
                                 log.error("Failed to process data push for transactionId: {}", transactionId, ex);
                                 // Notify failure
@@ -376,65 +375,12 @@ public class HiuConsentService {
                 });
     }
 
-    private List<DecryptedEntry> decryptEntries(List<HiuConsentWebhookController.DataEntry> entries,
-                                                                 JsonObject storedKeyMaterial,
-                                                                 HiuConsentWebhookController.KeyMaterialInfo senderKeyMaterial) {
-
-        String receiverPrivateKey = storedKeyMaterial.get("privateKey").getAsString();
-        String receiverNonce = storedKeyMaterial.get("nonce") != null ? storedKeyMaterial.get("nonce").getAsString() : UUID.randomUUID().toString();
-        String senderPublicKey = senderKeyMaterial.getDhPublicKey().getKeyValue();
-        String senderNonce = senderKeyMaterial.getNonce();
-
-        return  entries.stream()
-                .map(entry -> decryptEntry(entry, receiverPrivateKey, receiverNonce, senderPublicKey, senderNonce))
-                .collect(Collectors.toList());
-    }
-
-    private DecryptedEntry decryptEntry(HiuConsentWebhookController.DataEntry entry,
-                                                         String receiverPrivateKey, String receiverNonce,
-                                                         String senderPublicKey, String senderNonce) {
-            try {
-                DecryptionRequest decryptionRequest = new DecryptionRequest(
-                        receiverPrivateKey, receiverNonce, senderPublicKey, senderNonce, entry.getContent());
-
-                DecryptionResponse decryptionResponse = decryptionService.decrypt(decryptionRequest);
-
-                return DecryptedEntry.builder()
-                        .careContextReference(entry.getCareContextReference())
-                        .decryptedContent(decryptionResponse.getDecryptedData())
-                        .media(entry.getMedia())
-                        .checksum(entry.getChecksum())
-                        .build();
-            } catch (Exception e) {
-                log.error("Failed to decrypt entry for careContext: {}", entry.getCareContextReference(), e);
-                throw new RuntimeException("Decryption failed for: " + entry.getCareContextReference(), e);
-            }
-    }
-
-    private JsonObject createHealthRecordsJson(List<DecryptedEntry> decryptedEntries) {
-        JsonObject healthRecords = new JsonObject();
-
-        for (DecryptedEntry entry : decryptedEntries) {
-            JsonObject entryJson = new JsonObject();
-            entryJson.addProperty("content", entry.getDecryptedContent());
-            entryJson.addProperty("media", entry.getMedia());
-            entryJson.addProperty("checksum", entry.getChecksum());
-            entryJson.addProperty("decryptedAt", Instant.now().toString());
-
-            healthRecords.add(entry.getCareContextReference(), entryJson);
-        }
-
-        return healthRecords;
-    }
-
-    private CompletionStage<Void> notifyHealthInfoTransferSuccess(ConsentHealthRecord consentHealthRecord,
-                                                                  String transactionId,
-                                                                  List<HiuConsentWebhookController.DataEntry> entries) {
+    private CompletionStage<Void> notifyHealthInfoTransferSuccess(ConsentHealthRecord consentHealthRecord) {
 
         String requestId = UUID.randomUUID().toString();
         String timestamp = Instant.now().truncatedTo(ChronoUnit.MILLIS).toString();
 
-        List<AbdmDataFlow8RequestNotificationStatusNotificationStatusResponsesInner> statusResponses = entries.stream()
+        List<AbdmDataFlow8RequestNotificationStatusNotificationStatusResponsesInner> statusResponses = consentHealthRecord.getHealthRecords().stream()
                 .map(entry -> new AbdmDataFlow8RequestNotificationStatusNotificationStatusResponsesInner()
                         .careContextReference(entry.getCareContextReference())
                         .hiStatus("OK")
@@ -444,7 +390,7 @@ public class HiuConsentService {
         AbdmDataFlow8Request notificationRequest = new AbdmDataFlow8Request()
                 .notification(new AbdmDataFlow8RequestNotification()
                         .consentId(consentHealthRecord.getConsentId())
-                        .transactionId(transactionId)
+                        .transactionId(consentHealthRecord.getTransactionId())
                         .doneAt(timestamp)
                         .notifier(new AbdmDataFlow8RequestNotificationNotifier()
                                 .type(AbdmDataFlow8RequestNotificationNotifier.TypeEnum.HIU)
@@ -492,14 +438,5 @@ public class HiuConsentService {
                             return consentHealthRecordDao.getByConsentRequestId(consentRequestId);
                         });
 
-    }
-
-    @Builder
-    @Getter
-    private static class DecryptedEntry {
-        private final String careContextReference;
-        private final String decryptedContent;
-        private final String media;
-        private final String checksum;
     }
 }

@@ -1,5 +1,8 @@
 package in.docq.health.facility.controller;
 
+import in.docq.abha.rest.client.model.AbdmConsentManagement6RequestEntriesInner;
+import in.docq.abha.rest.client.model.AbdmConsentManagement6RequestKeyMaterial;
+import in.docq.abha.rest.client.model.AbdmConsentManagement6RequestKeyMaterialDhPublicKey;
 import in.docq.health.facility.service.HiuConsentService;
 import lombok.Builder;
 import lombok.Getter;
@@ -273,7 +276,7 @@ public class HiuConsentWebhookController {
     @Getter
     public static class DataEntry {
         private final String content;
-        private final String media;
+        private final AbdmConsentManagement6RequestEntriesInner.MediaEnum media;
         private final String checksum;
         private final String careContextReference;
     }
@@ -281,9 +284,9 @@ public class HiuConsentWebhookController {
     @Builder
     @Getter
     public static class KeyMaterialInfo {
-        private final String cryptoAlg;
-        private final String curve;
-        private final DhPublicKeyInfo dhPublicKey;
+        private final AbdmConsentManagement6RequestKeyMaterial.CryptoAlgEnum cryptoAlg;
+        private final AbdmConsentManagement6RequestKeyMaterial.CurveEnum curve;
+        private final AbdmConsentManagement6RequestKeyMaterialDhPublicKey dhPublicKey;
         private final String nonce;
     }
 

@@ -16,6 +16,7 @@ import in.docq.health.facility.auth.DesktopKeycloakRestClient;
 import in.docq.health.facility.controller.*;
 import in.docq.health.facility.dao.*;
 import in.docq.health.facility.model.*;
+import in.docq.health.facility.service.HiuConsentService;
 import in.docq.health.facility.service.OPDService;
 import in.docq.keycloak.rest.client.model.GetAccessToken200Response;
 import org.junit.Before;
@@ -39,9 +40,11 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import static configuration.TestAbhaClientConfiguration.MockAbhaRestClient.*;
 import static org.assertj.core.util.Preconditions.checkState;
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -121,6 +124,9 @@ public class EndToEndDataTransferTest {
     private HIPLinkingTokenDao hipLinkingTokenDao;
 
     @Autowired
+    private HiuConsentService hiuConsentService;
+
+    @Autowired
     private CareContextDao careContextDao;
 
     @Autowired
@@ -146,6 +152,10 @@ public class EndToEndDataTransferTest {
         setupPrescriptionData();
         mockAbhaRestClient.sendConsentRequestCount = 0;
         mockAbhaRestClient.fetchConsentRequestCount = 0;
+        mockAbhaRestClient.notifyDataTransferCount = 0;
+        mockAbhaRestClient.healthInfoRequestAcknowledgementCount = 0;
+        mockAbhaRestClient.notifyHealthInfoTransferCount = 0;
+        mockAbhaRestClient.setHiuConsentService(hiuConsentService);
     }
 
     @Test
@@ -190,10 +200,12 @@ public class EndToEndDataTransferTest {
         callHipHealthInformationRequestApi(consentArtifactId2, transactionId2, HIP_ID_2);
         assertCallHipHealthInformationRequestApi(consentArtifactId1, transactionId1, HIP_ID_1);
         assertCallHipHealthInformationRequestApi(consentArtifactId2, transactionId2, HIP_ID_2);
+        assertEquals(2, mockAbhaRestClient.healthInfoRequestAcknowledgementCount);
 
         // Assertions
-        //verifyConsentHealthRecords(consentArtifactId1, consentArtifactId2);
-        //verifyNotifyHealthInfoTransferCalls(consentArtifactId1, consentArtifactId2);
+        await()
+                .atMost(10, TimeUnit.SECONDS)
+                .until(() -> verifyConsentHealthRecords(transactionId1, consentArtifactId1, transactionId2, consentArtifactId2));
     }
 
     private void setupPrescriptionData() throws Exception {
@@ -210,8 +222,8 @@ public class EndToEndDataTransferTest {
         createPrescriptionsForHip(testHealthFacilityID, facilityManagerTokenHIP1, doctorTokenHIP1, testDoctorID, 5, nextToNextYearStart, nextToNextYearEnd);
 
         // Create prescriptions for HIP_ID_2
-        createPrescriptionsForHip(testSecondHealthFacilityID, facilityManagerTokenHIP2, doctorTokenHIP2, testSecondDoctorID, 5, nextToNextYearStart, nextToNextYearEnd);
-        createPrescriptionsForHip(testSecondHealthFacilityID, facilityManagerTokenHIP2, doctorTokenHIP2, testSecondDoctorID, 12, nextYearStart, nextYearEnd);
+        createPrescriptionsForHip(testSecondHealthFacilityID, facilityManagerTokenHIP2, doctorTokenHIP2, testSecondDoctorID, 5, nextYearStart, nextYearEnd);
+        createPrescriptionsForHip(testSecondHealthFacilityID, facilityManagerTokenHIP2, doctorTokenHIP2, testSecondDoctorID, 12, nextToNextYearStart, nextToNextYearEnd);
     }
 
     private void createPrescriptionsForHip(String testHealthFacilityID, String facilityManagerToken, String doctorToken, String doctorID, int count, LocalDate startDate, LocalDate endDate) throws Exception {
@@ -244,6 +256,16 @@ public class EndToEndDataTransferTest {
                 .content(gson.toJson(createPrescriptionRequestBody))
                 .contentType(MediaType.APPLICATION_JSON)))
                 .andExpect(status().isOk());
+
+        CareContext careContext = CareContext.builder()
+                .appointmentID(appointment.getUniqueId())
+                .healthFacilityId(opd.getHealthFacilityID())
+                .patientId(PATIENT_ID)
+                .isLinked(true)
+                .appointmentStartTime(appointment.getOpdDate().atTime(10, 0).toInstant(ZoneOffset.UTC).toEpochMilli())
+                .build();
+
+        careContextDao.upsert(careContext).toCompletableFuture().join();
     }
 
     private JsonObject createPrescriptionBundle(Appointment appointment, String doctorId) {
@@ -451,8 +473,8 @@ public class EndToEndDataTransferTest {
                         .permission(new AbdmConsentManagement1RequestConsentPermission()
                                 .accessMode(AbdmConsentManagement1RequestConsentPermission.AccessModeEnum.VIEW)
                                 .dateRange(new AbdmConsentManagement1RequestConsentPermissionDateRange()
-                                        .from(OffsetDateTime.parse("2025-01-01T00:00:00Z"))
-                                        .to(OffsetDateTime.parse("2026-01-01T00:00:00Z")))));
+                                        .from(OffsetDateTime.parse("2026-01-01T00:00:00Z"))
+                                        .to(OffsetDateTime.parse("2027-01-01T00:00:00Z")))));
 
         handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testThirdHealthFacilityID + "/health-facility-professionals/" + testThirdDoctorID + "/consent-request")
                 .header("Authorization", "Bearer " + doctorTokenHIU)
@@ -578,8 +600,8 @@ public class EndToEndDataTransferTest {
                                 .permission(HiuConsentWebhookController.PermissionInfo.builder()
                                         .accessMode("VIEW")
                                         .dateRange(HiuConsentWebhookController.DateRangeInfo.builder()
-                                                .from("2025-01-01T00:00:00Z")
-                                                .to("2026-01-01T00:00:00Z")
+                                                .from("2026-01-01T00:00:00Z")
+                                                .to("2027-01-01T00:00:00Z")
                                                 .build())
                                         .build())
                                 .build())
@@ -590,37 +612,47 @@ public class EndToEndDataTransferTest {
                 .build();
     }
 
-    private boolean shouldIncludeInDateRange(Appointment appointment) {
-        // Include appointments that fall within 2025-2026 date range
-        LocalDate appointmentDate = appointment.getOpdDate();
-        return !appointmentDate.isBefore(LocalDate.of(2025, 1, 1)) &&
-                !appointmentDate.isAfter(LocalDate.of(2026, 1, 1));
-    }
-
-    private void verifyConsentHealthRecords(String consentArtifactId1, String consentArtifactId2) throws Exception {
+    private boolean verifyConsentHealthRecords(String healthInfoTxnId1, String consentArtifactId1, String healthInfoTxnId2, String consentArtifactId2) throws Exception {
         // Get consent health records from database
         Optional<ConsentHealthRecord> record1 = consentHealthRecordDao.getByConsentId(consentArtifactId1).toCompletableFuture().get();
         Optional<ConsentHealthRecord> record2 = consentHealthRecordDao.getByConsentId(consentArtifactId2).toCompletableFuture().get();
+        Optional<HealthInformationRequest> healthInfoRequest1 = healthInformationRequestDao.getByTransactionId(healthInfoTxnId1).toCompletableFuture().get();
+        Optional<HealthInformationRequest> healthInfoRequest2 = healthInformationRequestDao.getByTransactionId(healthInfoTxnId2).toCompletableFuture().get();
 
-        // Verify records exist
-        assertTrue("Consent health record should exist for HIP " + HIP_ID_1, record1.isPresent());
-        assertTrue("Consent health record should exist for HIP " + HIP_ID_2, record2.isPresent());
+        try {
+            assertEquals(2, mockAbhaRestClient.notifyDataTransferCount);
+            assertEquals(2, mockAbhaRestClient.notifyHealthInfoTransferCount);
+            assertTrue(healthInfoRequest1.isPresent());
+            assertTrue(healthInfoRequest2.isPresent());
+            assertEquals("TRANSFERRED", healthInfoRequest1.get().getStatus());
+            assertEquals("TRANSFERRED", healthInfoRequest2.get().getStatus());
 
-        // Verify HIP_ID_1 consent has 12 records
-        ConsentHealthRecord hipRecord1 = record1.get();
-        assertEquals(HIP_ID_1, hipRecord1.getHipId());
-        assertEquals(12, countHealthRecordEntries(hipRecord1.getHealthRecord()));
-        assertEquals(ConsentHealthRecord.Status.TRANSFERRED, hipRecord1.getStatus());
+            // Verify records exist
+            assertTrue("Consent health record should exist for HIP " + HIP_ID_1, record1.isPresent());
+            assertTrue("Consent health record should exist for HIP " + HIP_ID_2, record2.isPresent());
 
-        // Verify HIP_ID_2 consent has 5 records
-        ConsentHealthRecord hipRecord2 = record2.get();
-        assertEquals(HIP_ID_2, hipRecord2.getHipId());
-        assertEquals(5, countHealthRecordEntries(hipRecord2.getHealthRecord()));
-        assertEquals(ConsentHealthRecord.Status.TRANSFERRED, hipRecord2.getStatus());
+            // Verify HIP_ID_1 consent has 12 records
+            ConsentHealthRecord hipRecord1 = record1.get();
+            assertEquals(HIP_ID_1, hipRecord1.getHipId());
+            assertEquals(2, hipRecord1.getPaginatedHealthRecords().size());
+            assertTrue(hipRecord1.getPaginatedHealthRecords().stream().allMatch(r -> r.getHealthRecords().size() == 10 || r.getHealthRecords().size() == 2));
+            assertEquals(ConsentHealthRecord.Status.TRANSFERRED, hipRecord1.getStatus());
+
+            // Verify HIP_ID_2 consent has 5 records
+            ConsentHealthRecord hipRecord2 = record2.get();
+            assertEquals(HIP_ID_2, hipRecord2.getHipId());
+            assertEquals(1, hipRecord2.getPaginatedHealthRecords().size());
+            assertEquals(5, hipRecord2.getPaginatedHealthRecords().get(0).getHealthRecords().size());
+            assertEquals(ConsentHealthRecord.Status.TRANSFERRED, hipRecord2.getStatus());
+
+            return true;
+        } catch (AssertionError assertionError) {
+            return false;
+        }
     }
 
     private int countHealthRecordEntries(JsonObject healthRecord) {
-        return healthRecord.entrySet().size();
+        return Optional.ofNullable(healthRecord).map(hr -> hr.entrySet().size()).orElse(0);
     }
 
 //    private void verifyNotifyHealthInfoTransferCalls(String consentArtifactId1, String consentArtifactId2) {
@@ -912,10 +944,10 @@ public class EndToEndDataTransferTest {
                                 .permission(Consent.Permission.builder()
                                         .accessMode("VIEW")
                                         .dateRange(Consent.DateRange.builder()
-                                                .from("2025-01-01T00:00:00.000Z")
-                                                .to("2026-01-01T00:00:00.000Z")
+                                                .from("2026-01-01T00:00:00.000Z")
+                                                .to("2027-01-01T00:00:00.000Z")
                                                 .build())
-                                        .dataEraseAt("2024-05-31T06:21:42.683Z")
+                                        .dataEraseAt("2027-01-01T00:00:00.000Z")
                                         .frequency(Consent.Frequency.builder()
                                                 .unit("HOUR")
                                                 .value(0)
