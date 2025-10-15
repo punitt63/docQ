@@ -3,15 +3,20 @@ package configuration;
 import in.docq.abha.rest.client.AbhaRestClient;
 import in.docq.abha.rest.client.ApiClient;
 import in.docq.abha.rest.client.model.*;
+import in.docq.health.facility.controller.HiuConsentWebhookController;
+import in.docq.health.facility.service.HiuConsentService;
 import in.docq.health.facility.service.OTPService;
+import lombok.Setter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
@@ -67,12 +72,17 @@ public class TestAbhaClientConfiguration {
         public AbdmUserInitiatedLinking2Request lastLinkUserInitiatedCareContextRequest;
         public int sendConsentGrantAcknowledgementCount = 0;
         public int healthInfoRequestAcknowledgementCount = 0;
+        public int healthRecordDataTransferCount = 0;
         public int getGatewayPublicCertsCount = 0;
         public int sendConsentRequestCount = 0;
         public int fetchConsentRequestCount = 0;
         public int sendHealthInfoRequestCount = 0;
+        public int notifyDataTransferCount = 0;
+        public int notifyHealthInfoTransferCount = 0;
         public Map<String, AbdmDataFlow7Request> sendHealthInfoRequestMap = new HashMap<>();
         public AbdmSessions3200Response gatewayPublicKeysResponse;
+        @Setter
+        private HiuConsentService hiuConsentService;
 
         public MockAbhaRestClient() {
             super(null, null, null, null);
@@ -172,6 +182,46 @@ public class TestAbhaClientConfiguration {
 
         public AbdmDataFlow7Request getStoredHealthInfoRequest(String consentArtifactId) {
             return sendHealthInfoRequestMap.get(consentArtifactId);
+        }
+
+        public CompletionStage<Void> notifyDataTransfer(String requestId, String timestamp, AbdmDataFlow8Request abdmConsentManagement8Request) {
+            notifyDataTransferCount++;
+            return completedFuture(null);
+        }
+
+        public CompletionStage<Void> healthRecordDataTransfer(String dataPushUrl, AbdmConsentManagement6Request abdmConsentManagement6Request) {
+            return hiuConsentService.processDataPush(convertToDataPushBody(abdmConsentManagement6Request));
+        }
+
+        public CompletionStage<Void> notifyHealthInfoTransfer(String requestId, String timestamp, AbdmDataFlow8Request abdmDataFlow8Request) {
+            notifyHealthInfoTransferCount++;
+            return completedFuture(null);
+        }
+
+        private HiuConsentWebhookController.DataPushBody convertToDataPushBody(AbdmConsentManagement6Request request) {
+            List<HiuConsentWebhookController.DataEntry> entries = request.getEntries().stream()
+                    .map(entry -> HiuConsentWebhookController.DataEntry.builder()
+                            .content(entry.getContent())
+                            .media(entry.getMedia())
+                            .checksum(entry.getChecksum())
+                            .careContextReference(entry.getCareContextReference())
+                            .build())
+                    .collect(Collectors.toList());
+
+            HiuConsentWebhookController.KeyMaterialInfo keyMaterial = HiuConsentWebhookController.KeyMaterialInfo.builder()
+                    .cryptoAlg(request.getKeyMaterial().getCryptoAlg())
+                    .curve(request.getKeyMaterial().getCurve())
+                    .dhPublicKey(request.getKeyMaterial().getDhPublicKey())
+                    .nonce(request.getKeyMaterial().getNonce())
+                    .build();
+
+            return HiuConsentWebhookController.DataPushBody.builder()
+                    .pageNumber(request.getPageNumber())
+                    .pageCount(request.getPageCount())
+                    .transactionId(request.getTransactionId())
+                    .entries(entries)
+                    .keyMaterial(keyMaterial)
+                    .build();
         }
     }
 }

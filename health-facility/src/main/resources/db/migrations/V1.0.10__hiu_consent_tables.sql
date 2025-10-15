@@ -21,7 +21,6 @@ CREATE TABLE consent_health_record (
     consent_request_id varchar(100) NOT NULL,
     hiu_id varchar(100) NOT NULL,
     hip_id varchar(100),
-    page_no int,
     health_records jsonb,
     status varchar(20) NOT NULL,
     health_data_request_id varchar(100),

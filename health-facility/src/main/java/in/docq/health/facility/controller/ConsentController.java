@@ -46,15 +46,13 @@ public class ConsentController {
 
     @GetMapping("/consent-request/{consent-request-id}/health-records")
     @Authorized(resource = "consent", scope = "read")
-    public CompletionStage<ResponseEntity<ConsentHealthRecordsResponse>> getConsentHealthRecords(
+    public CompletionStage<ResponseEntity<List<ConsentHealthRecord>>> getConsentHealthRecords(
             @PathVariable("health-facility-id") String healthFacilityId,
             @PathVariable("health-facility-professional-id") String healthFacilityProfessionalId,
             @PathVariable("consent-request-id") String consentRequestId) {
 
         return hiuConsentService.listConsentHealthRecords(healthFacilityId, healthFacilityProfessionalId, consentRequestId)
-                .thenApply(consentHealthRecords -> ResponseEntity.ok(ConsentHealthRecordsResponse.builder()
-                        .healthRecords(consentHealthRecords.stream().map(ConsentHealthRecord::getHealthRecord).toList())
-                        .build()));
+                .thenApply(ResponseEntity::ok);
     }
 
     @Builder

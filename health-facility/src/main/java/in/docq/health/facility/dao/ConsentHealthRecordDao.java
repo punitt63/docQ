@@ -2,6 +2,7 @@ package in.docq.health.facility.dao;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import in.docq.health.facility.fidelius.keys.KeyMaterial;
 import in.docq.health.facility.model.ConsentHealthRecord;
 import in.docq.spring.boot.commons.postgres.PostgresDAO;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +29,7 @@ public class ConsentHealthRecordDao {
     private final String getByConsentRequestIdQuery;
     private final String updateStatusQuery;
     private final String updateHealthDataRequestIdQuery;
-    private final String updateHealthRecordQuery;
+    private final String updateHealthRecordsAndStatusQuery;
     private final String updateKeyMaterialQuery;
     private final String getByHealthDataRequestIdQuery;
     private final String updateTransactionIdQuery;
@@ -46,7 +48,7 @@ public class ConsentHealthRecordDao {
         this.getByConsentRequestIdQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE consent_request_id = ?";
         this.updateStatusQuery = "UPDATE " + table + " SET status = ? WHERE consent_id = ?";
         this.updateHealthDataRequestIdQuery = "UPDATE " + table + " SET health_data_request_id = ? WHERE consent_id = ?";
-        this.updateHealthRecordQuery = "UPDATE " + table + " SET health_record = ?::jsonb WHERE consent_id = ?";
+        this.updateHealthRecordsAndStatusQuery = "UPDATE " + table + " SET health_records = ?::jsonb, status = ? WHERE consent_id = ?";
         this.updateKeyMaterialQuery = "UPDATE " + table + " SET key_material = ?::jsonb WHERE consent_id = ?";
         this.getByHealthDataRequestIdQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table + " WHERE health_data_request_id = ?";
         this.updateTransactionIdQuery = "UPDATE " + table + " SET transaction_id = ? WHERE consent_id = ?";
@@ -57,7 +59,7 @@ public class ConsentHealthRecordDao {
         return postgresDAO.update(dbMetricsGroupName, "insert", insertQuery,
                         consentHealthRecord.getConsentId(),
                         consentHealthRecord.getConsentRequestId(),
-                        consentHealthRecord.getHealthRecord() != null ? getJsonbObject(gson.toJson(consentHealthRecord.getHealthRecord())) : null,
+                        consentHealthRecord.getPaginatedHealthRecords() != null ? getJsonbObject(gson.toJson(consentHealthRecord.getPaginatedHealthRecords())) : null,
                         consentHealthRecord.getStatus().name(),
                         consentHealthRecord.getKeyMaterial() != null ? getJsonbObject(gson.toJson(consentHealthRecord.getKeyMaterial())) : null,
                         consentHealthRecord.getTransactionId(),
@@ -87,10 +89,10 @@ public class ConsentHealthRecordDao {
                 .thenAccept(ignore -> {});
     }
 
-    public CompletionStage<Void> updateHealthRecords(String consentId, Object healthRecord) {
-        String healthRecordJson = healthRecord != null ? gson.toJson(healthRecord) : null;
-        return postgresDAO.update(dbMetricsGroupName, "updateHealthRecord", updateHealthRecordQuery,
-                        healthRecordJson, consentId)
+    public CompletionStage<Void> updateHealthRecordsAndStatus(ConsentHealthRecord consentHealthRecord) {
+        Object paginatedHealthRecordsJson = getJsonbObject(gson.toJson(consentHealthRecord.getPaginatedHealthRecords()));
+        return postgresDAO.update(dbMetricsGroupName, "updateHealthRecord", updateHealthRecordsAndStatusQuery,
+                        paginatedHealthRecordsJson, consentHealthRecord.getStatus().name(), consentHealthRecord.getConsentId())
                 .thenAccept(ignore -> {});
     }
 
@@ -145,13 +147,13 @@ public class ConsentHealthRecordDao {
             String transactionId = rs.getString(Column.TRANSACTION_ID.getColumnName());
             String healthDataRequestId = rs.getString(Column.HEALTH_DATA_REQUEST_ID.getColumnName());
             String hipId = rs.getString(Column.HIP_ID.getColumnName());
-            JsonObject healthRecord = healthRecordJsonStr != null ? gson.fromJson(healthRecordJsonStr, JsonObject.class) : null;
+            List<ConsentHealthRecord.PaginatedHealthRecords> healthRecords = healthRecordJsonStr != null ? gson.fromJson(healthRecordJsonStr, new TypeToken<List<ConsentHealthRecord.PaginatedHealthRecords>>(){}.getType()) : new ArrayList<>();
             JsonObject keyMaterial = keyMaterialJsonStr != null ? gson.fromJson(keyMaterialJsonStr, JsonObject.class) : null;
 
             return ConsentHealthRecord.builder()
                     .consentId(consentId)
                     .consentRequestId(consentRequestId)
-                    .healthRecord(healthRecord)
+                    .paginatedHealthRecords(healthRecords)
                     .status(ConsentHealthRecord.Status.valueOf(status))
                     .keyMaterial(keyMaterial)
                     .transactionId(transactionId)

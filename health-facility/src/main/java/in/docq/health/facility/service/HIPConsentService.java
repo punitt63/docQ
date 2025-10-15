@@ -8,6 +8,8 @@ import in.docq.health.facility.dao.ConsentDao;
 import in.docq.health.facility.dao.HealthInformationRequestDao;
 import in.docq.health.facility.exception.ErrorCodes;
 import in.docq.health.facility.exception.HealthFacilityException;
+import in.docq.health.facility.fidelius.encryption.EncryptionRequest;
+import in.docq.health.facility.fidelius.encryption.EncryptionResponse;
 import in.docq.health.facility.fidelius.encryption.EncryptionService;
 import in.docq.health.facility.fidelius.keys.KeyMaterial;
 import in.docq.health.facility.fidelius.keys.KeysService;
@@ -23,10 +25,13 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -44,6 +49,7 @@ public class HIPConsentService {
     private final EncryptionService encryptionService;
     private final CareContextService careContextService;
     private final PrescriptionService prescriptionService;
+    private final ExecutorService dataPushExecutor = java.util.concurrent.Executors.newFixedThreadPool(20);
 
     @Autowired
     public HIPConsentService(ConsentDao consentDao,
@@ -129,7 +135,7 @@ public class HIPConsentService {
 
                     return healthInformationRequestDao.upsert(transactionId, consentId, request, "ACKNOWLEDGED")
                             .thenCompose(ignore -> sendSuccessAcknowledgement(requestId, timestamp, transactionId))
-                            .thenAccept(ignore -> startDataPush(timestamp, request, consent));
+                            .thenAccept((ignore) -> CompletableFuture.supplyAsync(() -> startDataPush(timestamp, request, consent), dataPushExecutor));
                 });
     }
 
@@ -163,10 +169,10 @@ public class HIPConsentService {
         );
     }
 
-    private void startDataPush(String timestamp,
+    private CompletionStage<Void> startDataPush(String timestamp,
                                                 HIPConsentWebhookController.HealthInformationRequestBody request,
                                                 Consent consent) {
-            careContextService.getLinkedCareContexts(
+            return careContextService.getLinkedCareContexts(
                     consent.getHip().getId(),
                             consent.getPatient().getId(),
                             request.getHiRequest().getDateRange().getFromAsInstant().toEpochMilli(),
@@ -176,8 +182,11 @@ public class HIPConsentService {
                             request.getHiRequest().getDataPushUrl(),
                             request.getTransactionId(),
                             request.getHiRequest().getKeyMaterial(),
-                            prescriptions)
-                            .thenCompose(ignore -> abhaRestClient.notifyDataTransfer(
+                            prescriptions).thenApply(ignore -> prescriptions))
+                    .thenCompose(prescriptions -> healthInformationRequestDao.updateStatus(request.getTransactionId(), "TRANSFERRED").thenApply(ignore -> prescriptions))
+                    .handle((prescriptions, throwable) -> {
+                        if(throwable == null) {
+                            return abhaRestClient.notifyDataTransfer(
                                     UUID.randomUUID().toString(),
                                     timestamp,
                                     new AbdmDataFlow8Request()
@@ -187,31 +196,56 @@ public class HIPConsentService {
                                                     .doneAt(Instant.now().toString())
                                                     .notifier(new AbdmDataFlow8RequestNotificationNotifier().id(consent.getHip().getId()).type(AbdmDataFlow8RequestNotificationNotifier.TypeEnum.HIP))
                                                     .statusNotification(new AbdmDataFlow8RequestNotificationStatusNotification().sessionStatus("TRANSFERRED").hipId(consent.getHip().getId()).statusResponses(Prescription.toStatusResponseEntries(prescriptions)))
-                                    )
-                    )))
-                    .thenCompose(ignore -> healthInformationRequestDao.updateStatus(request.getTransactionId(), "TRANSFERRED"));
+                                            ));
+                        }
+                        throwable = throwable.getCause();
+                        logger.error("Data transfer failed for transactionId: {}. Error: {}", request.getTransactionId(), throwable.getMessage());
+                        return abhaRestClient.notifyDataTransfer(
+                                UUID.randomUUID().toString(),
+                                timestamp,
+                                new AbdmDataFlow8Request()
+                                        .notification(new AbdmDataFlow8RequestNotification()
+                                                .transactionId(request.getTransactionId())
+                                                .consentId(consent.getConsentId())
+                                                .doneAt(Instant.now().toString())
+                                                .notifier(new AbdmDataFlow8RequestNotificationNotifier().id(consent.getHip().getId()).type(AbdmDataFlow8RequestNotificationNotifier.TypeEnum.HIP))
+                                                .statusNotification(new AbdmDataFlow8RequestNotificationStatusNotification().sessionStatus("FAILED").hipId(consent.getHip().getId()).statusResponses(Collections.emptyList()))
+                                        ));
+                    }).thenCompose(Function.identity());
         }
 
     private CompletionStage<Void> transferHealthRecordData(String dataPushUrl, String transactionId, AbdmConsentManagement6RequestKeyMaterial receiverKeyMaterial, List<Prescription> prescriptions) {
         KeyMaterial senderKeyMaterial = keysService.generate();
-        List<CompletionStage<Void>> futures = new ArrayList<>();
+        CompletionStage<Void> future = completedFuture(null);
         int pageSize = 10;
         List<List<Prescription>> prescriptionsList =  IntStream.range(0, (prescriptions.size() + pageSize - 1) / pageSize)
                 .mapToObj(i -> prescriptions.subList(i * pageSize,
                         Math.min(prescriptions.size(), (i + 1) * pageSize)))
                 .toList();
-        int pageCount = 1;
+        int pageNo = 1;
+        int pageCount = prescriptions.size() / pageSize + 1;
+        String keyToShare = prescriptions.get(0).encryptPrescription(encryptionService, receiverKeyMaterial, senderKeyMaterial).getKeyToShare();
         for (List<Prescription> chunk : prescriptionsList) {
-            futures.add(abhaRestClient.healthRecordDataTransfer(
+            int finalPageNo = pageNo;
+            future = future.thenCompose(ignore -> abhaRestClient.healthRecordDataTransfer(
                     dataPushUrl,
                     new AbdmConsentManagement6Request()
-                            .pageNumber(pageCount)
-                            .pageCount(pageSize)
+                            .pageNumber(finalPageNo)
+                            .pageCount(pageCount)
                             .transactionId(transactionId)
-                            .keyMaterial(receiverKeyMaterial)
+                            .keyMaterial(new AbdmConsentManagement6RequestKeyMaterial()
+                                    .curve(AbdmConsentManagement6RequestKeyMaterial.CurveEnum.CURVE25519)
+                                    .cryptoAlg(AbdmConsentManagement6RequestKeyMaterial.CryptoAlgEnum.ECDH)
+                                    .dhPublicKey(new AbdmConsentManagement6RequestKeyMaterialDhPublicKey()
+                                            .keyValue(keyToShare)
+                                            .expiry(Instant.now().plusSeconds(300).toString())
+                                            .parameters(AbdmConsentManagement6RequestKeyMaterialDhPublicKey.ParametersEnum.CURVE25519_32BYTE_RANDOM_KEY)
+                                    )
+                                    .nonce(senderKeyMaterial.getNonce())
+                            )
                             .entries(Prescription.toDataTransferEntries(chunk, encryptionService, receiverKeyMaterial, senderKeyMaterial))));
-            pageCount++;
+            pageNo++;
         }
-        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        return future;
     }
 }

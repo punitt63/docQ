@@ -31,7 +31,7 @@ public class Prescription {
     private final LocalDate date;
     private final String content;
 
-    private EncryptionResponse encryptPrescription(EncryptionService encryptionService,
+    public EncryptionResponse encryptPrescription(EncryptionService encryptionService,
                                                    AbdmConsentManagement6RequestKeyMaterial receiverKeyMaterial,
                                                    KeyMaterial senderKeyMaterial) {
             try {
