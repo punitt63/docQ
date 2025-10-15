@@ -2,7 +2,6 @@ package in.docq.health.facility.controller;
 
 import in.docq.health.facility.auth.Authorized;
 import in.docq.health.facility.model.Appointment;
-import in.docq.health.facility.model.AppointmentDetails;
 import in.docq.health.facility.service.AppointmentService;
 import lombok.Builder;
 import lombok.Getter;
@@ -26,7 +25,7 @@ public class AppointmentController {
     }
 
     @PostMapping("/health-facilities/{health-facility-id}/opd-dates/{opd-date}/opds/{opd-id}/appointments")
-    //@Authorized(resource = "appointment", scope = "create")
+    @Authorized(resource = "appointment", scope = "create")
     public CompletionStage<ResponseEntity<Appointment>> createAppointment(@PathVariable("health-facility-id") String healthFacilityID,
                                                                           @PathVariable("opd-date") LocalDate opdDate,
                                                                           @PathVariable("opd-id") String id,
@@ -53,7 +52,7 @@ public class AppointmentController {
     }
 
     @GetMapping("/appointments")
-    //@Authorized(resource = "appointment", scope = "read")
+    @Authorized(resource = "appointment", scope = "read")
     public CompletionStage<ResponseEntity<List<Appointment>>> getAppointment(@RequestParam(value = "start-opd-date") LocalDate startOpdDate,
                                                                              @RequestParam(value = "end-opd-date") LocalDate endOpdDate,
                                                                              @RequestParam(value = "opd-id", required = false) String opdID,
@@ -62,27 +61,14 @@ public class AppointmentController {
                                                                              @RequestParam(value = "offset", required = false, defaultValue = "0") Integer offset,
                                                                              @RequestParam(value = "limit", required = false, defaultValue = "5") Integer limit) {
         checkState(endOpdDate.isBefore(startOpdDate.plusDays(31)), "start date and end date should have at max 30 days of difference");
-        //checkState(limit <= 5, "Limit should be less than 5");
+        checkState(limit <= 5, "Limit should be less than 5");
         return appointmentService.list(startOpdDate, endOpdDate, opdID, patientID, states, limit)
                 .thenApply(ResponseEntity::ok);
     }
 
-    @GetMapping("/appointments/details")
-    //@Authorized(resource = "appointment", scope = "read")
-    public CompletionStage<ResponseEntity<List<AppointmentDetails>>> getAppointments(@RequestParam(value = "start-opd-date") LocalDate startOpdDate,
-                                                                                     @RequestParam(value = "end-opd-date") LocalDate endOpdDate,
-                                                                                     @RequestParam(value = "opd-id", required = false) String opdID,
-                                                                                     @RequestParam(value = "patient-id", required = false) String patientID,
-                                                                                     @RequestParam(value = "offset", required = false, defaultValue = "0") Integer offset,
-                                                                                     @RequestParam(value = "limit", required = false, defaultValue = "5") Integer limit) {
-        checkState(endOpdDate.isBefore(startOpdDate.plusDays(31)), "start date and end date should have at max 30 days of difference");
-        //checkState(limit <= 5, "Limit should be less than 5");
-        return appointmentService.listCompleted(startOpdDate, endOpdDate, opdID, patientID, limit)
-                .thenApply(ResponseEntity::ok);
-    }
 
     @PatchMapping("/health-facilities/{health-facility-id}/opd-dates/{opd-date}/opds/{opd-id}/appointments/{appointment-id}/start")
-    //@Authorized(resource = "appointment", scope = "start")
+    @Authorized(resource = "appointment", scope = "start")
     public CompletionStage<ResponseEntity<Appointment>> startAppointment(@PathVariable("health-facility-id") String healthFacilityID,
                                                                          @PathVariable("opd-date") LocalDate opdDate,
                                                                          @PathVariable("opd-id") String opdID,
@@ -92,7 +78,7 @@ public class AppointmentController {
     }
 
     @PatchMapping("/health-facilities/{health-facility-id}/opd-dates/{opd-date}/opds/{opd-id}/appointments/{appointment-id}/complete")
-    //@Authorized(resource = "appointment", scope = "complete")
+    @Authorized(resource = "appointment", scope = "complete")
     public CompletionStage<ResponseEntity<Appointment>> completeAppointment(@PathVariable("opd-date") LocalDate opdDate,
                                                                            @PathVariable("opd-id") String opdID,
                                                                            @PathVariable("appointment-id") Integer appointmentId) {
@@ -101,7 +87,7 @@ public class AppointmentController {
     }
 
     @PatchMapping("/health-facilities/{health-facility-id}/opd-dates/{opd-date}/opds/{opd-id}/appointments/{appointment-id}/cancel")
-    //@Authorized(resource = "appointment", scope = "cancel")
+    @Authorized(resource = "appointment", scope = "cancel")
     public CompletionStage<ResponseEntity<Appointment>> cancelAppointment(@PathVariable("opd-date") LocalDate opdDate,
                                                                           @PathVariable("opd-id") String opdID,
                                                                           @PathVariable("appointment-id") Integer appointmentId) {

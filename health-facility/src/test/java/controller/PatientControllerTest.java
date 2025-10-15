@@ -31,9 +31,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import static configuration.TestAbhaClientConfiguration.MockAbhaRestClient.testDoctorID;
-import static configuration.TestAbhaClientConfiguration.MockAbhaRestClient.testHealthFacilityID;
-import static configuration.TestAbhaClientConfiguration.MockAbhaRestClient.testHealthFacilityManagerID;
+import static configuration.TestAbhaClientConfiguration.MockAbhaRestClient.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -164,6 +162,15 @@ public class PatientControllerTest {
         HealthProfessionalController.OnBoardHealthProfessionalRequestBody onBoardFacilityManagerRequestBody = HealthProfessionalController.OnBoardHealthProfessionalRequestBody.builder()
                 .type(HealthProfessionalType.FACILITY_MANAGER)
                 .healthProfessionalID(testHealthFacilityManagerID)
+                .healthProfessionalName("Ms. Emily Davis")
+                .healthFacilityName("City General Hospital")
+                .stateCode(testStateCode)
+                .districtCode(testDistrictCode)
+                .speciality("Facility Manager")
+                .address("123 Main Street, City Center")
+                .pincode("123456")
+                .latitude(12.9716)
+                .longitude(77.5946)
                 .password("test-pass")
                 .build();
         handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/onboard")

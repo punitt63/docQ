@@ -56,11 +56,10 @@ public class AbdmAuthenticationFilter extends OncePerRequestFilter {
             
             // Set authenticated user information in request attributes
             request.setAttribute("abdmTokenInfo", tokenInfo);
-            request.setAttribute("authenticatedPatientId", tokenInfo.getPatientId());
-            request.setAttribute("abhaAddress", tokenInfo.getAbhaAddress());
+            request.setAttribute("authenticatedPatientId", tokenInfo.getAbhaAddress());
             request.setAttribute("abhaNumber", tokenInfo.getAbhaNumber());
             
-            logger.debug("Successfully authenticated patient: {}", tokenInfo.getPatientId());
+            logger.debug("Successfully authenticated patient: {}", tokenInfo.getAbhaAddress());
             
             filterChain.doFilter(request, response);
             

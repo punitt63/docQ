@@ -1,66 +1,80 @@
 package in.docq.patient.client;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import in.docq.patient.auth.BackendKeyCloakRestClient;
 import in.docq.patient.model.Appointment;
-import in.docq.patient.model.AppointmentDetails;
 import in.docq.patient.model.OPD;
 import in.docq.patient.model.HealthProfessional;
+import in.docq.patient.model.Prescription;
 import lombok.Builder;
 import lombok.Getter;
+import okhttp3.*;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
-import in.docq.patient.model.Prescription;
-import java.util.concurrent.CompletableFuture;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 @Component
 public class HealthFacilityRestClient {
 
-    private final RestTemplate restTemplate;
+    private final OkHttpClient httpClient;
     private final BackendKeyCloakRestClient backendKeyCloakRestClient;
+    private final ObjectMapper objectMapper;
 
     @Value("${health-facility.service.url}")
     private String healthFacilityServiceUrl;
 
-    public HealthFacilityRestClient(RestTemplate restTemplate, 
-                                   BackendKeyCloakRestClient backendKeyCloakRestClient) {
-        this.restTemplate = restTemplate;
+    public HealthFacilityRestClient(BackendKeyCloakRestClient backendKeyCloakRestClient) {
+        this.httpClient = new OkHttpClient.Builder()
+                .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+                .writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+                .build();
         this.backendKeyCloakRestClient = backendKeyCloakRestClient;
+        this.objectMapper = new ObjectMapper();
+        // Configure ObjectMapper to handle Java 8 date/time types
+        this.objectMapper.findAndRegisterModules();
     }
 
     public CompletionStage<Appointment> createAppointment(String healthFacilityId,
                                                           LocalDate opdDate,
                                                           String opdId,
                                                           CreateAppointmentRequestBody requestBody) {
-        return backendKeyCloakRestClient.getAccessToken()
+        return backendKeyCloakRestClient.getRequestingPartyToken()
                 .thenCompose(token -> CompletableFuture.supplyAsync(() -> {
-                    String url = healthFacilityServiceUrl + "/health-facilities/{health-facility-id}/opd-dates/{opd-date}/opds/{opd-id}/appointments";
-                    
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.setBearerAuth(token);
-                    HttpEntity<CreateAppointmentRequestBody> entity = new HttpEntity<>(requestBody, headers);
-                    
-                    ResponseEntity<Appointment> response = restTemplate.exchange(
-                            url,
-                            HttpMethod.POST,
-                            entity,
-                            Appointment.class,
-                            healthFacilityId,
-                            opdDate,
-                            opdId
-                    );
-                    return response.getBody();
+                    try {
+                        String url = healthFacilityServiceUrl + "/health-facilities/" + healthFacilityId + 
+                                   "/opd-dates/" + opdDate + "/opds/" + opdId + "/appointments";
+                        
+                        String jsonBody = objectMapper.writeValueAsString(requestBody);
+                        RequestBody body = RequestBody.create(jsonBody, MediaType.get("application/json"));
+                        
+                        Request request = new Request.Builder()
+                                .url(url)
+                                .post(body)
+                                .addHeader("Authorization", "Bearer " + token)
+                                .addHeader("Content-Type", "application/json")
+                                .build();
+                        
+                        try (Response response = httpClient.newCall(request).execute()) {
+                            if (!response.isSuccessful()) {
+                                throw new RuntimeException("HTTP error: " + response.code() + " " + response.message());
+                            }
+                            String responseBody = response.body().string();
+                            if (responseBody == null || responseBody.trim().isEmpty()) {
+                                throw new RuntimeException("Empty response body from server");
+                            }
+                            return objectMapper.readValue(responseBody, Appointment.class);
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to create appointment", e);
+                    }
                 }));
     }
 
@@ -71,88 +85,116 @@ public class HealthFacilityRestClient {
                                                             List<Appointment.State> states,
                                                             Integer offset,
                                                             Integer limit) {
-        return backendKeyCloakRestClient.getAccessToken()
+        return backendKeyCloakRestClient.getRequestingPartyToken()
                 .thenCompose(token -> CompletableFuture.supplyAsync(() -> {
-                    UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(healthFacilityServiceUrl + "/appointments")
-                            .queryParam("start-opd-date", startOpdDate)
-                            .queryParam("end-opd-date", endOpdDate);
+                    try {
+                        HttpUrl.Builder urlBuilder = HttpUrl.parse(healthFacilityServiceUrl + "/appointments").newBuilder()
+                                .addQueryParameter("start-opd-date", startOpdDate.toString())
+                                .addQueryParameter("end-opd-date", endOpdDate.toString());
 
-                    if (opdId != null) builder.queryParam("opd-id", opdId);
-                    if (patientId != null) builder.queryParam("patient-id", patientId);
-                    if (states != null && !states.isEmpty()) builder.queryParam("state", states);
-                    if (offset != null) builder.queryParam("offset", offset);
-                    if (limit != null) builder.queryParam("limit", limit);
+                        if (opdId != null) urlBuilder.addQueryParameter("opd-id", opdId);
+                        if (patientId != null) urlBuilder.addQueryParameter("patient-id", patientId);
+                        if (states != null && !states.isEmpty()) {
+                            for (Appointment.State state : states) {
+                                urlBuilder.addQueryParameter("state", state.toString());
+                            }
+                        }
+                        if (offset != null) urlBuilder.addQueryParameter("offset", offset.toString());
+                        if (limit != null) urlBuilder.addQueryParameter("limit", limit.toString());
 
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.setBearerAuth(token);
-                    HttpEntity<?> entity = new HttpEntity<>(headers);
+                        Request request = new Request.Builder()
+                                .url(urlBuilder.build())
+                                .get()
+                                .addHeader("Authorization", "Bearer " + token)
+                                .build();
 
-                    ResponseEntity<List<Appointment>> response = restTemplate.exchange(
-                            builder.toUriString(),
-                            HttpMethod.GET,
-                            entity,
-                            new ParameterizedTypeReference<List<Appointment>>() {}
-                    );
-                    return response.getBody();
+                        try (Response response = httpClient.newCall(request).execute()) {
+                            if (!response.isSuccessful()) {
+                                throw new RuntimeException("HTTP error: " + response.code() + " " + response.message());
+                            }
+                            String responseBody = response.body().string();
+                            if (responseBody == null || responseBody.trim().isEmpty()) {
+                                throw new RuntimeException("Empty response body from server");
+                            }
+                            return objectMapper.readValue(responseBody, new TypeReference<List<Appointment>>() {});
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to get appointments", e);
+                    }
                 }));
-        }
+    }
 
     public CompletionStage<Appointment> cancelAppointment(String healthFacilityId, 
                                                         LocalDate opdDate, 
                                                         String opdId, 
                                                         Integer appointmentId) {
-        return backendKeyCloakRestClient.getAccessToken()
+        return backendKeyCloakRestClient.getRequestingPartyToken()
                 .thenCompose(token -> CompletableFuture.supplyAsync(() -> {
-                    String url = healthFacilityServiceUrl + "/health-facilities/{health-facility-id}/opd-dates/{opd-date}/opds/{opd-id}/appointments/{appointment-id}/cancel";
-                    
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.setBearerAuth(token);
-                    HttpEntity<?> entity = new HttpEntity<>(headers);
-                    
-                    ResponseEntity<Appointment> response = restTemplate.exchange(
-                            url,
-                            HttpMethod.PATCH,
-                            entity,
-                            Appointment.class,
-                            healthFacilityId,
-                            opdDate,
-                            opdId,
-                            appointmentId
-                    );
-                    return response.getBody();
+                    try {
+                        String url = healthFacilityServiceUrl + "/health-facilities/" + healthFacilityId + 
+                                   "/opd-dates/" + opdDate + "/opds/" + opdId + 
+                                   "/appointments/" + appointmentId + "/cancel";
+                        
+                        Request request = new Request.Builder()
+                                .url(url)
+                                .patch(RequestBody.create("", MediaType.get("application/json")))
+                                .addHeader("Authorization", "Bearer " + token)
+                                .build();
+                        
+                        try (Response response = httpClient.newCall(request).execute()) {
+                            if (!response.isSuccessful()) {
+                                throw new RuntimeException("HTTP error: " + response.code() + " " + response.message());
+                            }
+                            String responseBody = response.body().string();
+                            if (responseBody == null || responseBody.trim().isEmpty()) {
+                                throw new RuntimeException("Empty response body from server");
+                            }
+                            return objectMapper.readValue(responseBody, Appointment.class);
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to cancel appointment", e);
+                    }
                 }));
     }
 
-    // New method to get AppointmentDetails with prescriptions
-    public CompletionStage<List<AppointmentDetails>> getAppointmentDetails(
+    public CompletionStage<List<Appointment>> getAppointment(
             LocalDate startOpdDate,
             LocalDate endOpdDate,
             String opdId,
             String patientId,
             Integer offset,
             Integer limit) {
-        return backendKeyCloakRestClient.getAccessToken()
+        return backendKeyCloakRestClient.getRequestingPartyToken()
                 .thenCompose(token -> CompletableFuture.supplyAsync(() -> {
-                    UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(healthFacilityServiceUrl + "/appointments/details")
-                            .queryParam("start-opd-date", startOpdDate)
-                            .queryParam("end-opd-date", endOpdDate);
+                    try {
+                        HttpUrl.Builder urlBuilder = HttpUrl.parse(healthFacilityServiceUrl + "/appointments").newBuilder()
+                                .addQueryParameter("start-opd-date", startOpdDate.toString())
+                                .addQueryParameter("end-opd-date", endOpdDate.toString());
 
-                    if (opdId != null) builder.queryParam("opd-id", opdId);
-                    if (patientId != null) builder.queryParam("patient-id", patientId);
-                    if (offset != null) builder.queryParam("offset", offset);
-                    if (limit != null) builder.queryParam("limit", limit);
+                        if (opdId != null) urlBuilder.addQueryParameter("opd-id", opdId);
+                        if (patientId != null) urlBuilder.addQueryParameter("patient-id", patientId);
+                        if (offset != null) urlBuilder.addQueryParameter("offset", offset.toString());
+                        if (limit != null) urlBuilder.addQueryParameter("limit", limit.toString());
 
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.setBearerAuth(token);
-                    HttpEntity<?> entity = new HttpEntity<>(headers);
+                        Request request = new Request.Builder()
+                                .url(urlBuilder.build())
+                                .get()
+                                .addHeader("Authorization", "Bearer " + token)
+                                .build();
 
-                    ResponseEntity<List<AppointmentDetails>> response = restTemplate.exchange(
-                            builder.toUriString(),
-                            HttpMethod.GET,
-                            entity,
-                            new ParameterizedTypeReference<List<AppointmentDetails>>() {}
-                    );
-                    return response.getBody();
+                        try (Response response = httpClient.newCall(request).execute()) {
+                            if (!response.isSuccessful()) {
+                                throw new RuntimeException("HTTP error: " + response.code() + " " + response.message());
+                            }
+                            String responseBody = response.body().string();
+                            if (responseBody == null || responseBody.trim().isEmpty()) {
+                                throw new RuntimeException("Empty response body from server");
+                            }
+                            return objectMapper.readValue(responseBody, new TypeReference<List<Appointment>>() {});
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to get appointment details", e);
+                    }
                 }));
     }
 
@@ -160,131 +202,165 @@ public class HealthFacilityRestClient {
                                               String healthFacilityProfessionalId,
                                               LocalDate startDate,
                                               LocalDate endDate) {
-        return backendKeyCloakRestClient.getAccessToken()
+        return backendKeyCloakRestClient.getRequestingPartyToken()
                 .thenCompose(token -> CompletableFuture.supplyAsync(() -> {
-                    UriComponentsBuilder builder = UriComponentsBuilder
-                        .fromHttpUrl(healthFacilityServiceUrl + "/health-facilities/{health-facility-id}/health-facility-professionals/opds")
-                        .queryParam("health-facility-professional-id", healthFacilityProfessionalId)
-                        .queryParam("start-date", startDate)
-                        .queryParam("end-date", endDate);
+                    try {
+                        HttpUrl.Builder urlBuilder = HttpUrl.parse(healthFacilityServiceUrl + "/health-facilities/" + healthFacilityId + "/health-facility-professionals/opds").newBuilder()
+                                .addQueryParameter("health-facility-professional-id", healthFacilityProfessionalId)
+                                .addQueryParameter("start-date", startDate.toString())
+                                .addQueryParameter("end-date", endDate.toString());
 
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.setBearerAuth(token);
-                    HttpEntity<?> entity = new HttpEntity<>(headers);
+                        Request request = new Request.Builder()
+                                .url(urlBuilder.build())
+                                .get()
+                                .addHeader("Authorization", "Bearer " + token)
+                                .build();
 
-                    ResponseEntity<List<OPD>> response = restTemplate.exchange(
-                        builder.build().toUriString(),
-                        HttpMethod.GET,
-                        entity,
-                        new ParameterizedTypeReference<List<OPD>>() {},
-                        healthFacilityId
-                    );
-                    return response.getBody();
+                        try (Response response = httpClient.newCall(request).execute()) {
+                            if (!response.isSuccessful()) {
+                                throw new RuntimeException("HTTP error: " + response.code() + " " + response.message());
+                            }
+                            String responseBody = response.body().string();
+                            if (responseBody == null || responseBody.trim().isEmpty()) {
+                                throw new RuntimeException("Empty response body from server");
+                            }
+                            return objectMapper.readValue(responseBody, new TypeReference<List<OPD>>() {});
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to list OPDs", e);
+                    }
                 }));
     }
 
-    public CompletionStage<List<AppointmentDetails>> listPatientPrescriptions(String patientId,
-                                                                              LocalDate startOpdDate,
-                                                                              LocalDate endOpdDate,
-                                                                              Integer limit) {
-        return backendKeyCloakRestClient.getAccessToken()
+    public CompletionStage<List<Prescription>> listPatientPrescriptions(String patientId,
+                                                                      LocalDate startOpdDate,
+                                                                      LocalDate endOpdDate,
+                                                                      Integer limit) {
+        return backendKeyCloakRestClient.getRequestingPartyToken()
                 .thenCompose(token -> CompletableFuture.supplyAsync(() -> {
-                    UriComponentsBuilder builder = UriComponentsBuilder
-                            .fromHttpUrl(healthFacilityServiceUrl + "/patients/{patient-id}/prescriptions")
-                            .queryParam("start-opd-date", startOpdDate)
-                            .queryParam("end-opd-date", endOpdDate)
-                            .queryParam("limit", Optional.ofNullable(limit).orElse(100));
+                    try {
+                        HttpUrl.Builder urlBuilder = HttpUrl.parse(healthFacilityServiceUrl + "/patients/" + patientId + "/prescriptions").newBuilder()
+                                .addQueryParameter("start-opd-date", startOpdDate.toString())
+                                .addQueryParameter("end-opd-date", endOpdDate.toString())
+                                .addQueryParameter("limit", Optional.ofNullable(limit).orElse(100).toString());
 
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.setBearerAuth(token);
-                    HttpEntity<?> entity = new HttpEntity<>(headers);
+                        Request request = new Request.Builder()
+                                .url(urlBuilder.build())
+                                .get()
+                                .addHeader("Authorization", "Bearer " + token)
+                                .build();
 
-                    ResponseEntity<List<AppointmentDetails>> response = restTemplate.exchange(
-                            builder.build().toUriString(),
-                            HttpMethod.GET,
-                            entity,
-                            new ParameterizedTypeReference<List<AppointmentDetails>>() {},
-                            patientId
-                    );
-                    return response.getBody();
+                        try (Response response = httpClient.newCall(request).execute()) {
+                            if (!response.isSuccessful()) {
+                                throw new RuntimeException("HTTP error: " + response.code() + " " + response.message());
+                            }
+                            String responseBody = response.body().string();
+                            if (responseBody == null || responseBody.trim().isEmpty()) {
+                                throw new RuntimeException("Empty response body from server");
+                            }
+                            return objectMapper.readValue(responseBody, new TypeReference<List<Prescription>>() {});
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to list patient prescriptions", e);
+                    }
                 }));
     }
 
     public CompletionStage<Prescription> getOPDPrescription(LocalDate opdDate,
                                                             String opdId,
                                                             Integer appointmentId) {
-        return backendKeyCloakRestClient.getAccessToken()
+        return backendKeyCloakRestClient.getRequestingPartyToken()
                 .thenCompose(token -> CompletableFuture.supplyAsync(() -> {
-                    String url = healthFacilityServiceUrl + "/health-facilities/{health-facility-id}/opd-dates/{opd-date}/opds/{opd-id}/appointments/{appointment-id}/prescriptions";
+                    try {
+                        String healthFacilityId = "_"; // Placeholder as per original logic
+                        String url = healthFacilityServiceUrl + "/health-facilities/" + healthFacilityId + 
+                                   "/opd-dates/" + opdDate + "/opds/" + opdId + 
+                                   "/appointments/" + appointmentId + "/prescriptions";
 
-                    // No facility scoping enforced at patient side; pass a placeholder or empty string if required
-                    String healthFacilityId = "_";
+                        Request request = new Request.Builder()
+                                .url(url)
+                                .get()
+                                .addHeader("Authorization", "Bearer " + token)
+                                .build();
 
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.setBearerAuth(token);
-                    HttpEntity<?> entity = new HttpEntity<>(headers);
-
-                    ResponseEntity<Prescription> response = restTemplate.exchange(
-                            url,
-                            HttpMethod.GET,
-                            entity,
-                            Prescription.class,
-                            healthFacilityId,
-                            opdDate,
-                            opdId,
-                            appointmentId
-                    );
-                    return response.getBody();
+                        try (Response response = httpClient.newCall(request).execute()) {
+                            if (!response.isSuccessful()) {
+                                throw new RuntimeException("HTTP error: " + response.code() + " " + response.message());
+                            }
+                            String responseBody = response.body().string();
+                            if (responseBody == null || responseBody.trim().isEmpty()) {
+                                throw new RuntimeException("Empty response body from server");
+                            }
+                            return objectMapper.readValue(responseBody, Prescription.class);
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to get OPD prescription", e);
+                    }
                 }));
     }
 
     public CompletionStage<List<HealthProfessional>> listHealthProfessionals(int stateCode,
                                                                              int districtCode,
                                                                              String speciality) {
-        return backendKeyCloakRestClient.getAccessToken()
+        return backendKeyCloakRestClient.getRequestingPartyToken()
                 .thenCompose(token -> CompletableFuture.supplyAsync(() -> {
-                    UriComponentsBuilder builder = UriComponentsBuilder
-                            .fromHttpUrl(healthFacilityServiceUrl + "/health-facilities/_/health-facility-professionals/search")
-                            .queryParam("state-code", stateCode)
-                            .queryParam("district-code", districtCode);
+                    try {
+                        HttpUrl.Builder urlBuilder = HttpUrl.parse(healthFacilityServiceUrl + "/health-facilities/_/health-facility-professionals/search").newBuilder()
+                                .addQueryParameter("state-code", String.valueOf(stateCode))
+                                .addQueryParameter("district-code", String.valueOf(districtCode));
 
-                    if (speciality != null && !speciality.isBlank()) {
-                        builder.queryParam("speciality", speciality);
+                        if (speciality != null && !speciality.isBlank()) {
+                            urlBuilder.addQueryParameter("speciality", speciality);
+                        }
+
+                        Request request = new Request.Builder()
+                                .url(urlBuilder.build())
+                                .get()
+                                .addHeader("Authorization", "Bearer " + token)
+                                .build();
+
+                        try (Response response = httpClient.newCall(request).execute()) {
+                            if (!response.isSuccessful()) {
+                                throw new RuntimeException("HTTP error: " + response.code() + " " + response.message());
+                            }
+                            String responseBody = response.body().string();
+                            if (responseBody == null || responseBody.trim().isEmpty()) {
+                                throw new RuntimeException("Empty response body from server");
+                            }
+                            return objectMapper.readValue(responseBody, new TypeReference<List<HealthProfessional>>() {});
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to list health professionals", e);
                     }
-
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.setBearerAuth(token);
-                    HttpEntity<?> entity = new HttpEntity<>(headers);
-
-                    ResponseEntity<List<HealthProfessional>> response = restTemplate.exchange(
-                            builder.build().toUriString(),
-                            HttpMethod.GET,
-                            entity,
-                            new ParameterizedTypeReference<List<HealthProfessional>>() {}
-                    );
-                    return response.getBody();
                 }));
     }
 
     public CompletionStage<Void> createPatientIfNotExists(String healthFacilityId,
                                                           CreatePatientRequestBody requestBody) {
-        return backendKeyCloakRestClient.getAccessToken()
+        return backendKeyCloakRestClient.getRequestingPartyToken()
                 .thenCompose(token -> CompletableFuture.supplyAsync(() -> {
-                    String url = healthFacilityServiceUrl + "/health-facilities/{health-facility-id}/patients/create-if-not-exists";
-
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.setBearerAuth(token);
-                    headers.set("Content-Type", "application/json");
-                    HttpEntity<CreatePatientRequestBody> entity = new HttpEntity<>(requestBody, headers);
-
-                    restTemplate.exchange(
-                            url,
-                            HttpMethod.POST,
-                            entity,
-                            Void.class,
-                            healthFacilityId
-                    );
-                    return null;
+                    try {
+                        String url = healthFacilityServiceUrl + "/health-facilities/" + healthFacilityId + "/patients/create-if-not-exists";
+                        
+                        String jsonBody = objectMapper.writeValueAsString(requestBody);
+                        RequestBody body = RequestBody.create(jsonBody, MediaType.get("application/json"));
+                        
+                        Request request = new Request.Builder()
+                                .url(url)
+                                .post(body)
+                                .addHeader("Authorization", "Bearer " + token)
+                                .addHeader("Content-Type", "application/json")
+                                .build();
+                        
+                        try (Response response = httpClient.newCall(request).execute()) {
+                            if (!response.isSuccessful()) {
+                                throw new RuntimeException("HTTP error: " + response.code() + " " + response.message());
+                            }
+                            return null; // Void return type
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to create patient if not exists", e);
+                    }
                 }));
     }
 

@@ -4,7 +4,6 @@ import in.docq.health.facility.controller.AppointmentController;
 import in.docq.health.facility.exception.ErrorCodes;
 import in.docq.health.facility.exception.HealthFacilityException;
 import in.docq.health.facility.model.Appointment;
-import in.docq.health.facility.model.AppointmentDetails;
 import in.docq.health.facility.model.OPD;
 import in.docq.spring.boot.commons.postgres.PostgresDAO;
 import lombok.Getter;
@@ -175,67 +174,6 @@ public class AppointmentDao {
                 args.toArray());
     }
 
-    public CompletionStage<List<AppointmentDetails>> listCompleted(LocalDate startOpdDate, LocalDate endOpdDate, String patientID, int limit) {
-        StringBuilder queryBuilder = new StringBuilder();
-        queryBuilder.append("""
-            SELECT 
-                a.id,
-                a.opd_date,
-                a.opd_id,
-                a.patient_id,
-                a.state,
-                a.start_time,
-                a.end_time,
-                a.priority,
-                p.content,
-                o.health_facility_id as health_facility_name,
-                CONCAT(hp.health_professional_id, ' (', hp.type, ')') as health_professional_name
-            FROM appointment a
-            INNER JOIN opd o ON a.opd_date = o.opd_date AND a.opd_id = o.id
-            INNER JOIN health_professional hp ON o.health_facility_id = hp.health_facility_id 
-                                              AND o.health_professional_id = hp.health_professional_id
-            LEFT JOIN prescription p ON p.opd_date = a.opd_date AND p.opd_id = a.opd_id AND p.appointment_id = a.id
-            WHERE a.opd_date >= ? AND a.opd_date <= ?
-            """);
-
-        List<Object> args = new ArrayList<>();
-        args.add(Date.valueOf(startOpdDate));
-        args.add(Date.valueOf(endOpdDate));
-
-        // Add optional filters
-        /*if (opdIDs != null && !opdIDs.isEmpty()) {
-            queryBuilder.append(" AND a.opd_id IN (");
-            queryBuilder.append(opdIDs.stream().map(s -> "?").collect(Collectors.joining(",")));
-            queryBuilder.append(")");
-            args.addAll(opdIDs);
-        }*/
-
-        if (patientID != null) {
-            queryBuilder.append(" AND a.patient_id = ?");
-            args.add(patientID);
-        }
-
-        queryBuilder.append(" ORDER BY a.opd_date DESC, a.priority DESC, a.id ASC LIMIT ?");
-        args.add(limit);
-
-        String finalQuery = queryBuilder.toString();
-
-        return postgresDAO.query(dbMetricsGroupName, "listCompleted", finalQuery, (rs, rowNum) -> 
-            AppointmentDetails.builder()
-                .id(rs.getInt("id"))
-                .opdDate(rs.getDate("opd_date").toLocalDate())
-                .opdId(rs.getString("opd_id"))
-                .patientId(rs.getString("patient_id"))
-                .state(Appointment.State.valueOf(rs.getString("state")))
-                .startTime(Optional.ofNullable(rs.getTimestamp("start_time")).map(Timestamp::getTime).orElse(null))
-                .endTime(Optional.ofNullable(rs.getTimestamp("end_time")).map(Timestamp::getTime).orElse(null))
-                .content(rs.getString("content"))
-                .priority(rs.getInt("priority"))
-                .healthFacilityName(rs.getString("health_facility_name"))
-                .healthProfessionalName(rs.getString("health_professional_name"))
-                .build(),
-            args.toArray());
-    }
 
     public CompletionStage<Integer> truncate() {
         return postgresDAO.update(dbMetricsGroupName, "delete", "DELETE FROM " + table);

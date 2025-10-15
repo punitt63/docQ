@@ -1,20 +1,15 @@
 package configuration;
 
-import com.sun.xml.xsom.impl.scd.Iterators;
 import in.docq.abha.rest.client.AbhaRestClient;
 import in.docq.abha.rest.client.ApiClient;
 import in.docq.abha.rest.client.model.*;
 import in.docq.health.facility.service.OTPService;
-import org.springframework.beans.factory.annotation.Value;
-import in.docq.abha.rest.client.model.SearchFacilitiesData;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
-import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 

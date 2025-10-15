@@ -2,7 +2,6 @@ package in.docq.patient.controller;
 
 import in.docq.patient.auth.AbdmAuthorized;
 import in.docq.patient.model.Appointment;
-import in.docq.patient.model.AppointmentDetails;
 import in.docq.patient.service.AppointmentService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Builder;
@@ -12,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -34,14 +32,6 @@ public class AppointmentController {
                                                                           @PathVariable("opd-id") String opdId,
                                                                           @RequestBody CreateAppointmentRequestBody requestBody,
                                                                           HttpServletRequest request) {
-        // Get authenticated patient ID from ABDM token
-        String authenticatedPatientId = (String) request.getAttribute("authenticatedPatientId");
-        
-        // Ensure the patient can only create appointments for themselves
-        if (!authenticatedPatientId.equals(requestBody.getPatientId())) {
-            return CompletableFuture.completedFuture(ResponseEntity.status(403).build());
-        }
-        
         return appointmentService.createAppointment(healthFacilityId, opdDate, opdId, requestBody.getPatientId())
                 .thenApply(ResponseEntity::ok);
     }
@@ -58,16 +48,10 @@ public class AppointmentController {
                                                                              HttpServletRequest request) {
         checkState(endOpdDate.isBefore(startOpdDate.plusDays(31)), "start date and end date should have at max 30 days of difference");
         checkState(limit <= 5, "Limit should be less than 5");
-        
-        // Get authenticated patient ID from ABDM token
+
+        // Use authenticated patientId for scoping
         String authenticatedPatientId = (String) request.getAttribute("authenticatedPatientId");
-        
-        // Patient can only see their own appointments
-        // If patientId is provided in query param, it must match authenticated patient
-        if (patientId != null && !authenticatedPatientId.equals(patientId)) {
-            return CompletableFuture.completedFuture(ResponseEntity.status(403).build());
-        }
-        
+
         // Always filter by authenticated patient ID
         return appointmentService.getAppointments(startOpdDate, endOpdDate, opdId, authenticatedPatientId, states, offset, limit)
                 .thenApply(ResponseEntity::ok);
@@ -80,36 +64,14 @@ public class AppointmentController {
                                                                           @PathVariable("opd-id") String opdId,
                                                                           @PathVariable("appointment-id") Integer appointmentId,
                                                                           HttpServletRequest request) {
-        // Get authenticated patient ID from ABDM token
-        String authenticatedPatientId = (String) request.getAttribute("authenticatedPatientId");
-        
-        // First, get the appointment to verify it belongs to the authenticated patient
-        return appointmentService.getAppointments(opdDate, opdDate, opdId, authenticatedPatientId, null, 0, 100)
-                .thenCompose(appointments -> {
-                    // Find the specific appointment
-                    boolean appointmentBelongsToPatient = appointments.stream()
-                            .anyMatch(appointment -> 
-                                appointment.getId() == appointmentId && 
-                                authenticatedPatientId.equals(appointment.getPatientId()));
-                    
-                    if (!appointmentBelongsToPatient) {
-                        return CompletableFuture.<ResponseEntity<Appointment>>completedFuture(ResponseEntity.status(403).build());
-                    }
-                    
-                    // If appointment belongs to patient, proceed with cancellation
-                    return appointmentService.cancelAppointment(healthFacilityId, opdDate, opdId, appointmentId)
-                            .thenApply(ResponseEntity::ok);
-                })
-                .exceptionally(throwable -> {
-                    // Handle any errors (appointment not found, etc.)
-                    return ResponseEntity.status(500).build();
-                });
+        return appointmentService.cancelAppointment(healthFacilityId, opdDate, opdId, appointmentId)
+                .thenApply(ResponseEntity::ok);
     }
 
     // Get upcoming appointments (WAITING state)
     @GetMapping("/upcoming")
     @AbdmAuthorized(resource = "appointment", validatePatientId = false)
-    public CompletionStage<ResponseEntity<List<AppointmentDetails>>> getUpcomingAppointments(
+    public CompletionStage<ResponseEntity<List<Appointment>>> getUpcomingAppointments(
             @RequestParam(value = "start-date", required = false) LocalDate startDate,
             @RequestParam(value = "end-date", required = false) LocalDate endDate,
             @RequestParam(value = "offset", defaultValue = "0") Integer offset,
@@ -118,15 +80,15 @@ public class AppointmentController {
 
         String authenticatedPatientId = (String) request.getAttribute("authenticatedPatientId");
         
-        return appointmentService.getAppointmentDetailsByState(
-                authenticatedPatientId, AppointmentDetails.State.WAITING, startDate, endDate, offset, limit)
+        return appointmentService.getAppointmentByState(
+                authenticatedPatientId, Appointment.State.WAITING, startDate, endDate, offset, limit)
                 .thenApply(ResponseEntity::ok);
     }
 
     // Get current appointments (IN_PROGRESS state)
     @GetMapping("/current")
     @AbdmAuthorized(resource = "appointment", validatePatientId = false)
-    public CompletionStage<ResponseEntity<List<AppointmentDetails>>> getCurrentAppointments(
+    public CompletionStage<ResponseEntity<List<Appointment>>> getCurrentAppointments(
             @RequestParam(value = "start-date", required = false) LocalDate startDate,
             @RequestParam(value = "end-date", required = false) LocalDate endDate,
             @RequestParam(value = "offset", defaultValue = "0") Integer offset,
@@ -135,15 +97,15 @@ public class AppointmentController {
 
         String authenticatedPatientId = (String) request.getAttribute("authenticatedPatientId");
         
-        return appointmentService.getAppointmentDetailsByState(
-                authenticatedPatientId, AppointmentDetails.State.IN_PROGRESS, startDate, endDate, offset, limit)
+        return appointmentService.getAppointmentByState(
+                authenticatedPatientId, Appointment.State.IN_PROGRESS, startDate, endDate, offset, limit)
                 .thenApply(ResponseEntity::ok);
     }
 
     // Get completed appointments (COMPLETED state)
     @GetMapping("/completed")
     @AbdmAuthorized(resource = "appointment", validatePatientId = false)
-    public CompletionStage<ResponseEntity<List<AppointmentDetails>>> getCompletedAppointments(
+    public CompletionStage<ResponseEntity<List<Appointment>>> getCompletedAppointments(
             @RequestParam(value = "start-date", required = false) LocalDate startDate,
             @RequestParam(value = "end-date", required = false) LocalDate endDate,
             @RequestParam(value = "offset", defaultValue = "0") Integer offset,
@@ -152,8 +114,8 @@ public class AppointmentController {
 
         String authenticatedPatientId = (String) request.getAttribute("authenticatedPatientId");
         
-        return appointmentService.getAppointmentDetailsByState(
-                authenticatedPatientId, AppointmentDetails.State.COMPLETED, startDate, endDate, offset, limit)
+        return appointmentService.getAppointmentByState(
+                authenticatedPatientId, Appointment.State.COMPLETED, startDate, endDate, offset, limit)
                 .thenApply(ResponseEntity::ok);
     }
 

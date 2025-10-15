@@ -5,7 +5,6 @@ import in.docq.health.facility.dao.AppointmentDao;
 import in.docq.health.facility.exception.ErrorCodes;
 import in.docq.health.facility.exception.HealthFacilityException;
 import in.docq.health.facility.model.Appointment;
-import in.docq.health.facility.model.AppointmentDetails;
 import in.docq.health.facility.model.OPD;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,7 +15,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
-import static com.google.common.base.Preconditions.checkState;
 
 @Service
 public class AppointmentService {
@@ -36,12 +34,9 @@ public class AppointmentService {
     }
 
     public CompletionStage<List<Appointment>> list(LocalDate startOpdDate, LocalDate endOpdDate, String opdId, String patientId, List<Appointment.State> states, int limit) {
-        return appointmentDao.list(startOpdDate, endOpdDate, List.of(opdId), patientId, states, limit);
+        return appointmentDao.list(startOpdDate, endOpdDate, opdId != null ? List.of(opdId) : null, patientId, states, limit);
     }
 
-    public CompletionStage<List<AppointmentDetails>> listCompleted(LocalDate startOpdDate, LocalDate endOpdDate, String opdId, String patientId, int limit) {
-        return appointmentDao.listCompleted(startOpdDate, endOpdDate, patientId, limit);
-    }
 
     public CompletionStage<List<Appointment>> list(String healthFacilityID, String healthFacilityProfessionalID, LocalDate startOpdDate, LocalDate endOpdDate, String opdId, String patientId, List<Appointment.State> states, int limit) {
         return opdService.list(healthFacilityID, healthFacilityProfessionalID, startOpdDate, endOpdDate)

@@ -1,7 +1,7 @@
 package in.docq.patient.controller;
 
 import in.docq.patient.auth.AbdmAuthorized;
-import in.docq.patient.model.AppointmentDetails;
+import in.docq.patient.model.Prescription;
 import in.docq.patient.service.PrescriptionService;
 import in.docq.patient.model.Prescription;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,7 +24,7 @@ public class PrescriptionController {
 
     @GetMapping
     @AbdmAuthorized(resource = "prescription", validatePatientId = false)
-    public CompletionStage<ResponseEntity<List<AppointmentDetails>>> listPatientPrescriptions(@RequestParam("start-opd-date") LocalDate startOpdDate,
+    public CompletionStage<ResponseEntity<List<Prescription>>> listPatientPrescriptions(@RequestParam("start-opd-date") LocalDate startOpdDate,
                                                                                               @RequestParam("end-opd-date") LocalDate endOpdDate,
                                                                                               @RequestParam(value = "limit", required = false, defaultValue = "100") Integer limit,
                                                                                               HttpServletRequest request) {
@@ -39,9 +39,6 @@ public class PrescriptionController {
                                                                             @PathVariable("opd-id") String opdId,
                                                                             @PathVariable("appointment-id") Integer appointmentId,
                                                                             HttpServletRequest request) {
-        String authenticatedPatientId = (String) request.getAttribute("authenticatedPatientId");
-
-        // Optional: Could add validation by fetching appointments and ensuring ownership, similar to cancel logic
         return prescriptionService.getOPDPrescription(opdDate, opdId, appointmentId)
                 .thenApply(ResponseEntity::ok);
     }

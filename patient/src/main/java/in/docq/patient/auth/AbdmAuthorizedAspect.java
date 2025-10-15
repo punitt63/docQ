@@ -16,6 +16,7 @@ import org.springframework.web.servlet.HandlerMapping;
 
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
 @Component
@@ -43,8 +44,8 @@ public class AbdmAuthorizedAspect {
             
             if (authenticatedPatientId == null || tokenInfo == null) {
                 logger.error("Patient authentication information not found in request");
-                return ResponseEntity.status(401)
-                    .body("{\"error\":\"Authentication required\"}");
+                return CompletableFuture.completedFuture(ResponseEntity.status(401)
+                    .body("{\"error\":\"Authentication required\"}"));
             }
             
             // Get method annotation
@@ -56,8 +57,8 @@ public class AbdmAuthorizedAspect {
             if (annotation.validatePatientId()) {
                 if (!validatePatientIdFromRequest(request, authenticatedPatientId, annotation.patientIdParam())) {
                     logger.warn("Patient ID validation failed for patient: {}", authenticatedPatientId);
-                    return ResponseEntity.status(403)
-                        .body("{\"error\":\"Access denied: You can only access your own data\"}");
+                    return CompletableFuture.completedFuture(ResponseEntity.status(403)
+                        .body("{\"error\":\"Access denied: You can only access your own data\"}"));
                 }
             }
             

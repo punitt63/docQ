@@ -24,28 +24,28 @@ public class PatientSignupByAadharController {
     }
 
     @PostMapping("/aadhar")
-    //@Authorized(resource = "patient", scope = "abha-signup-request-otp")
+    @Authorized(resource = "patient", scope = "abha-signup-request-otp")
     public CompletionStage<ResponseEntity<RequestOtpResponseBody>> requestOtp(@RequestBody AbhaSignupRequestOtpBody requestBody) throws Exception {
         return patientSignupByAadharService.abhaSignupRequestOtp(requestBody.getAadharNumber())
                 .thenApply(ResponseEntity::ok);
     }
 
     @PostMapping("/aadhar/verify")
-    //@Authorized(resource = "patient", scope = "abha-signup-verify-otp")
+    @Authorized(resource = "patient", scope = "abha-signup-verify-otp")
     public CompletionStage<ResponseEntity<EnrolByAadharResponseBody>> enrolByAadhaar(@RequestBody EnrolByAadharRequestBody enrolByAadharRequestBody) throws Exception {
         return patientSignupByAadharService.enrolByAadhaar(enrolByAadharRequestBody.getAuthMethods(), enrolByAadharRequestBody.getTxnId(), enrolByAadharRequestBody.getOtpValue(), enrolByAadharRequestBody.getMobile())
                 .thenApply(ResponseEntity::ok);
     }
 
     @GetMapping("/abha-address-suggestions")
-    //@Authorized(resource = "patient", scope = "abha-signup-request-otp")
+    @Authorized(resource = "patient", scope = "abha-signup-request-otp")
     public CompletionStage<ResponseEntity<AbhaAddressSuggestionsResponseBody>> getAbhaAddressSuggestions(@RequestHeader("txnId") String txnId) {
         return patientSignupByAadharService.getAbhaAddressSuggestions(txnId)
                 .thenApply(ResponseEntity::ok);
     }
 
     @PostMapping("/abha-address")
-    //@Authorized(resource = "patient", scope = "abha-signup-verify-otp")
+    @Authorized(resource = "patient", scope = "abha-signup-verify-otp")
     public CompletionStage<ResponseEntity<EnrolAbhaAddressResponseBody>> enrolAbhaAddress(@RequestBody EnrolAbhaAddressRequestBody enrolAbhaAddressRequestBody) {
         return patientSignupByAadharService.enrolAbhaAddress(enrolAbhaAddressRequestBody.getTxnId(), enrolAbhaAddressRequestBody.getAbhaAddress(), enrolAbhaAddressRequestBody.getPreferred())
                 .thenApply(ResponseEntity::ok);

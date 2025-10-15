@@ -107,6 +107,18 @@
         {
           "name" : "appointment",
           "scopes" : ["create", "read", "cancel"]
+        },
+        {
+          "name" : "prescription",
+          "scopes" : ["read"]
+        },
+        {
+          "name" : "patient",
+          "scopes" : ["create"]
+        },
+        {
+          "name" : "opd",
+          "scopes" : ["read"]
         }
       ]
     }

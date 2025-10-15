@@ -80,3 +80,7 @@ server:
 health-facility:
   service:
     url: http://localhost:9097
+
+x:
+  cm:
+    id: sbx

@@ -2,7 +2,6 @@ package in.docq.health.facility.controller;
 
 import in.docq.health.facility.auth.Authorized;
 import in.docq.health.facility.model.Prescription;
-import in.docq.health.facility.model.AppointmentDetails;
 import in.docq.health.facility.service.AppointmentService;
 import in.docq.health.facility.service.PrescriptionService;
 import lombok.Builder;
@@ -30,16 +29,6 @@ public class PrescriptionController {
                                                                                   @PathVariable("appointment-id") Integer appointmentId,
                                                                                   @RequestBody CreateOrReplaceOPDPrescriptionRequestBody createOrReplaceOPDPrescriptionRequestBody) {
         return prescriptionService.create(opdDate, opdId, appointmentId, createOrReplaceOPDPrescriptionRequestBody.getContent())
-                .thenApply(ResponseEntity::ok);
-    }
-
-    @GetMapping("/patients/{patient-id}/prescriptions")
-    //@Authorized(resource = "prescription", scope = "read")
-    public CompletionStage<ResponseEntity<java.util.List<AppointmentDetails>>> listPatientPrescriptions(@PathVariable("patient-id") String patientId,
-                                                                                                        @RequestParam("start-opd-date") LocalDate startOpdDate,
-                                                                                                        @RequestParam("end-opd-date") LocalDate endOpdDate,
-                                                                                                        @RequestParam(value = "limit", required = false, defaultValue = "100") Integer limit) {
-        return appointmentService.listCompleted(startOpdDate, endOpdDate, null, patientId, limit)
                 .thenApply(ResponseEntity::ok);
     }
 

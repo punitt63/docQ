@@ -1,7 +1,6 @@
 package in.docq.patient.service;
 
 import in.docq.patient.client.HealthFacilityRestClient;
-import in.docq.patient.model.AppointmentDetails;
 import in.docq.patient.model.Prescription;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +17,7 @@ public class PrescriptionService {
         this.healthFacilityRestClient = healthFacilityRestClient;
     }
 
-    public CompletionStage<List<AppointmentDetails>> listPatientPrescriptions(String patientId,
+    public CompletionStage<List<Prescription>> listPatientPrescriptions(String patientId,
                                                                               LocalDate startOpdDate,
                                                                               LocalDate endOpdDate,
                                                                               Integer limit) {

@@ -57,10 +57,21 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
             JWTVerifier verifier = JWT.require(algorithm)
                     .withIssuer(keyCloakBaseUrl + "/realms/" + realm)
-                    .withAudience("account")
                     .ignoreIssuedAt()
                     .build();
             verifier.verify(decodedJWT);
+
+            // OR audience check: accept any of the allowed audiences
+            java.util.Set<String> allowedAudiences = java.util.Set.of(
+                    "health-facility-backend-app",
+                    "health-facility-desktop-app",
+                    "account"
+            );
+            java.util.List<String> tokenAud = decodedJWT.getAudience();
+            boolean audienceOk = tokenAud != null && tokenAud.stream().anyMatch(allowedAudiences::contains);
+            if (!audienceOk) {
+                throw new JWTVerificationException("Invalid audience");
+            }
 
             SecurityContextHolder.getContext().setAuthentication(
                     new UsernamePasswordAuthenticationToken(decodedJWT.getSubject(), "***"));

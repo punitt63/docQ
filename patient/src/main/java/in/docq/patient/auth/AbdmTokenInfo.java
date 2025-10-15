@@ -6,13 +6,12 @@ import lombok.Getter;
 @Builder
 @Getter
 public class AbdmTokenInfo {
-    private final String patientId;
-    private final String abhaAddress;
-    private final String abhaNumber;
-    private final long expirationTime;
-    private final String originalToken;
-    
-    public boolean isExpired() {
-        return System.currentTimeMillis() / 1000 > expirationTime;
-    }
+    private final String abhaAddress;       // patient identifier
+    private final String abhaNumber;        // from healthIdNumber
+    private final String fullName;          // from fullName
+    private final String gender;            // from gender
+    private final String mobile;            // from mobile or phrMobile
+    private final long expirationTime;      // from exp
+    private final long issuedAt;            // from iat
+    private final String originalToken;     // raw JWT
 }

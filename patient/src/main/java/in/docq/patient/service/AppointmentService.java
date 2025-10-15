@@ -2,13 +2,12 @@ package in.docq.patient.service;
 
 import in.docq.patient.client.HealthFacilityRestClient;
 import in.docq.patient.model.Appointment;
-import in.docq.patient.model.AppointmentDetails;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 import java.util.Objects;
+import java.util.concurrent.CompletionStage;
 
 @Service
 public class AppointmentService {
@@ -54,9 +53,9 @@ public class AppointmentService {
     }
 
     // Get appointment details with prescriptions based on state
-    public CompletionStage<List<AppointmentDetails>> getAppointmentDetailsByState(
+    public CompletionStage<List<Appointment>> getAppointmentByState(
             String patientId,
-            AppointmentDetails.State state,
+            Appointment.State state,
             LocalDate startDate,
             LocalDate endDate,
             Integer offset,
@@ -87,7 +86,7 @@ public class AppointmentService {
             }
         }
 
-        return healthFacilityRestClient.getAppointmentDetails(
+        return healthFacilityRestClient.getAppointment(
                 effectiveStartDate, effectiveEndDate, null, patientId, 
                 offset != null ? offset : 0, 
                 limit != null ? limit : 50);

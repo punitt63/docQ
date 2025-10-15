@@ -40,24 +40,30 @@ public class AbdmTokenValidator {
                 String payload = new String(Base64.getUrlDecoder().decode(tokenParts[1]));
                 JsonNode payloadJson = objectMapper.readTree(payload);
                 
-                // Extract patient information
-                String patientId = extractPatientId(payloadJson);
+                // Extract patient information (treat abhaAddress as patientId)
                 String abhaAddress = extractAbhaAddress(payloadJson);
                 String abhaNumber = extractAbhaNumber(payloadJson);
+                String fullName = extractText(payloadJson, "fullName");
+                String gender = extractText(payloadJson, "gender");
+                String mobile = extractPreferredMobile(payloadJson);
                 long expirationTime = extractExpirationTime(payloadJson);
+                long issuedAt = extractIssuedAt(payloadJson);
                 
                 // Check if token is expired
                 if (Instant.now().getEpochSecond() > expirationTime) {
                     throw new AbdmAuthenticationException("ABDM token has expired");
                 }
                 
-                logger.info("Successfully validated ABDM token for patient: {}", patientId);
+                logger.info("Successfully validated ABDM token for patient: {}", abhaAddress);
                 
                 return AbdmTokenInfo.builder()
-                    .patientId(patientId)
                     .abhaAddress(abhaAddress)
                     .abhaNumber(abhaNumber)
+                    .fullName(fullName)
+                    .gender(gender)
+                    .mobile(mobile)
                     .expirationTime(expirationTime)
+                    .issuedAt(issuedAt)
                     .originalToken(actualToken)
                     .build();
                     
@@ -68,36 +74,22 @@ public class AbdmTokenValidator {
         });
     }
     
-    private String extractPatientId(JsonNode payload) {
-        // Try different possible fields for patient ID
+    private String extractAbhaAddress(JsonNode payload) {
+        if (payload.has("abhaAddress")) {
+            JsonNode n = payload.get("abhaAddress");
+            if (n.isArray() && n.size() > 0) return n.get(0).asText();
+            if (n.isTextual()) return n.asText();
+        }
         if (payload.has("sub")) {
             return payload.get("sub").asText();
         }
-        if (payload.has("patientId")) {
-            return payload.get("patientId").asText();
-        }
-        if (payload.has("abhaNumber")) {
-            return payload.get("abhaNumber").asText();
-        }
-        throw new AbdmAuthenticationException("Patient ID not found in ABDM token");
-    }
-    
-    private String extractAbhaAddress(JsonNode payload) {
-        if (payload.has("abhaAddress")) {
-            JsonNode abhaAddressNode = payload.get("abhaAddress");
-            if (abhaAddressNode.isArray() && abhaAddressNode.size() > 0) {
-                return abhaAddressNode.get(0).asText();
-            } else if (abhaAddressNode.isTextual()) {
-                return abhaAddressNode.asText();
-            }
-        }
-        return null; // ABHA address might not always be present
+        throw new AbdmAuthenticationException("abhaAddress not found in ABDM token");
     }
     
     private String extractAbhaNumber(JsonNode payload) {
-        if (payload.has("abhaNumber")) {
-            return payload.get("abhaNumber").asText();
-        }
+        // healthIdNumber in the provided sample
+        if (payload.has("healthIdNumber")) return payload.get("healthIdNumber").asText();
+        if (payload.has("abhaNumber")) return payload.get("abhaNumber").asText();
         return null;
     }
     
@@ -107,6 +99,28 @@ public class AbdmTokenValidator {
         }
         // If no expiration time, assume token is valid for 1 hour from now
         return Instant.now().getEpochSecond() + 3600;
+    }
+
+    private long extractIssuedAt(JsonNode payload) {
+        if (payload.has("iat")) {
+            return payload.get("iat").asLong();
+        }
+        return 0L;
+    }
+
+    private String extractText(JsonNode payload, String field) {
+        return payload.has(field) && !payload.get(field).isNull() ? payload.get(field).asText() : null;
+    }
+
+    private String extractPreferredMobile(JsonNode payload) {
+        // Prefer mobile, fallback to phrMobile
+        if (payload.has("mobile") && !payload.get("mobile").isNull()) {
+            return payload.get("mobile").asText();
+        }
+        if (payload.has("phrMobile") && !payload.get("phrMobile").isNull()) {
+            return payload.get("phrMobile").asText();
+        }
+        return null;
     }
     
     /**
