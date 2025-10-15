@@ -1,9 +1,9 @@
 package in.docq.patient.service;
 
 import in.docq.abha.rest.client.AbhaRestClient;
-import in.docq.abha.rest.client.model.phr.AbdmPatientShareHip1Request;
-import in.docq.abha.rest.client.model.phr.PatientShare2Request;
-import in.docq.abha.rest.client.model.phr.ProfileShare3200Response;
+import in.docq.abha.rest.client.model.AbdmPatientShareHip1Request;
+import in.docq.abha.rest.client.model.PatientShare2Request;
+import in.docq.abha.rest.client.model.ProfileShare3200Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

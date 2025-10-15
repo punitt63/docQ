@@ -15,9 +15,7 @@ package in.docq.abha.rest.client.api.phr;
 
 import com.google.gson.reflect.TypeToken;
 import in.docq.abha.rest.client.*;
-import in.docq.abha.rest.client.model.AbhaApiV3ProfileLoginRequestOtpPost200Response;
-import in.docq.abha.rest.client.model.AbhaApiV3ProfileLoginRequestOtpPostRequest;
-import in.docq.abha.rest.client.model.phr.*;
+import in.docq.abha.rest.client.model.*;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;

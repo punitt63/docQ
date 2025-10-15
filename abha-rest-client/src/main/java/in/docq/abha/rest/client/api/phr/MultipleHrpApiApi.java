@@ -15,7 +15,7 @@ package in.docq.abha.rest.client.api.phr;
 
 import com.google.gson.reflect.TypeToken;
 import in.docq.abha.rest.client.*;
-import in.docq.abha.rest.client.model.phr.BridgeAddUpdateRequestDTO;
+import in.docq.abha.rest.client.model.BridgeAddUpdateRequestDTO;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;

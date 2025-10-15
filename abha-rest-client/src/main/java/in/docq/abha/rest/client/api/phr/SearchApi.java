@@ -15,10 +15,10 @@ package in.docq.abha.rest.client.api.phr;
 
 import com.google.gson.reflect.TypeToken;
 import in.docq.abha.rest.client.*;
-import in.docq.abha.rest.client.model.phr.AddressFilterRequest;
-import in.docq.abha.rest.client.model.phr.DeduplicateResponseDto;
-import in.docq.abha.rest.client.model.phr.FacilitySearchResponse;
-import in.docq.abha.rest.client.model.phr.SearchFacilityRequestDTO;
+import in.docq.abha.rest.client.model.AddressFilterRequest;
+import in.docq.abha.rest.client.model.DeduplicateResponseDto;
+import in.docq.abha.rest.client.model.FacilitySearchResponse;
+import in.docq.abha.rest.client.model.SearchFacilityRequestDTO;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;

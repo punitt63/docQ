@@ -21,7 +21,6 @@ import in.docq.abha.rest.client.model.AbdmUserInitiatedLinking2Request;
 import in.docq.abha.rest.client.model.AbdmUserInitiatedLinking4Request;
 import in.docq.abha.rest.client.model.AbdmUserInitiatedLinking6Request;
 import in.docq.abha.rest.client.model.MultipleHRPRequest;
-import in.docq.abha.rest.client.model.phr.*;
 import in.docq.abha.rest.client.utils.RSAEncrypter;
 
 import java.time.Instant;

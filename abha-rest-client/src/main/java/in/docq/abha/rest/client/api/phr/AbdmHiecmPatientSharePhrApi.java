@@ -15,9 +15,9 @@ package in.docq.abha.rest.client.api.phr;
 
 import com.google.gson.reflect.TypeToken;
 import in.docq.abha.rest.client.*;
-import in.docq.abha.rest.client.model.phr.AbdmPatientShareHip1Request;
-import in.docq.abha.rest.client.model.phr.PatientShare2Request;
-import in.docq.abha.rest.client.model.phr.ProfileShare3200Response;
+import in.docq.abha.rest.client.model.AbdmPatientShareHip1Request;
+import in.docq.abha.rest.client.model.PatientShare2Request;
+import in.docq.abha.rest.client.model.ProfileShare3200Response;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;

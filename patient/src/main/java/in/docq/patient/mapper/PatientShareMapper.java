@@ -1,6 +1,6 @@
 package in.docq.patient.mapper;
 
-import in.docq.abha.rest.client.model.phr.*;
+import in.docq.abha.rest.client.model.*;
 import in.docq.patient.controller.PatientShareController;
 
 import java.math.BigDecimal;

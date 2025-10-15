@@ -17,10 +17,7 @@ import com.google.gson.*;
 import com.google.gson.internal.bind.util.ISO8601Utils;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import in.docq.abha.rest.client.model.AbhaApiV3EnrollmentEnrolByAadhaarPost200Response;
-import in.docq.abha.rest.client.model.AbhaApiV3EnrollmentEnrolByAadhaarPostRequestAuthData;
-import in.docq.abha.rest.client.model.AbhaApiV3PhrWebLoginAbhaVerifyPostRequestAuthData;
-import in.docq.abha.rest.client.model.phr.*;
+import in.docq.abha.rest.client.model.*;
 import io.gsonfire.GsonFireBuilder;
 import okio.ByteString;
 

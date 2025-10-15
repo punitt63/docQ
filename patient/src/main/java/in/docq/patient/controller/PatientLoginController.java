@@ -1,18 +1,6 @@
 package in.docq.patient.controller;
 
-import in.docq.abha.rest.client.model.AbhaAccount;
-import in.docq.abha.rest.client.model.Tokens;
-import in.docq.abha.rest.client.model.phr.PhrUser;
-import in.docq.abha.rest.client.model.phr.DeLinkRequest200Response;
-import in.docq.abha.rest.client.model.phr.GetProfile200Response;
-import in.docq.abha.rest.client.model.phr.LinkRequest200Response;
-import in.docq.abha.rest.client.model.phr.Logout200Response;
-import in.docq.abha.rest.client.model.phr.RefreshToken200Response;
-import in.docq.abha.rest.client.model.phr.OtpRequestMobile200Response;
-import in.docq.abha.rest.client.model.phr.VerifyOtpUpdateEmail200Response;
-import in.docq.abha.rest.client.model.phr.SwitchProfile200Response;
-import in.docq.abha.rest.client.model.phr.UpdateProfile200Response;
-import in.docq.abha.rest.client.model.phr.OtpVerifyMobile200ResponseTokens;
+import in.docq.abha.rest.client.model.*;
 import in.docq.patient.service.PatientLoginService;
 import lombok.Builder;
 import lombok.Getter;

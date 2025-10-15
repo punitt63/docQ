@@ -1,6 +1,6 @@
 package in.docq.patient.controller;
 
-import in.docq.abha.rest.client.model.phr.ProfileShare3200Response;
+import in.docq.abha.rest.client.model.ProfileShare3200Response;
 import in.docq.patient.mapper.PatientShareMapper;
 import in.docq.patient.service.PatientShareService;
 import lombok.Builder;

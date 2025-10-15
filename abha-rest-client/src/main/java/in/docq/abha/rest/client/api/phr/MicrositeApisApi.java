@@ -15,8 +15,8 @@ package in.docq.abha.rest.client.api.phr;
 
 import com.google.gson.reflect.TypeToken;
 import in.docq.abha.rest.client.*;
-import in.docq.abha.rest.client.model.phr.FacilityContResponseDto;
-import in.docq.abha.rest.client.model.phr.FacilityContactDetails;
+import in.docq.abha.rest.client.model.FacilityContResponseDto;
+import in.docq.abha.rest.client.model.FacilityContactDetails;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;

@@ -16,10 +16,10 @@ package in.docq.abha.rest.client.api.phr;
 import com.google.gson.reflect.TypeToken;
 
 import in.docq.abha.rest.client.*;
-import in.docq.abha.rest.client.model.phr.FacilityContactDetails;
-import in.docq.abha.rest.client.model.phr.FacilityOtpResponse;
-import in.docq.abha.rest.client.model.phr.ValidateOtpRequestDto;
-import in.docq.abha.rest.client.model.phr.ValidateOtpResponse;
+import in.docq.abha.rest.client.model.FacilityContactDetails;
+import in.docq.abha.rest.client.model.FacilityOtpResponse;
+import in.docq.abha.rest.client.model.ValidateOtpRequestDto;
+import in.docq.abha.rest.client.model.ValidateOtpResponse;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
