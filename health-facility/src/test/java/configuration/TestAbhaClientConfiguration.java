@@ -1,6 +1,5 @@
 package configuration;
 
-import com.sun.xml.xsom.impl.scd.Iterators;
 import in.docq.abha.rest.client.AbhaRestClient;
 import in.docq.abha.rest.client.ApiClient;
 import in.docq.abha.rest.client.model.*;

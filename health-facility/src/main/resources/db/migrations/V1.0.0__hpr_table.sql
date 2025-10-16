@@ -1,6 +1,12 @@
-CREATE TABLE health_professional (
-    health_facility_id varchar(20),
-    health_professional_id varchar(20),
-    type varchar(20),
-    CONSTRAINT health_professional_pkey PRIMARY KEY (health_facility_id, health_professional_id)
+CREATE TABLE facility_manager (
+    health_facility_id varchar(20) NOT NULL,
+    facility_manager_id varchar(20) NOT NULL,
+    CONSTRAINT facility_manager_pkey PRIMARY KEY (health_facility_id, facility_manager_id)
+);
+
+CREATE TABLE doctor (
+    health_facility_id varchar(20) NOT NULL,
+    doctor_id varchar(20) NOT NULL,
+    facility_manager_id varchar(20) NOT NULL,
+    CONSTRAINT doctor_pkey PRIMARY KEY (health_facility_id, doctor_id)
 );

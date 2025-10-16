@@ -2,6 +2,8 @@ package in.docq.health.facility.controller;
 
 import in.docq.health.facility.auth.Authorized;
 import in.docq.health.facility.model.Appointment;
+import in.docq.health.facility.model.HealthProfessional;
+import in.docq.health.facility.model.HealthProfessionalType;
 import in.docq.health.facility.service.AppointmentService;
 import lombok.Builder;
 import lombok.Getter;
@@ -71,8 +73,9 @@ public class AppointmentController {
     public CompletionStage<ResponseEntity<Appointment>> startAppointment(@PathVariable("health-facility-id") String healthFacilityID,
                                                                          @PathVariable("opd-date") LocalDate opdDate,
                                                                          @PathVariable("opd-id") String opdID,
-                                                                         @PathVariable("appointment-id") Integer appointmentId) {
-        return appointmentService.startAppointment(opdDate, opdID, appointmentId)
+                                                                         @PathVariable("appointment-id") Integer appointmentId,
+                                                                         @RequestAttribute("type") HealthProfessionalType healthProfessionalType) {
+        return appointmentService.startAppointment(healthProfessionalType, opdDate, opdID, appointmentId)
                 .thenApply(ResponseEntity::ok);
     }
 

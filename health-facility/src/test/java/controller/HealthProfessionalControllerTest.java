@@ -5,7 +5,8 @@ import configuration.TestAbhaClientConfiguration;
 import in.docq.health.facility.HealthFacilityApplication;
 import in.docq.health.facility.auth.DesktopKeycloakRestClient;
 import in.docq.health.facility.controller.HealthProfessionalController;
-import in.docq.health.facility.dao.HealthProfessionalDao;
+import in.docq.health.facility.dao.DoctorDao;
+import in.docq.health.facility.dao.FacilityManagerDao;
 import in.docq.health.facility.exception.ErrorCodes;
 import in.docq.health.facility.exception.ErrorResponse;
 import in.docq.health.facility.model.HealthProfessionalType;
@@ -41,7 +42,10 @@ public class HealthProfessionalControllerTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private HealthProfessionalDao healthProfessionalDao;
+    private DoctorDao doctorDao;
+
+    @Autowired
+    private FacilityManagerDao facilityManagerDao;
 
     @Autowired
     private DesktopKeycloakRestClient desktopKeycloakRestClient;
@@ -50,18 +54,18 @@ public class HealthProfessionalControllerTest {
 
     @Before
     public void beforeEach() {
-        healthProfessionalDao.truncate().toCompletableFuture().join();
+        doctorDao.truncate().toCompletableFuture().join();
+        facilityManagerDao.truncate().toCompletableFuture().join();
     }
 
     @Test
     public void testFacilityManagerOnBoarding() throws Exception {
         String adminUserToken = getAdminUserToken();
-        HealthProfessionalController.OnBoardHealthProfessionalRequestBody requestBody = HealthProfessionalController.OnBoardHealthProfessionalRequestBody.builder()
-                        .type(HealthProfessionalType.FACILITY_MANAGER)
-                        .healthProfessionalID(testHealthFacilityManagerID)
+        HealthProfessionalController.OnBoardFacilityManagerRequestBody requestBody = HealthProfessionalController.OnBoardFacilityManagerRequestBody.builder()
+                        .facilityManagerID(testHealthFacilityManagerID)
                         .password("test-pass")
                         .build();
-        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/onboard")
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/facility-manager/onboard")
                 .header("Authorization", "Bearer " + adminUserToken)
                 .content(gson.toJson(requestBody))
                 .contentType(MediaType.APPLICATION_JSON)))
@@ -109,24 +113,23 @@ public class HealthProfessionalControllerTest {
     public void testDoctorOnBoarding() throws Exception {
         // onboard facility manager
         String adminUserToken = getAdminUserToken();
-        HealthProfessionalController.OnBoardHealthProfessionalRequestBody onBoardFacilityManagerRequestBody = HealthProfessionalController.OnBoardHealthProfessionalRequestBody.builder()
-                .type(HealthProfessionalType.FACILITY_MANAGER)
-                .healthProfessionalID(testHealthFacilityManagerID)
+        HealthProfessionalController.OnBoardFacilityManagerRequestBody onBoardFacilityManagerRequestBody = HealthProfessionalController.OnBoardFacilityManagerRequestBody.builder()
+                .facilityManagerID(testHealthFacilityManagerID)
                 .password("test-pass")
                 .build();
-        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/onboard")
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/facility-manager/onboard")
                 .header("Authorization", "Bearer " + adminUserToken)
                 .content(gson.toJson(onBoardFacilityManagerRequestBody))
                 .contentType(MediaType.APPLICATION_JSON)))
                 .andReturn();
 
         String facilityManagerToken = getFacilityManagerLoginResponse().getAccessToken();
-        HealthProfessionalController.OnBoardHealthProfessionalRequestBody requestBody = HealthProfessionalController.OnBoardHealthProfessionalRequestBody.builder()
-                .type(HealthProfessionalType.DOCTOR)
-                .healthProfessionalID(testDoctorID)
+        HealthProfessionalController.OnBoardDoctorRequestBody requestBody = HealthProfessionalController.OnBoardDoctorRequestBody.builder()
+                .doctorID(testDoctorID)
                 .password("test-doc-pass")
+                .facilityManagerID(testHealthFacilityManagerID)
                 .build();
-        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/onboard")
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/doctor/onboard")
                 .header("Authorization", "Bearer " + facilityManagerToken)
                 .content(gson.toJson(requestBody))
                 .contentType(MediaType.APPLICATION_JSON)))

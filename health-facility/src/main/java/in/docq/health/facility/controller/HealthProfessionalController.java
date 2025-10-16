@@ -55,6 +55,22 @@ public class HealthProfessionalController {
                 .thenApply(ResponseEntity::ok);
     }
 
+    @PostMapping("/facility-manager/onboard")
+    @Authorized(resource = "health-facility", scope = "onboarding")
+    public CompletionStage<ResponseEntity<Void>> onBoardFacilityManager(@PathVariable("health-facility-id") String healthFacilityID,
+                                                                        @RequestBody OnBoardFacilityManagerRequestBody createHealthProfessionalRequestBody) {
+        return healthProfessionalService.onBoardFacilityManager(healthFacilityID, createHealthProfessionalRequestBody)
+                .thenApply(ResponseEntity::ok);
+    }
+
+    @PostMapping("/doctor/onboard")
+    @Authorized(resource = "health-facility", scope = "onboarding")
+    public CompletionStage<ResponseEntity<Void>> onBoardDoctor(@PathVariable("health-facility-id") String healthFacilityID,
+                                                                @RequestBody OnBoardDoctorRequestBody onBoardDoctorRequestBody) {
+        return healthProfessionalService.onBoardDoctor(healthFacilityID, onBoardDoctorRequestBody)
+                .thenApply(ResponseEntity::ok);
+    }
+
     @GetMapping("/{health-facility-professional-id}")
     public CompletionStage<ResponseEntity<HealthProfessional>> getHealthFacilityProfessional(@PathVariable("health-facility-id") String healthFacilityID,
                                                                                              @PathVariable("health-facility-professional-id") String healthFacilityProfessionalID) {
@@ -75,6 +91,21 @@ public class HealthProfessionalController {
         private final String healthProfessionalID;
         private final HealthProfessionalType type;
         private final String password;
+    }
+
+    @Builder
+    @Getter
+    public static class OnBoardFacilityManagerRequestBody {
+        private final String facilityManagerID;
+        private final String password;
+    }
+
+    @Builder
+    @Getter
+    public static class OnBoardDoctorRequestBody {
+        private final String doctorID;
+        private final String password;
+        private final String facilityManagerID;
     }
 
     @Builder

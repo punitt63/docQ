@@ -11,7 +11,7 @@ public class HealthProfessional {
     private final HealthProfessionalType type;
 
     public String getKeyCloakUserName() {
-        return healthFacilityID + "_" + id;
+        return healthFacilityID.toLowerCase() + "_" + id.toLowerCase();
     }
 
     public String getKeycloakRole() {
