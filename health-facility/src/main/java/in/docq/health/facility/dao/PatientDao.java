@@ -52,7 +52,6 @@ public class PatientDao {
     }
 
     public CompletionStage<Void> insert(Patient patient) {
-        Patient encryptedPatient = patient.encrypt(aesEncryptionKey);
         return postgresDAO.update(dbMetricsGroupName, "insert", insertPatientQuery,
                         patient.getId(),
                         patient.getAbhaNo(),

@@ -2,7 +2,6 @@ package in.docq.health.facility.controller;
 
 import in.docq.health.facility.auth.Authorized;
 import in.docq.health.facility.model.Prescription;
-import in.docq.health.facility.service.AppointmentService;
 import in.docq.health.facility.service.PrescriptionService;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,11 +14,9 @@ import java.util.concurrent.CompletionStage;
 @RestController
 public class PrescriptionController {
     private final PrescriptionService prescriptionService;
-    private final AppointmentService appointmentService;
 
-    public PrescriptionController(PrescriptionService prescriptionService, AppointmentService appointmentService) {
+    public PrescriptionController(PrescriptionService prescriptionService) {
         this.prescriptionService = prescriptionService;
-        this.appointmentService = appointmentService;
     }
 
     @PostMapping("/health-facilities/{health-facility-id}/opd-dates/{opd-date}/opds/{opd-id}/appointments/{appointment-id}/prescriptions")

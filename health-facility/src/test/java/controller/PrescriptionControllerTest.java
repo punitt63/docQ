@@ -309,16 +309,6 @@ public class PrescriptionControllerTest {
         //onboard
         HealthProfessionalController.OnBoardDoctorRequestBody requestBody = HealthProfessionalController.OnBoardDoctorRequestBody.builder()
                 .doctorID(testDoctorID)
-                .healthProfessionalID(testDoctorID)
-                .healthProfessionalName("Dr. John Smith")
-                .healthFacilityName("City General Hospital")
-                .stateCode(testStateCode)
-                .districtCode(testDistrictCode)
-                .speciality("General Physician")
-                .address("123 Main Street, City Center")
-                .pincode("123456")
-                .latitude(12.9716)
-                .longitude(77.5946)
                 .password("test-doc-pass")
                 .facilityManagerID(testHealthFacilityManagerID)
                 .build();
@@ -344,16 +334,6 @@ public class PrescriptionControllerTest {
         String adminUserToken = getAdminUserToken();
         HealthProfessionalController.OnBoardFacilityManagerRequestBody requestBody = HealthProfessionalController.OnBoardFacilityManagerRequestBody.builder()
                 .facilityManagerID(testHealthFacilityManagerID)
-                .healthProfessionalID(testHealthFacilityManagerID)
-                .healthProfessionalName("Ms. Emily Davis")
-                .healthFacilityName("City General Hospital")
-                .stateCode(testStateCode)
-                .districtCode(testDistrictCode)
-                .speciality("Facility Manager")
-                .address("123 Main Street, City Center")
-                .pincode("123456")
-                .latitude(12.9716)
-                .longitude(77.5946)
                 .password("test-pass")
                 .build();
         handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/facility-manager/onboard")

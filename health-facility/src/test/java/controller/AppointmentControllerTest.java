@@ -541,16 +541,6 @@ public class AppointmentControllerTest {
         String adminUserToken = getAdminUserToken();
         HealthProfessionalController.OnBoardFacilityManagerRequestBody requestBody = HealthProfessionalController.OnBoardFacilityManagerRequestBody.builder()
                 .facilityManagerID(testHealthFacilityManagerID)
-                .healthProfessionalID(testHealthFacilityManagerID)
-                .healthProfessionalName("Ms. Emily Davis")
-                .healthFacilityName("City General Hospital")
-                .stateCode(testStateCode)
-                .districtCode(testDistrictCode)
-                .speciality("Facility Manager")
-                .address("123 Main Street, City Center")
-                .pincode("123456")
-                .latitude(12.9716)
-                .longitude(77.5946)
                 .password("test-pass")
                 .build();
         handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/facility-manager/onboard")

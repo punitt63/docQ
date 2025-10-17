@@ -768,16 +768,6 @@ public class EndToEndDataTransferTest {
         String adminUserToken = getAdminUserToken();
         HealthProfessionalController.OnBoardFacilityManagerRequestBody requestBody = HealthProfessionalController.OnBoardFacilityManagerRequestBody.builder()
                 .facilityManagerID(facilityManagerID)
-                .healthProfessionalID(facilityManagerID)
-                .healthProfessionalName("Ms. Emily Davis")
-                .healthFacilityName("City General Hospital")
-                .stateCode(testStateCode)
-                .districtCode(testDistrictCode)
-                .speciality("Facility Manager")
-                .address("123 Main Street, City Center")
-                .pincode("123456")
-                .latitude(12.9716)
-                .longitude(77.5946)
                 .password("test-pass")
                 .build();
         handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + healthFacilityID + "/health-facility-professionals/facility-manager/onboard")
@@ -793,16 +783,6 @@ public class EndToEndDataTransferTest {
         //onboard
         HealthProfessionalController.OnBoardDoctorRequestBody requestBody = HealthProfessionalController.OnBoardDoctorRequestBody.builder()
                 .doctorID(doctorID)
-                .healthProfessionalID(doctorID)
-                .healthProfessionalName("Dr. John Smith")
-                .healthFacilityName("City General Hospital")
-                .stateCode(testStateCode)
-                .districtCode(testDistrictCode)
-                .speciality("General Physician")
-                .address("123 Main Street, City Center")
-                .pincode("123456")
-                .latitude(12.9716)
-                .longitude(77.5946)
                 .password("test-doc-pass")
                 .facilityManagerID(facilityManagerId)
                 .build();
