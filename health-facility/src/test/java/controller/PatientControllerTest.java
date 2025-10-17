@@ -159,8 +159,8 @@ public class PatientControllerTest {
 
     private String onboardFacilityManagerAndGetToken() throws Exception {
         String adminUserToken = getAdminUserToken();
-        HealthProfessionalController.OnBoardHealthProfessionalRequestBody onBoardFacilityManagerRequestBody = HealthProfessionalController.OnBoardHealthProfessionalRequestBody.builder()
-                .type(HealthProfessionalType.FACILITY_MANAGER)
+        HealthProfessionalController.OnBoardFacilityManagerRequestBody requestBody = HealthProfessionalController.OnBoardFacilityManagerRequestBody.builder()
+                .facilityManagerID(testHealthFacilityManagerID)
                 .healthProfessionalID(testHealthFacilityManagerID)
                 .healthProfessionalName("Ms. Emily Davis")
                 .healthFacilityName("City General Hospital")
@@ -173,11 +173,11 @@ public class PatientControllerTest {
                 .longitude(77.5946)
                 .password("test-pass")
                 .build();
-        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/onboard")
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/facility-manager/onboard")
                 .header("Authorization", "Bearer " + adminUserToken)
-                .content(gson.toJson(onBoardFacilityManagerRequestBody))
+                .content(gson.toJson(requestBody))
                 .contentType(MediaType.APPLICATION_JSON)))
-                .andReturn();
+                .andExpect(status().isOk());
 
         return getFacilityManagerToken();
     }

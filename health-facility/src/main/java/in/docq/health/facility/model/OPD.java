@@ -35,6 +35,14 @@ public class OPD {
     private final Long actualEndTime;
     private final int appointmentsCount;
 
+    public HealthProfessional getDoctor() {
+        return HealthProfessional.builder()
+                .healthFacilityID(healthFacilityID)
+                .id(healthProfessionalID)
+                .type(HealthProfessionalType.DOCTOR)
+                .build();
+    }
+
     public String getSequenceName() {
         return "sequence" + "_" + id.replace("-", "_");
     }
@@ -81,6 +89,7 @@ public class OPD {
     public enum State {
         INACTIVE,
         ACTIVE,
+        PAUSED,
         COMPLETED
     }
 

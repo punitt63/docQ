@@ -81,11 +81,11 @@
         },
         {
           "name" : "opd",
-          "scopes" : ["read"]
+          "scopes" : ["read", "update"]
         },
         {
           "name" : "appointment",
-          "scopes" : ["read"]
+          "scopes" : ["read", "complete"]
         },
         {
           "name" : "prescription",

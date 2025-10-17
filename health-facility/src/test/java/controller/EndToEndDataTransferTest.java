@@ -145,9 +145,9 @@ public class EndToEndDataTransferTest {
         facilityManagerTokenHIU = onboardFacilityManagerAndGetToken(testThirdHealthFacilityID, testThirdHealthFacilityManagerID);
         facilityManagerTokenHIP1 = onboardFacilityManagerAndGetToken(testHealthFacilityID, testHealthFacilityManagerID);
         facilityManagerTokenHIP2 = onboardFacilityManagerAndGetToken(testSecondHealthFacilityID, testSecondHealthFacilityManagerID);
-        doctorTokenHIU = onboardDoctorAndGetToken(testThirdHealthFacilityID, facilityManagerTokenHIU, testThirdDoctorID);
-        doctorTokenHIP1 = onboardDoctorAndGetToken(testHealthFacilityID, facilityManagerTokenHIP1, testDoctorID);
-        doctorTokenHIP2 = onboardDoctorAndGetToken(testSecondHealthFacilityID, facilityManagerTokenHIP2, testSecondDoctorID);
+        doctorTokenHIU = onboardDoctorAndGetToken(testThirdHealthFacilityID, testThirdHealthFacilityManagerID, facilityManagerTokenHIU, testThirdDoctorID);
+        doctorTokenHIP1 = onboardDoctorAndGetToken(testHealthFacilityID, testHealthFacilityManagerID, facilityManagerTokenHIP1, testDoctorID);
+        doctorTokenHIP2 = onboardDoctorAndGetToken(testSecondHealthFacilityID, testSecondHealthFacilityManagerID, facilityManagerTokenHIP2, testSecondDoctorID);
         testPatient = createAbhaPatient(facilityManagerTokenHIP1);
         setupPrescriptionData();
         mockAbhaRestClient.sendConsentRequestCount = 0;
@@ -766,8 +766,8 @@ public class EndToEndDataTransferTest {
 
     private String onboardFacilityManagerAndGetToken(String healthFacilityID, String facilityManagerID) throws Exception {
         String adminUserToken = getAdminUserToken();
-        HealthProfessionalController.OnBoardHealthProfessionalRequestBody onBoardFacilityManagerRequestBody = HealthProfessionalController.OnBoardHealthProfessionalRequestBody.builder()
-                .type(HealthProfessionalType.FACILITY_MANAGER)
+        HealthProfessionalController.OnBoardFacilityManagerRequestBody requestBody = HealthProfessionalController.OnBoardFacilityManagerRequestBody.builder()
+                .facilityManagerID(facilityManagerID)
                 .healthProfessionalID(facilityManagerID)
                 .healthProfessionalName("Ms. Emily Davis")
                 .healthFacilityName("City General Hospital")
@@ -780,19 +780,19 @@ public class EndToEndDataTransferTest {
                 .longitude(77.5946)
                 .password("test-pass")
                 .build();
-        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + healthFacilityID + "/health-facility-professionals/onboard")
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + healthFacilityID + "/health-facility-professionals/facility-manager/onboard")
                 .header("Authorization", "Bearer " + adminUserToken)
-                .content(gson.toJson(onBoardFacilityManagerRequestBody))
+                .content(gson.toJson(requestBody))
                 .contentType(MediaType.APPLICATION_JSON)))
-                .andReturn();
+                .andExpect(status().isOk());
 
         return getFacilityManagerToken(healthFacilityID, facilityManagerID);
     }
 
-    private String onboardDoctorAndGetToken(String healthFacilityID, String facilityManagerToken, String doctorID) throws Exception {
+    private String onboardDoctorAndGetToken(String healthFacilityID, String facilityManagerId, String facilityManagerToken, String doctorID) throws Exception {
         //onboard
-        HealthProfessionalController.OnBoardHealthProfessionalRequestBody requestBody = HealthProfessionalController.OnBoardHealthProfessionalRequestBody.builder()
-                .type(HealthProfessionalType.DOCTOR)
+        HealthProfessionalController.OnBoardDoctorRequestBody requestBody = HealthProfessionalController.OnBoardDoctorRequestBody.builder()
+                .doctorID(doctorID)
                 .healthProfessionalID(doctorID)
                 .healthProfessionalName("Dr. John Smith")
                 .healthFacilityName("City General Hospital")
@@ -804,8 +804,9 @@ public class EndToEndDataTransferTest {
                 .latitude(12.9716)
                 .longitude(77.5946)
                 .password("test-doc-pass")
+                .facilityManagerID(facilityManagerId)
                 .build();
-        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + healthFacilityID + "/health-facility-professionals/onboard")
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + healthFacilityID + "/health-facility-professionals/doctor/onboard")
                 .header("Authorization", "Bearer " + facilityManagerToken)
                 .content(gson.toJson(requestBody))
                 .contentType(MediaType.APPLICATION_JSON)))

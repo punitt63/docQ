@@ -307,8 +307,8 @@ public class PrescriptionControllerTest {
 
     private String onboardDoctorAndGetToken(String facilityManagerToken) throws Exception {
         //onboard
-        HealthProfessionalController.OnBoardHealthProfessionalRequestBody requestBody = HealthProfessionalController.OnBoardHealthProfessionalRequestBody.builder()
-                .type(HealthProfessionalType.DOCTOR)
+        HealthProfessionalController.OnBoardDoctorRequestBody requestBody = HealthProfessionalController.OnBoardDoctorRequestBody.builder()
+                .doctorID(testDoctorID)
                 .healthProfessionalID(testDoctorID)
                 .healthProfessionalName("Dr. John Smith")
                 .healthFacilityName("City General Hospital")
@@ -320,8 +320,9 @@ public class PrescriptionControllerTest {
                 .latitude(12.9716)
                 .longitude(77.5946)
                 .password("test-doc-pass")
+                .facilityManagerID(testHealthFacilityManagerID)
                 .build();
-        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/onboard")
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/doctor/onboard")
                 .header("Authorization", "Bearer " + facilityManagerToken)
                 .content(gson.toJson(requestBody))
                 .contentType(MediaType.APPLICATION_JSON)))
@@ -341,8 +342,8 @@ public class PrescriptionControllerTest {
 
     private String onboardFacilityManagerAndGetToken() throws Exception {
         String adminUserToken = getAdminUserToken();
-        HealthProfessionalController.OnBoardHealthProfessionalRequestBody onBoardFacilityManagerRequestBody = HealthProfessionalController.OnBoardHealthProfessionalRequestBody.builder()
-                .type(HealthProfessionalType.FACILITY_MANAGER)
+        HealthProfessionalController.OnBoardFacilityManagerRequestBody requestBody = HealthProfessionalController.OnBoardFacilityManagerRequestBody.builder()
+                .facilityManagerID(testHealthFacilityManagerID)
                 .healthProfessionalID(testHealthFacilityManagerID)
                 .healthProfessionalName("Ms. Emily Davis")
                 .healthFacilityName("City General Hospital")
@@ -355,11 +356,11 @@ public class PrescriptionControllerTest {
                 .longitude(77.5946)
                 .password("test-pass")
                 .build();
-        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/onboard")
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/facility-manager/onboard")
                 .header("Authorization", "Bearer " + adminUserToken)
-                .content(gson.toJson(onBoardFacilityManagerRequestBody))
+                .content(gson.toJson(requestBody))
                 .contentType(MediaType.APPLICATION_JSON)))
-                .andReturn();
+                .andExpect(status().isOk());
 
         return getFacilityManagerToken();
     }

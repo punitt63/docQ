@@ -5,6 +5,8 @@ import in.docq.health.facility.dao.AppointmentDao;
 import in.docq.health.facility.exception.ErrorCodes;
 import in.docq.health.facility.exception.HealthFacilityException;
 import in.docq.health.facility.model.Appointment;
+import in.docq.health.facility.model.HealthProfessional;
+import in.docq.health.facility.model.HealthProfessionalType;
 import in.docq.health.facility.model.OPD;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,11 +22,13 @@ import java.util.concurrent.CompletionStage;
 public class AppointmentService {
     private final OPDService opdService;
     private final AppointmentDao appointmentDao;
+    private final HealthProfessionalService healthProfessionalService;
 
     @Autowired
-    public AppointmentService(OPDService opdService, AppointmentDao appointmentDao) {
+    public AppointmentService(OPDService opdService, AppointmentDao appointmentDao, HealthProfessionalService healthProfessionalService) {
         this.opdService = opdService;
         this.appointmentDao = appointmentDao;
+        this.healthProfessionalService = healthProfessionalService;
     }
 
     public CompletionStage<Appointment> createAppointment(LocalDate opdDate, String opdId, AppointmentController.CreateAppointmentRequestBody createAppointmentRequestBody) {
@@ -45,30 +49,42 @@ public class AppointmentService {
 
     public CompletionStage<Appointment> get(LocalDate opdDate, String opdID, Integer id) {
         return opdService.get(opdDate, opdID)
-                .thenCompose(ignore -> appointmentDao.get(opdDate, opdID, id));
+                .thenCompose(opd -> appointmentDao.get(opdDate, opdID, id).thenApply(appointment -> appointment.toBuilder().opd(opd).build()));
     }
 
     private CompletionStage<Appointment> updateAppointment(LocalDate opdDate, String opdID, Integer id, AppointmentController.UpdateAppointmentRequestBody updateAppointmentRequestBody) {
         return appointmentDao.update(opdDate, opdID, id, updateAppointmentRequestBody);
     }
 
-    public CompletionStage<Appointment> startAppointment(LocalDate opdDate, String opdID, Integer id) {
+    public CompletionStage<Appointment> startAppointment(HealthProfessionalType originatorType, LocalDate opdDate, String opdID, Integer id) {
         return get(opdDate, opdID, id)
-                .thenCompose(ignore -> getTopAppointment(opdDate, opdID, List.of(Appointment.State.WAITING, Appointment.State.IN_PROGRESS)))
-                .thenCompose(topAppointmentOptional -> {
-                    if(topAppointmentOptional.isEmpty()) {
-                        throw new HealthFacilityException(ErrorCodes.ACTION_NOT_ALLOWED);
-                    }
-                    Appointment topAppointment = topAppointmentOptional.get();
-                    if(topAppointment.getId() != id) {
-                        throw new HealthFacilityException(ErrorCodes.ACTION_NOT_ALLOWED);
-                    }
-                    return updateAppointment(opdDate, opdID, id, AppointmentController.UpdateAppointmentRequestBody.builder()
-                            .state(Appointment.State.IN_PROGRESS)
-                            .startTime(Instant.now().toEpochMilli())
-                            .priority(1000000)
-                            .build());
-                });
+                .thenCompose(appointment -> getTopAppointment(opdDate, opdID, List.of(Appointment.State.WAITING, Appointment.State.IN_PROGRESS))
+                        .thenCompose(topAppointmentOptional -> {
+                            if (topAppointmentOptional.isEmpty()) {
+                                throw new HealthFacilityException(ErrorCodes.ACTION_NOT_ALLOWED);
+                            }
+                            Appointment topAppointment = topAppointmentOptional.get();
+                            if (topAppointment.getId() != id) {
+                                throw new HealthFacilityException(ErrorCodes.ACTION_NOT_ALLOWED);
+                            }
+                            return updateAppointment(opdDate, opdID, id, AppointmentController.UpdateAppointmentRequestBody.builder()
+                                    .state(Appointment.State.IN_PROGRESS)
+                                    .startTime(Instant.now().toEpochMilli())
+                                    .priority(1000000)
+                                    .build())
+                                    .thenApply(updatedAppointment -> {
+                                        healthProfessionalService.sendMessageToCounterPart(
+                                                originatorType,
+                                                appointment.getDoctor(),
+                                                WsConnectionHandler.StateChangeMessage.builder()
+                                                        .objectId(updatedAppointment.getUniqueId())
+                                                        .objectType("APPOINTMENT")
+                                                        .fromState(Appointment.State.WAITING.name())
+                                                        .toState(Appointment.State.IN_PROGRESS.name())
+                                                        .build());
+                                        return updatedAppointment;
+                                    });
+                        }));
     }
 
     public CompletionStage<Appointment> completeAppointment(LocalDate opdDate, String opdID, Integer id) {

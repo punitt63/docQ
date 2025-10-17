@@ -117,7 +117,7 @@ public class OPDDao {
                 });
     }
 
-    public CompletionStage<Void> update(OPD opd) {
+    public CompletionStage<OPD> update(OPD opd) {
         return postgresDAO.update(dbMetricsGroupName, "update", updateOPDQuery,
                         opd.getStartHour(),
                         opd.getEndHour(),
@@ -131,7 +131,7 @@ public class OPDDao {
                         Optional.ofNullable(opd.getActualEndTime()).map(Timestamp::new).orElse(null),
                         Date.valueOf(opd.getDate()),
                         opd.getId())
-                .thenAccept(ignore -> {});
+                .thenApply(ignore -> opd);
     }
 
     public CompletionStage<List<OPD>> list(String healthFacilityID, String healthProfessionalID, LocalDate startDate, LocalDate endDate) {

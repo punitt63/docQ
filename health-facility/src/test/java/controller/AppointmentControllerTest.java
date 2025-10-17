@@ -13,18 +13,21 @@ import in.docq.health.facility.controller.OPDController;
 import in.docq.health.facility.dao.AppointmentDao;
 import in.docq.health.facility.dao.OPDDao;
 import in.docq.health.facility.model.Appointment;
-import in.docq.health.facility.model.HealthProfessionalType;
 import in.docq.health.facility.model.OPD;
 import in.docq.health.facility.service.AppointmentService;
 import in.docq.health.facility.service.OPDService;
+import in.docq.health.facility.service.WsConnectionHandler;
 import in.docq.keycloak.rest.client.model.GetAccessToken200Response;
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.DeploymentException;
+import jakarta.websocket.WebSocketContainer;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ActiveProfiles;
@@ -32,25 +35,31 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import java.io.IOException;
+import java.net.URI;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 import static configuration.TestAbhaClientConfiguration.MockAbhaRestClient.*;
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(classes = {HealthFacilityApplication.class, TestAbhaClientConfiguration.class})
+@SpringBootTest(classes = {HealthFacilityApplication.class, TestAbhaClientConfiguration.class}, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @ActiveProfiles(profiles = "test")
 @RunWith(SpringRunner.class)
 public class AppointmentControllerTest {
+
+    @LocalServerPort
+    private int port;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -70,6 +79,9 @@ public class AppointmentControllerTest {
     private DesktopKeycloakRestClient desktopKeycloakRestClient;
 
     private final String testPatientId = "test-patient-id";
+
+    private WebSocketIntegrationTest.TestWebSocketClient facilityManagerWsClient;
+    private WebSocketIntegrationTest.TestWebSocketClient doctorSessionWsClient;
 
     private static Gson gson = new GsonBuilder()
             .registerTypeAdapter(LocalDate.class, new JSON.LocalDateTypeAdapter()).create();
@@ -252,12 +264,26 @@ public class AppointmentControllerTest {
     @Test
     public void testTopAppointmentWhenInProgress() throws Exception {
         String facilityManagerToken = onboardFacilityManagerAndGetToken();
+        onboardDoctorAndGetToken(facilityManagerToken);
         OPD testOPD = createTestOPD(3);
         createAppointments(testOPD, facilityManagerToken, 3);
         Appointment firstAppointment = getTopAppointment(facilityManagerToken, testOPD);
         assertEquals(1, firstAppointment.getId());
         startAppointment(facilityManagerToken, firstAppointment);
         assertEquals(1, getTopAppointment(facilityManagerToken, testOPD).getId());
+        awaitWsStateChangeMessage(doctorSessionWsClient, firstAppointment, Appointment.State.WAITING, Appointment.State.IN_PROGRESS);
+    }
+
+    private void awaitWsStateChangeMessage(WebSocketIntegrationTest.TestWebSocketClient webSocketClient, Appointment firstAppointment, Appointment.State from, Appointment.State to) {
+        WsConnectionHandler.StateChangeMessage stateChangeMessage = WsConnectionHandler.StateChangeMessage.builder()
+                .objectId(firstAppointment.getUniqueId())
+                .objectType("APPOINTMENT")
+                .fromState(from.name())
+                .toState(to.name())
+                .build();
+        await()
+                .atMost(10, TimeUnit.SECONDS)
+                .until(() -> webSocketClient.receivedMessage(gson.toJson(stateChangeMessage)));
     }
 
     // 3 appointments
@@ -265,6 +291,7 @@ public class AppointmentControllerTest {
     @Test
     public void testCompletingAllAppointments() throws Exception {
         String facilityManagerToken = onboardFacilityManagerAndGetToken();
+        onboardDoctorAndGetToken(facilityManagerToken);
         OPD testOPD = createTestOPD(3);
         createAppointments(testOPD, facilityManagerToken, 3);
         // 1st Appointment
@@ -283,6 +310,8 @@ public class AppointmentControllerTest {
         startAppointment(facilityManagerToken, thirdAppointment);
         completeAppointment(facilityManagerToken, thirdAppointment);
         assertAllAppointmentsInTerminalState(facilityManagerToken, testOPD);
+
+
     }
 
     // 3 appointments
@@ -510,8 +539,8 @@ public class AppointmentControllerTest {
 
     private String onboardFacilityManagerAndGetToken() throws Exception {
         String adminUserToken = getAdminUserToken();
-        HealthProfessionalController.OnBoardHealthProfessionalRequestBody onBoardFacilityManagerRequestBody = HealthProfessionalController.OnBoardHealthProfessionalRequestBody.builder()
-                .type(HealthProfessionalType.FACILITY_MANAGER)
+        HealthProfessionalController.OnBoardFacilityManagerRequestBody requestBody = HealthProfessionalController.OnBoardFacilityManagerRequestBody.builder()
+                .facilityManagerID(testHealthFacilityManagerID)
                 .healthProfessionalID(testHealthFacilityManagerID)
                 .healthProfessionalName("Ms. Emily Davis")
                 .healthFacilityName("City General Hospital")
@@ -524,11 +553,11 @@ public class AppointmentControllerTest {
                 .longitude(77.5946)
                 .password("test-pass")
                 .build();
-        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/onboard")
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/facility-manager/onboard")
                 .header("Authorization", "Bearer " + adminUserToken)
-                .content(gson.toJson(onBoardFacilityManagerRequestBody))
+                .content(gson.toJson(requestBody))
                 .contentType(MediaType.APPLICATION_JSON)))
-                .andReturn();
+                .andExpect(status().isOk());
 
         return getFacilityManagerToken();
     }
@@ -542,8 +571,10 @@ public class AppointmentControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)))
                 .andReturn()
                 .getResponse();
-        return gson.fromJson(mockHttpServletResponse.getContentAsString(), HealthProfessionalController.LoginResponse.class)
+        String token = gson.fromJson(mockHttpServletResponse.getContentAsString(), HealthProfessionalController.LoginResponse.class)
                 .getAccessToken();
+        facilityManagerWsClient = createWsConnection(token);
+        return token;
     }
 
     private String getAdminUserToken() {
@@ -589,5 +620,40 @@ public class AppointmentControllerTest {
         return opdService.list(testHealthFacilityID, testDoctorID, currDate.plusDays(1), currDate.plusDays(1).plusWeeks(1))
                 .toCompletableFuture().join()
                 .get(1);
+    }
+
+    private WebSocketIntegrationTest.TestWebSocketClient createWsConnection(String token) throws DeploymentException, IOException {
+        URI uri = URI.create("ws://localhost:" + port + "/ws?token=" + token);
+        WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+        WebSocketIntegrationTest.TestWebSocketClient client = new WebSocketIntegrationTest.TestWebSocketClient();
+        container.connectToServer(client, uri);
+        return client;
+    }
+
+    private String onboardDoctorAndGetToken(String facilityManagerToken) throws Exception {
+        //onboard
+        HealthProfessionalController.OnBoardDoctorRequestBody requestBody = HealthProfessionalController.OnBoardDoctorRequestBody.builder()
+                .doctorID(testDoctorID)
+                .password("test-doc-pass")
+                .facilityManagerID(testHealthFacilityManagerID)
+                .build();
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/doctor/onboard")
+                .header("Authorization", "Bearer " + facilityManagerToken)
+                .content(gson.toJson(requestBody))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+        // get token
+        HealthProfessionalController.LoginHealthProfessionalRequestBody loginHealthProfessionalRequestBody = HealthProfessionalController.LoginHealthProfessionalRequestBody.builder()
+                .password("test-doc-pass")
+                .build();
+        MockHttpServletResponse mockHttpServletResponse = handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/" + testDoctorID + "/login")
+                .content(gson.toJson(loginHealthProfessionalRequestBody))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andReturn()
+                .getResponse();
+        String token = gson.fromJson(mockHttpServletResponse.getContentAsString(), HealthProfessionalController.LoginResponse.class)
+                .getAccessToken();
+        doctorSessionWsClient = createWsConnection(token);
+        return token;
     }
 }

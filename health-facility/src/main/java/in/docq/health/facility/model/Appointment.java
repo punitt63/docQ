@@ -21,6 +21,7 @@ public class Appointment {
     private final Long startTime;
     private final Long endTime;
     private final int priority;
+    private final OPD opd;
     private static final List<Pair<State, State>> allowedStateChange = List.of(
             ImmutablePair.of(State.WAITING, State.NO_SHOW),
             ImmutablePair.of(State.NO_SHOW, State.WAITING),
@@ -45,6 +46,10 @@ public class Appointment {
 
     public String getUniqueId() {
         return opdDate.toString() + "_" + opdId + "_" + id;
+    }
+
+    public HealthProfessional getDoctor() {
+        return opd.getDoctor();
     }
 
     public boolean isStateChangeAllowed(State finalState) {

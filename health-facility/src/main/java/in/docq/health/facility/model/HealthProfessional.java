@@ -20,7 +20,7 @@ public class HealthProfessional {
     private final Double longitude;
 
     public String getKeyCloakUserName() {
-        return healthFacilityID + "_" + id;
+        return healthFacilityID.toLowerCase() + "_" + id.toLowerCase();
     }
 
     public String getKeycloakRole() {

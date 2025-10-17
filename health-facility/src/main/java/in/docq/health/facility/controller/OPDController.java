@@ -1,6 +1,8 @@
 package in.docq.health.facility.controller;
 
 import in.docq.health.facility.auth.Authorized;
+import in.docq.health.facility.model.HealthProfessional;
+import in.docq.health.facility.model.HealthProfessionalType;
 import in.docq.health.facility.model.OPD;
 import in.docq.health.facility.service.OPDService;
 import jakarta.validation.constraints.Max;
@@ -39,16 +41,23 @@ public class OPDController {
     }
 
     @PatchMapping("/{health-facility-professional-id}/opd-dates/{opd-date}/opds/{opd-id}")
+    @Authorized(resource = "opd", scope = "update")
     public CompletionStage<ResponseEntity<OPD>> updateOPD(@PathVariable("health-facility-id") String healthFacilityID,
                                                           @PathVariable("health-facility-professional-id") String healthFacilityProfessionalID,
                                                           @PathVariable("opd-date") LocalDate opdDate,
                                                           @PathVariable("opd-id") String id,
-                                                          @RequestBody UpdateOPDRequestBody updateOPDRequestBody) {
-        return opdService.update(healthFacilityID, healthFacilityProfessionalID, opdDate, id, updateOPDRequestBody)
+                                                          @RequestBody UpdateOPDRequestBody updateOPDRequestBody,
+                                                          @RequestAttribute("type") HealthProfessionalType healthProfessionalType) {
+        return opdService.update(healthProfessionalType, HealthProfessional.builder()
+                        .healthFacilityID(healthFacilityID)
+                        .id(healthFacilityProfessionalID)
+                        .type(HealthProfessionalType.DOCTOR)
+                        .build(), opdDate, id, updateOPDRequestBody)
                 .thenApply(ResponseEntity::ok);
     }
 
     @GetMapping("/opds")
+    @Authorized(resource = "opd", scope = "read")
     public CompletionStage<ResponseEntity<List<OPD>>> listOPDs(@PathVariable("health-facility-id") String healthFacilityID,
                                                                @RequestParam("health-facility-professional-id") String healthFacilityProfessionalID,
                                                                @RequestParam("start-date") LocalDate startDate,
