@@ -78,6 +78,7 @@ public class AbhaRestClient {
         this.abhaProfileApi = new AbhaProfileApi(apiClient);
         this.abhaProfileApi.setCustomBaseUrl("https://abhasbx.abdm.gov.in");
         this.healthFacilitySearchApi = new HealthFacilitySearchApi(apiClient);
+        this.healthFacilitySearchApi.setCustomBaseUrl("https://apihspsbx.abdm.gov.in/v4/int/FacilityManagement");
         this.healthProfessionalSearchApi = new HealthProfessionalSearchApi(apiClient);
         this.enrollmentApiCollectionApi = new EnrollmentApiCollectionApi(apiClient);
         this.enrollmentApiCollectionApi.setCustomBaseUrl("https://abhasbx.abdm.gov.in");
@@ -176,7 +177,7 @@ public class AbhaRestClient {
 
     public CompletionStage<SearchFacilitiesData> getHealthFacility(String facilityID) {
         return getAccessToken()
-                .thenCompose(token -> healthFacilitySearchApi.v15SearchFacilitiesFuzzyPostUsingPOSTAsync(token, new SearchForFacilitiesRequest().facilityId(facilityID)))
+                .thenCompose(token -> healthFacilitySearchApi.v15SearchFacilitiesFuzzyPostUsingPOSTAsync(token, new SearchForFacilitiesRequest().facilityId(facilityID).page(1).resultsPerPage(10)))
                 .thenApply(searchForFacilitiesResponse -> {
                     if(searchForFacilitiesResponse.getTotalFacilities() == null || searchForFacilitiesResponse.getTotalFacilities() == 0) {
                         throw new ApiException(404, "Facility " + facilityID + " Not Found");
