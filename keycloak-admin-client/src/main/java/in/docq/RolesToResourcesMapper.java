@@ -61,14 +61,9 @@ public class RolesToResourcesMapper {
         public List<RoleResourceMapping> roleResourceMappings;
     }
 
-    public static void main(String[] args) {
+    public static void configureResources() {
         // Default config file path
         String resourcesMappingFile = "resource-mappings.json";
-
-        // Check if config file path is provided as argument
-        if (args.length > 0) {
-            resourcesMappingFile = args[0];
-        }
 
         try {
             // Load configuration from JSON file
