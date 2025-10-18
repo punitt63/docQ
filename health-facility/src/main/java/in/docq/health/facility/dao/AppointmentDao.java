@@ -174,6 +174,7 @@ public class AppointmentDao {
                 args.toArray());
     }
 
+
     public CompletionStage<Integer> truncate() {
         return postgresDAO.update(dbMetricsGroupName, "delete", "DELETE FROM " + table);
     }

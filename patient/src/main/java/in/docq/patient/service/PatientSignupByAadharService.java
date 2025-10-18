@@ -22,7 +22,7 @@ public class PatientSignupByAadharService {
     }
 
     public CompletionStage<PatientSignupByAadharController.RequestOtpResponseBody> requestOtp(String aadharNumber) {
-        return abhaRestClient.abhaEnrollmentRequestOtp(aadharNumber)
+        return abhaRestClient.otpRequestMobile(aadharNumber)
                 .thenApply(response -> PatientSignupByAadharController.RequestOtpResponseBody.builder()
                         .txnId(response.getTxnId())
                         .message(response.getMessage())
@@ -40,8 +40,8 @@ public class PatientSignupByAadharService {
                         .build());
     }
 
-    public CompletionStage<PatientSignupByAadharController.AbhaAddressSuggestionsResponseBody> getAbhaAddressSuggestions(String txnId) {
-        return abhaRestClient.getAbhaAddressSuggestions(txnId)
+    public CompletionStage<PatientSignupByAadharController.AbhaAddressSuggestionsResponseBody> getAbhaAddressSuggestions(String dayOfBirth, String firstName, String lastName, String monthOfBirth, String yearOfBirth, String txnId) {
+        return abhaRestClient.getAbhaAddressSuggestionsPhr(dayOfBirth, firstName, lastName, monthOfBirth, yearOfBirth, txnId)
                 .thenApply(response ->
                     PatientSignupByAadharController.AbhaAddressSuggestionsResponseBody.builder()
                             .txnId(response.getTxnId())

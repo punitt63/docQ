@@ -69,6 +69,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- Spring Boot Web Starter already includes support for PATCH method -->
 
     </dependencies>
 
@@ -88,13 +89,20 @@
             </resource>
         </resources>
         <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>in.docq.patient.PatientApplication</mainClass>
-                </configuration>
-            </plugin>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <configuration>
+                        <mainClass>in.docq.patient.PatientApplication</mainClass>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>repackage</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
         </plugins>
     </build>
 

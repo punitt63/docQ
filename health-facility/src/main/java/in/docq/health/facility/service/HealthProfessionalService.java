@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.concurrent.CompletionException;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 import static in.docq.health.facility.model.HealthProfessionalType.DOCTOR;
@@ -78,14 +79,27 @@ public class HealthProfessionalService {
     public CompletionStage<Void> onBoard(String healthFacilityID, HealthProfessionalController.OnBoardHealthProfessionalRequestBody onBoardHealthProfessionalRequestBody) {
         HealthProfessional healthProfessional = HealthProfessional.builder()
                 .id(onBoardHealthProfessionalRequestBody.getHealthProfessionalID())
+                .healthProfessionalName(onBoardHealthProfessionalRequestBody.getHealthProfessionalName())
                 .healthFacilityID(healthFacilityID)
+                .healthFacilityName(onBoardHealthProfessionalRequestBody.getHealthFacilityName())
                 .type(onBoardHealthProfessionalRequestBody.getType())
                 .build();
-        return abhaRestClient.getHealthFacility(healthFacilityID)
-                .thenCompose(ignore -> abhaRestClient.getHealthProfessionalExists(onBoardHealthProfessionalRequestBody.getHealthProfessionalID()))
-                .thenCompose(ignore -> backendKeyCloakRestClient.createUserIfNotExists(healthProfessional.getKeyCloakUserName(), onBoardHealthProfessionalRequestBody.getPassword(), List.of(healthProfessional.getKeycloakRole())))
+        return backendKeyCloakRestClient.createUserIfNotExists(healthProfessional.getKeyCloakUserName(), onBoardHealthProfessionalRequestBody.getPassword(), List.of(healthProfessional.getKeycloakRole()))
                 .thenCompose(ignore -> backendKeyCloakRestClient.mapRealmRole(healthProfessional.getKeyCloakUserName(), healthProfessional.getKeycloakRole()))
-                .thenCompose(ignore -> healthProfessionalDao.insert(healthFacilityID, onBoardHealthProfessionalRequestBody.getHealthProfessionalID(), healthProfessional.getType()));
+                .thenCompose(ignore -> healthProfessionalDao.insert(
+                        healthFacilityID,
+                        onBoardHealthProfessionalRequestBody.getHealthFacilityName(),
+                        onBoardHealthProfessionalRequestBody.getHealthProfessionalID(),
+                        onBoardHealthProfessionalRequestBody.getHealthProfessionalName(),
+                        healthProfessional.getType(),
+                        onBoardHealthProfessionalRequestBody.getStateCode(),
+                        onBoardHealthProfessionalRequestBody.getDistrictCode(),
+                        onBoardHealthProfessionalRequestBody.getSpeciality(),
+                        onBoardHealthProfessionalRequestBody.getAddress(),
+                        onBoardHealthProfessionalRequestBody.getPincode(),
+                        onBoardHealthProfessionalRequestBody.getLatitude(),
+                        onBoardHealthProfessionalRequestBody.getLongitude()
+                ));
     }
 
     public CompletionStage<Void> onBoardFacilityManager(String healthFacilityID, HealthProfessionalController.OnBoardFacilityManagerRequestBody onBoardFacilityManagerRequestBody) {
@@ -159,5 +173,9 @@ public class HealthProfessionalService {
                         .healthFacilityID(doc.get().getHealthFacilityID())
                         .type(DOCTOR)
                         .build());
+    }
+
+    public CompletionStage<List<HealthProfessional>> listByStateDistrictAndSpeciality(int stateCode, int districtCode, Optional<String> speciality) {
+        return healthProfessionalDao.listByStateAndDistrict(stateCode, districtCode, speciality);
     }
 }

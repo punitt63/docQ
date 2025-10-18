@@ -7,16 +7,13 @@ import in.docq.health.facility.controller.HiuConsentWebhookController;
 import in.docq.health.facility.service.HiuConsentService;
 import in.docq.health.facility.service.OTPService;
 import lombok.Setter;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
-import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
@@ -59,6 +56,10 @@ public class TestAbhaClientConfiguration {
         public static String testSecondHealthFacilityManagerID = "test-second-fm-id";
         public static String testThirdHealthFacilityManagerID = "test-third-fm-id";
         public static String testDoctorID = "test-doctor-id";
+        public static int testStateCode = 29;
+        public static int testDistrictCode = 525;
+        public static String testFMSpeciality = "Facility Manager";
+        public static String testDoctorSpeciality = "General Physician";
         public static String testSecondDoctorID = "test-doctor-id-2";
         public static String testThirdDoctorID = "test-doctor-id-3";
         public int sendDeepLinkNotificationCount;

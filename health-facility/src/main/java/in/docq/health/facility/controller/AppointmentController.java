@@ -54,7 +54,7 @@ public class AppointmentController {
     }
 
     @GetMapping("/appointments")
-    //@Authorized(resource = "appointment", scope = "read")
+    @Authorized(resource = "appointment", scope = "read")
     public CompletionStage<ResponseEntity<List<Appointment>>> getAppointment(@RequestParam(value = "start-opd-date") LocalDate startOpdDate,
                                                                              @RequestParam(value = "end-opd-date") LocalDate endOpdDate,
                                                                              @RequestParam(value = "opd-id", required = false) String opdID,
@@ -67,6 +67,7 @@ public class AppointmentController {
         return appointmentService.list(startOpdDate, endOpdDate, opdID, patientID, states, limit)
                 .thenApply(ResponseEntity::ok);
     }
+
 
     @PatchMapping("/health-facilities/{health-facility-id}/opd-dates/{opd-date}/opds/{opd-id}/appointments/{appointment-id}/start")
     @Authorized(resource = "appointment", scope = "start")
