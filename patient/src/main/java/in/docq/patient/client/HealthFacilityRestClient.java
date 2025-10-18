@@ -46,7 +46,7 @@ public class HealthFacilityRestClient {
                                                           LocalDate opdDate,
                                                           String opdId,
                                                           CreateAppointmentRequestBody requestBody) {
-        return backendKeyCloakRestClient.getRequestingPartyToken()
+        return backendKeyCloakRestClient.getAccessToken()
                 .thenCompose(token -> CompletableFuture.supplyAsync(() -> {
                     try {
                         String url = healthFacilityServiceUrl + "/health-facilities/" + healthFacilityId + 
@@ -85,7 +85,7 @@ public class HealthFacilityRestClient {
                                                             List<Appointment.State> states,
                                                             Integer offset,
                                                             Integer limit) {
-        return backendKeyCloakRestClient.getRequestingPartyToken()
+        return backendKeyCloakRestClient.getAccessToken()
                 .thenCompose(token -> CompletableFuture.supplyAsync(() -> {
                     try {
                         HttpUrl.Builder urlBuilder = HttpUrl.parse(healthFacilityServiceUrl + "/appointments").newBuilder()
@@ -128,7 +128,7 @@ public class HealthFacilityRestClient {
                                                         LocalDate opdDate, 
                                                         String opdId, 
                                                         Integer appointmentId) {
-        return backendKeyCloakRestClient.getRequestingPartyToken()
+        return backendKeyCloakRestClient.getAccessToken()
                 .thenCompose(token -> CompletableFuture.supplyAsync(() -> {
                     try {
                         String url = healthFacilityServiceUrl + "/health-facilities/" + healthFacilityId + 
@@ -164,7 +164,7 @@ public class HealthFacilityRestClient {
             String patientId,
             Integer offset,
             Integer limit) {
-        return backendKeyCloakRestClient.getRequestingPartyToken()
+        return backendKeyCloakRestClient.getAccessToken()
                 .thenCompose(token -> CompletableFuture.supplyAsync(() -> {
                     try {
                         HttpUrl.Builder urlBuilder = HttpUrl.parse(healthFacilityServiceUrl + "/appointments").newBuilder()
@@ -202,7 +202,7 @@ public class HealthFacilityRestClient {
                                               String healthFacilityProfessionalId,
                                               LocalDate startDate,
                                               LocalDate endDate) {
-        return backendKeyCloakRestClient.getRequestingPartyToken()
+        return backendKeyCloakRestClient.getAccessToken()
                 .thenCompose(token -> CompletableFuture.supplyAsync(() -> {
                     try {
                         HttpUrl.Builder urlBuilder = HttpUrl.parse(healthFacilityServiceUrl + "/health-facilities/" + healthFacilityId + "/health-facility-professionals/opds").newBuilder()
@@ -236,7 +236,7 @@ public class HealthFacilityRestClient {
                                                                       LocalDate startOpdDate,
                                                                       LocalDate endOpdDate,
                                                                       Integer limit) {
-        return backendKeyCloakRestClient.getRequestingPartyToken()
+        return backendKeyCloakRestClient.getAccessToken()
                 .thenCompose(token -> CompletableFuture.supplyAsync(() -> {
                     try {
                         HttpUrl.Builder urlBuilder = HttpUrl.parse(healthFacilityServiceUrl + "/patients/" + patientId + "/prescriptions").newBuilder()
@@ -269,7 +269,7 @@ public class HealthFacilityRestClient {
     public CompletionStage<Prescription> getOPDPrescription(LocalDate opdDate,
                                                             String opdId,
                                                             Integer appointmentId) {
-        return backendKeyCloakRestClient.getRequestingPartyToken()
+        return backendKeyCloakRestClient.getAccessToken()
                 .thenCompose(token -> CompletableFuture.supplyAsync(() -> {
                     try {
                         String healthFacilityId = "_"; // Placeholder as per original logic
@@ -302,7 +302,7 @@ public class HealthFacilityRestClient {
     public CompletionStage<List<HealthProfessional>> listHealthProfessionals(int stateCode,
                                                                              int districtCode,
                                                                              String speciality) {
-        return backendKeyCloakRestClient.getRequestingPartyToken()
+        return backendKeyCloakRestClient.getAccessToken()
                 .thenCompose(token -> CompletableFuture.supplyAsync(() -> {
                     try {
                         HttpUrl.Builder urlBuilder = HttpUrl.parse(healthFacilityServiceUrl + "/health-facilities/_/health-facility-professionals/search").newBuilder()
@@ -337,7 +337,7 @@ public class HealthFacilityRestClient {
 
     public CompletionStage<Void> createPatientIfNotExists(String healthFacilityId,
                                                           CreatePatientRequestBody requestBody) {
-        return backendKeyCloakRestClient.getRequestingPartyToken()
+        return backendKeyCloakRestClient.getAccessToken()
                 .thenCompose(token -> CompletableFuture.supplyAsync(() -> {
                     try {
                         String url = healthFacilityServiceUrl + "/health-facilities/" + healthFacilityId + "/patients/create-if-not-exists";

@@ -8,8 +8,6 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.JWTVerifier;
-import in.docq.health.facility.model.HealthProfessional;
-import in.docq.health.facility.model.HealthProfessionalType;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -59,28 +57,15 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
             JWTVerifier verifier = JWT.require(algorithm)
                     .withIssuer(keyCloakBaseUrl + "/realms/" + realm)
+                    .withAudience("account")
                     .ignoreIssuedAt()
                     .build();
             verifier.verify(decodedJWT);
-
-            // OR audience check: accept any of the allowed audiences
-            java.util.Set<String> allowedAudiences = java.util.Set.of(
-                    "health-facility-backend-app",
-                    "health-facility-desktop-app",
-                    "account"
-            );
-            java.util.List<String> tokenAud = decodedJWT.getAudience();
-            boolean audienceOk = tokenAud != null && tokenAud.stream().anyMatch(allowedAudiences::contains);
-            if (!audienceOk) {
-                throw new JWTVerificationException("Invalid audience");
-            }
 
             SecurityContextHolder.getContext().setAuthentication(
                     new UsernamePasswordAuthenticationToken(decodedJWT.getSubject(), "***"));
             request.setAttribute("authenticatedUser", decodedJWT.getClaim("preferred_username").asString());
             request.setAttribute("authenticatedToken", token);
-            HealthProfessionalType healthProfessionalType = decodedJWT.getClaims().get("realm_access").asMap().get("roles").toString().contains("doctor") ? HealthProfessionalType.DOCTOR : HealthProfessionalType.FACILITY_MANAGER;
-            request.setAttribute("type", healthProfessionalType.name());
         } catch (JWTVerificationException jwtVerificationException){
             logger.error("Verification Exception ", jwtVerificationException);
             ((HttpServletResponse) response).sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token Validation Failed");

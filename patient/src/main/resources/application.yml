@@ -59,11 +59,15 @@ keycloak:
   backend:
     client:
       id: patient-backend-app
-      secret: 3G1Pp9ZmEGabFBchTTyXfuwZKLto8a4G
+      secret: 90R4KlaDowq4jU5gM2g05BsBmDRPdW4f
   desktop:
     client:
       id: patient-mobile-app
       secret: 1OadpENrgZprruUrOOy014AoiNfu3jom
+  patient:
+    admin:
+      username: patient-admin
+      password: Kx9#mP2$vL8@nQ5!
   http:
     max:
       idle:
