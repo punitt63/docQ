@@ -1,0 +1,144 @@
+services:
+  postgres:
+    image: postgres:14
+    container_name: postgres
+    environment:
+      POSTGRES_DB: health_facility
+      POSTGRES_USER: docq
+      POSTGRES_PASSWORD: docq
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docq -d health_facility"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0.6
+    container_name: keycloak
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: postgres
+      KC_DB_URL_PORT: 5432
+      KC_DB_USERNAME: docq
+      KC_DB_PASSWORD: docq
+      KC_DB_URL_DATABASE: health_facility
+      KC_ADMIN: admin
+      KC_ADMIN_PASSWORD: admin
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: start-dev
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 5 sh -c 'echo > /dev/tcp/localhost/8080' || exit 1"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+  keycloak-setup:
+    image: maven:3.9-eclipse-temurin-17
+    container_name: keycloak-setup
+    network_mode: "service:keycloak"
+    working_dir: /usr/src/app
+    volumes:
+      - ./:/usr/src/app
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    command: >
+      bash -lc "
+      echo 'Waiting for Keycloak to be ready...' &&
+      until curl -fsS http://localhost:8080/realms/master >/dev/null 2>&1; do sleep 2; done &&
+      echo 'Keycloak is up. Running setup...' &&
+      mvn -q -pl keycloak-admin-client -am -DskipTests package &&
+      java -cp 'keycloak-admin-client/target/classes:keycloak-admin-client/target/dependency/*' in.docq.KeycloakSetupOrchestrator
+      "
+
+  flyway:
+    image: flyway/flyway:8.5.13
+    container_name: flyway
+    command: -url=jdbc:postgresql://postgres:5432/health_facility -user=docq -password=docq -connectRetries=60 -baselineOnMigrate=true migrate
+    environment:
+      - FLYWAY_USER=docq
+      - FLYWAY_PASSWORD=docq
+      - FLYWAY_MIXED=true
+    volumes:
+      - ./health-facility/src/main/resources/db/migrations:/flyway/sql
+    depends_on:
+     postgres:
+       condition: service_healthy
+
+  health-facility:
+    build:
+      context: .
+      dockerfile: health-facility/Dockerfile
+    container_name: health-facility
+    ports:
+      - "9097:9097"
+    environment:
+      - SPRING_PROFILES_ACTIVE:local
+      - KEYCLOAK_BASE_URL=http://keycloak:8080
+      - KEYCLOAK_REALM=health-facility
+      - KEYCLOAK_BACKEND_CLIENT_ID=health-facility-backend-app
+      - KEYCLOAK_BACKEND_CLIENT_SECRET=3G1Pp9ZmEGabFBchTTyXfuwZKLto8a4G
+      - KEYCLOAK_DESKTOP_CLIENT_ID=health-facility-desktop-app
+      - KEYCLOAK_DESKTOP_CLIENT_SECRET=1OadpENrgZprruUrOOy014AoiNfu3jom
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/health_facility
+      - SPRING_DATASOURCE_USERNAME=docq
+      - SPRING_DATASOURCE_PASSWORD=docq
+    links:
+      - "keycloak:keycloak"
+    depends_on:
+      flyway:
+        condition: service_completed_successfully
+      keycloak-setup:
+        condition: service_completed_successfully
+    healthcheck:
+      test: "curl --fail --silent localhost:9097/health | grep UP || exit 1"
+      interval: 5s
+      timeout: 10s
+      retries: 5
+    networks:
+      - default
+
+  patient:
+    build:
+      context: .
+      dockerfile: patient/Dockerfile
+    container_name: patient
+    ports:
+      - "9098:9098"
+    environment:
+      - SPRING_PROFILES_ACTIVE:local
+      - KEYCLOAK_BASE_URL=http://keycloak:8080
+      - KEYCLOAK_REALM=health-facility
+      - KEYCLOAK_BACKEND_CLIENT_ID=patient-backend-app
+      - KEYCLOAK_BACKEND_CLIENT_SECRET=3G1Pp9ZmEGabFBchTTyXfuwZKLto8a4G
+      - KEYCLOAK_PATIENT_ADMIN_USERNAME=patient-admin
+      - KEYCLOAK_PATIENT_ADMIN_PASSWORD=Kx9#mP2$vL8@nQ5!
+      - HEALTH_FACILITY_BASE_URL=http://health-facility:9097
+    links:
+      - "keycloak:keycloak"
+      - "health-facility:health-facility"
+    depends_on:
+        health-facility:
+            condition: service_healthy
+    healthcheck:
+      test: "curl --fail --silent localhost:9098/health | grep UP || exit 1"
+      interval: 5s
+      timeout: 10s
+      retries: 5
+    networks:
+      - default
+
+volumes:
+  pgdata:
