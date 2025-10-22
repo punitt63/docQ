@@ -2,8 +2,8 @@ package in.docq.health.facility.controller;
 
 import in.docq.health.facility.auth.Authorized;
 import in.docq.health.facility.exception.HealthProfessionalNotFound;
+import in.docq.health.facility.model.Doctor;
 import in.docq.health.facility.model.HealthProfessional;
-import in.docq.health.facility.model.HealthProfessionalType;
 import in.docq.health.facility.service.HealthProfessionalService;
 import in.docq.keycloak.rest.client.model.GetAccessToken200Response;
 import in.docq.keycloak.rest.client.model.Permission;
@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 @RestController
-@RequestMapping("/health-facilities/{health-facility-id}/health-facility-professionals")
 public class HealthProfessionalController {
     private final HealthProfessionalService healthProfessionalService;
 
@@ -26,7 +25,7 @@ public class HealthProfessionalController {
         this.healthProfessionalService = healthProfessionalService;
     }
 
-    @PostMapping("/{health-facility-professional-id}/login")
+    @PostMapping("/health-facilities/{health-facility-id}/health-facility-professionals/{health-facility-professional-id}/login")
     public CompletionStage<ResponseEntity<LoginResponse>> loginFacilityProfessional(@PathVariable("health-facility-id") String healthFacilityID,
                                                                            @PathVariable("health-facility-professional-id") String healthFacilityProfessionalID,
                                                                            @RequestBody LoginHealthProfessionalRequestBody loginHealthProfessionalRequestBody) {
@@ -34,28 +33,20 @@ public class HealthProfessionalController {
                 .thenApply(ResponseEntity::ok);
     }
 
-    @GetMapping("/refresh-token")
+    @GetMapping("/health-facilities/{health-facility-id}/health-facility-professionals/refresh-token")
     public CompletionStage<ResponseEntity<GetAccessToken200Response>> refreshUserAccessToken(@RequestHeader("Refresh-Token") String refreshToken) {
         return healthProfessionalService.refreshUserAccessToken(refreshToken)
                 .thenApply(ResponseEntity::ok);
     }
 
-    @PostMapping("/logout")
+    @PostMapping("/health-facilities/{health-facility-id}/health-facility-professionals/logout")
     public CompletionStage<ResponseEntity<Void>> logoutFacilityProfessional(@RequestHeader("Authorization") String bearerToken,
                                                                             @RequestBody LogoutHealthProfessionalRequestBody logoutHealthProfessionalRequestBody) {
         return healthProfessionalService.logout(bearerToken, logoutHealthProfessionalRequestBody.getRefreshToken())
                 .thenApply(ResponseEntity::ok);
     }
 
-    @PostMapping("/onboard")
-    @Authorized(resource = "health-facility", scope = "onboarding")
-    public CompletionStage<ResponseEntity<Void>> onBoardHealthFacilityProfessional(@PathVariable("health-facility-id") String healthFacilityID,
-                                                                                  @RequestBody OnBoardHealthProfessionalRequestBody createHealthProfessionalRequestBody) {
-        return healthProfessionalService.onBoard(healthFacilityID, createHealthProfessionalRequestBody)
-                .thenApply(ResponseEntity::ok);
-    }
-
-    @PostMapping("/facility-manager/onboard")
+    @PostMapping("/health-facilities/{health-facility-id}/health-facility-professionals/facility-manager/onboard")
     @Authorized(resource = "health-facility", scope = "onboarding")
     public CompletionStage<ResponseEntity<Void>> onBoardFacilityManager(@PathVariable("health-facility-id") String healthFacilityID,
                                                                         @RequestBody OnBoardFacilityManagerRequestBody createHealthProfessionalRequestBody) {
@@ -63,7 +54,7 @@ public class HealthProfessionalController {
                 .thenApply(ResponseEntity::ok);
     }
 
-    @PostMapping("/doctor/onboard")
+    @PostMapping("/health-facilities/{health-facility-id}/health-facility-professionals/doctor/onboard")
     @Authorized(resource = "health-facility", scope = "onboarding")
     public CompletionStage<ResponseEntity<Void>> onBoardDoctor(@PathVariable("health-facility-id") String healthFacilityID,
                                                                 @RequestBody OnBoardDoctorRequestBody onBoardDoctorRequestBody) {
@@ -71,26 +62,39 @@ public class HealthProfessionalController {
                 .thenApply(ResponseEntity::ok);
     }
 
-    @GetMapping("/{health-facility-professional-id}")
+    @GetMapping("/health-facilities/{health-facility-id}/health-facility-professionals/{health-facility-professional-id}")
+    @Authorized(resource = "health-professional", scope = "read")
     public CompletionStage<ResponseEntity<HealthProfessional>> getHealthFacilityProfessional(@PathVariable("health-facility-id") String healthFacilityID,
                                                                                              @PathVariable("health-facility-professional-id") String healthFacilityProfessionalID) {
         return healthProfessionalService.get(healthFacilityID, healthFacilityProfessionalID)
                 .thenApply(ResponseEntity::ok)
                 .exceptionally(throwable -> {
-                    throwable = throwable.getCause();
-                    if (throwable instanceof HealthProfessionalNotFound) {
-                        return (ResponseEntity<HealthProfessional>) ResponseEntity.notFound();
+                    Throwable cause = throwable.getCause();
+                    if (cause instanceof HealthProfessionalNotFound) {
+                        return ResponseEntity.notFound().build();
                     }
-                    return (ResponseEntity<HealthProfessional>) ResponseEntity.internalServerError();
+                    return ResponseEntity.internalServerError().build();
                 });
     }
 
-    @Builder
-    @Getter
-    public static class OnBoardHealthProfessionalRequestBody {
-        private final String healthProfessionalID;
-        private final HealthProfessionalType type;
-        private final String password;
+    @GetMapping("/health-facilities/{health-facility-id}/health-facility-professionals/doctors")
+    @Authorized(resource = "health-professional", scope = "read")
+    public CompletionStage<ResponseEntity<List<Doctor>>> listByHealthFacility(
+            @PathVariable("health-facility-id") String healthFacilityID,
+            @RequestParam(value = "facility-manager-id", required = false) String facilityManagerID) {
+        return healthProfessionalService
+                .listDoctorsByHealthFacility(healthFacilityID, facilityManagerID)
+                .thenApply(ResponseEntity::ok);
+    }
+
+    @GetMapping("/doctors")
+    @Authorized(resource = "health-professional", scope = "read")
+    public CompletionStage<ResponseEntity<List<Doctor>>> listHealthProfessionals(
+            @RequestParam(value = "state-code") int stateCode,
+            @RequestParam(value = "district-code") int districtCode) {
+        return healthProfessionalService
+                .listDoctorsByStateDistrict(stateCode, districtCode)
+                .thenApply(ResponseEntity::ok);
     }
 
     @Builder

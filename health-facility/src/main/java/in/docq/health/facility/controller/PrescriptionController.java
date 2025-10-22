@@ -33,8 +33,7 @@ public class PrescriptionController {
     @Authorized(resource = "prescription", scope = "read")
     public CompletionStage<ResponseEntity<Prescription>> getOPDPrescription(@PathVariable("opd-date") LocalDate opdDate,
                                                                             @PathVariable("opd-id") String opdId,
-                                                                            @PathVariable("appointment-id") Integer appointmentId
-    ) {
+                                                                            @PathVariable("appointment-id") Integer appointmentId) {
         return prescriptionService.get(opdDate, opdId, appointmentId)
                 .thenApply(ResponseEntity::ok);
     }

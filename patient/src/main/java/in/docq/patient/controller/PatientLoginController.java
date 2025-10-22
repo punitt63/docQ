@@ -1,7 +1,6 @@
 package in.docq.patient.controller;
 
-import in.docq.abha.rest.client.model.AbhaAccount;
-import in.docq.abha.rest.client.model.Tokens;
+import in.docq.abha.rest.client.model.*;
 import in.docq.patient.service.PatientLoginService;
 import lombok.Builder;
 import lombok.Getter;
@@ -35,11 +34,89 @@ public class PatientLoginController {
                 .thenApply(ResponseEntity::ok);
     }
 
-    @PostMapping("/abha-number")
+    @PostMapping("/abha-address")
     public CompletionStage<ResponseEntity<PatientLoginController.VerifyUserResponseBody>> verifyUser(@RequestBody PatientLoginController.VerifyUserRequestBody verifyUserRequestBody,
                                                                                                      @RequestHeader("T-token") String tToken) {
         return patientLoginService.verifyUser(verifyUserRequestBody, tToken)
                 .thenApply(ResponseEntity::ok);
+    }
+
+    @GetMapping("/search-auth-methods")
+    public CompletionStage<ResponseEntity<PatientLoginController.SearchAuthMethodsResponseBody>> searchAuthMethodsByAbhaAddress(@RequestParam("abhaAddress") String abhaAddress) {
+        return patientLoginService.searchAuthMethodsByAbhaAddress(abhaAddress)
+                .thenApply(ResponseEntity::ok);
+    }
+
+    // ===== PHR Profile endpoints =====
+
+    @PostMapping("/profile/de-link")
+    public CompletionStage<ResponseEntity<DeLinkRequest200Response>> deLinkAbhaProfile(@RequestHeader("X-token") String xToken, @RequestParam("transactionId") String transactionId) {
+        return patientLoginService.deLinkAbhaProfile(xToken, transactionId).thenApply(ResponseEntity::ok);
+    }
+
+    @GetMapping("/profile/phr-card")
+    public CompletionStage<ResponseEntity<byte[]>> getPhrCard(@RequestHeader("X-token") String xToken) {
+        return patientLoginService.getPhrCard(xToken).thenApply(imageBytes -> 
+            ResponseEntity.ok()
+                .header("Content-Type", "image/png")
+                .header("Content-Disposition", "inline; filename=\"phr-card.png\"")
+                .body(imageBytes)
+        );
+    }
+
+    @GetMapping("/profile")
+    public CompletionStage<ResponseEntity<GetProfile200Response>> getProfile(@RequestHeader("X-token") String xToken) {
+        return patientLoginService.getProfile(xToken).thenApply(ResponseEntity::ok);
+    }
+
+    @GetMapping("/profile/qr")
+    public CompletionStage<ResponseEntity<byte[]>> getQrCode(@RequestHeader("X-token") String xToken) {
+        return patientLoginService.getQrCode(xToken).thenApply(imageBytes -> 
+            ResponseEntity.ok()
+                .header("Content-Type", "image/png")
+                .header("Content-Disposition", "inline; filename=\"qrcode.png\"")
+                .body(imageBytes)
+        );
+    }
+
+    @PostMapping("/profile/link")
+    public CompletionStage<ResponseEntity<LinkRequest200Response>> linkAbhaProfile(@RequestHeader("X-token") String xToken, @RequestParam("transactionId") String transactionId) {
+        return patientLoginService.linkAbhaProfile(xToken, transactionId).thenApply(ResponseEntity::ok);
+    }
+
+    @PostMapping("/profile/logout")
+    public CompletionStage<ResponseEntity<Logout200Response>> logout(@RequestHeader("X-token") String xToken) {
+        return patientLoginService.logout(xToken).thenApply(ResponseEntity::ok);
+    }
+
+    @PostMapping("/profile/refresh-token")
+    public CompletionStage<ResponseEntity<RefreshToken200Response>> refreshProfileToken(@RequestHeader("R-token") String rToken) {
+        return patientLoginService.refreshProfileToken(rToken).thenApply(ResponseEntity::ok);
+    }
+
+    @PostMapping("/profile/update-email/send-otp")
+    public CompletionStage<ResponseEntity<OtpRequestMobile200Response>> sendUpdateEmailOtp(@RequestHeader("X-token") String xToken, @RequestParam("email") String email, @RequestParam("txnId") String txnId) {
+        return patientLoginService.sendUpdateEmailOtp(xToken, email, txnId).thenApply(ResponseEntity::ok);
+    }
+
+    @PostMapping("/profile/update-email/verify-otp")
+    public CompletionStage<ResponseEntity<VerifyOtpUpdateEmail200Response>> verifyUpdateEmailOtp(@RequestHeader("X-token") String xToken, @RequestParam("otp") String otp, @RequestParam("txnId") String txnId) {
+        return patientLoginService.verifyUpdateEmailOtp(xToken, otp, txnId).thenApply(ResponseEntity::ok);
+    }
+
+    @PostMapping("/profile/switch")
+    public CompletionStage<ResponseEntity<SwitchProfile200Response>> switchProfile(@RequestHeader("X-token") String xToken) {
+        return patientLoginService.switchProfile(xToken).thenApply(ResponseEntity::ok);
+    }
+
+    @PostMapping("/profile/update")
+    public CompletionStage<ResponseEntity<UpdateProfile200Response>> updateProfile(@RequestHeader("X-token") String xToken, @RequestParam("email") String email, @RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName) {
+        return patientLoginService.updateProfile(xToken, email, firstName, lastName).thenApply(ResponseEntity::ok);
+    }
+
+    @PostMapping("/profile/verify-user-switch")
+    public CompletionStage<ResponseEntity<OtpVerifyMobile200ResponseTokens>> verifyUserForSwitch(@RequestHeader("T-token") String tToken, @RequestParam("txnId") String txnId, @RequestParam("otp") String otp) {
+        return patientLoginService.verifyUserForSwitch(tToken, txnId, otp).thenApply(ResponseEntity::ok);
     }
 
     @Builder
@@ -73,13 +150,14 @@ public class PatientLoginController {
         String authResult;
         String message;
         Tokens tokens;
-        List<AbhaAccount> accounts;
+        List<PhrUser> users;
+        String preferredAbhaAddress;
     }
 
     @Builder
     @Getter
     public static class VerifyUserRequestBody {
-        String abhaNumber;
+        String abhaAddress;
         String txnId;
     }
 
@@ -87,5 +165,16 @@ public class PatientLoginController {
     @Getter
     public static class VerifyUserResponseBody {
         Tokens tokens;
+    }
+
+    @Builder
+    @Getter
+    public static class SearchAuthMethodsResponseBody {
+        String abhaAddress;
+        List<String> authMethods;
+        String fullName;
+        String healthIdNumber;
+        String mobile;
+        String status;
     }
 }

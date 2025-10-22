@@ -3,6 +3,8 @@ package in.docq.abha.rest.client.model;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.math.BigDecimal;
+
 @Builder
 @Getter
 public class Tokens {
@@ -27,6 +29,15 @@ public class Tokens {
                 .expiresIn(expiresIn)
                 .refreshToken(refreshToken)
                 .refreshExpiresIn(refreshExpiresIn)
+                .build();
+    }
+
+    public static Tokens toTokens(String token, BigDecimal expiresIn, String refreshToken, BigDecimal refreshExpiresIn) {
+        return Tokens.builder()
+                .token(token)
+                .expiresIn(expiresIn != null ? expiresIn.intValue() : null)
+                .refreshToken(refreshToken)
+                .refreshExpiresIn(refreshExpiresIn != null ? refreshExpiresIn.intValue() : null)
                 .build();
     }
 
