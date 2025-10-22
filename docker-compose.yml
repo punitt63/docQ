@@ -123,7 +123,7 @@ services:
       - KEYCLOAK_REALM=health-facility
       - KEYCLOAK_BACKEND_CLIENT_ID=patient-backend-app
       - KEYCLOAK_BACKEND_CLIENT_SECRET=3G1Pp9ZmEGabFBchTTyXfuwZKLto8a4G
-      - KEYCLOAK_PATIENT_ADMIN_USERNAME=patient-admin
+      - KEYCLOAK_PATIENT_ADMIN_USERNAME=patient-backend-app
       - KEYCLOAK_PATIENT_ADMIN_PASSWORD=Kx9#mP2$vL8@nQ5!
       - HEALTH_FACILITY_BASE_URL=http://health-facility:9097
     links:

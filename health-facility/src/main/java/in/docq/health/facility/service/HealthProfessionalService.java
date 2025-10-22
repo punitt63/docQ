@@ -8,8 +8,8 @@ import in.docq.health.facility.auth.DesktopKeycloakRestClient;
 import in.docq.health.facility.controller.HealthProfessionalController;
 import in.docq.health.facility.dao.DoctorDao;
 import in.docq.health.facility.dao.FacilityManagerDao;
-import in.docq.health.facility.dao.HealthProfessionalDao;
 import in.docq.health.facility.exception.HealthProfessionalNotFound;
+import in.docq.health.facility.model.Doctor;
 import in.docq.health.facility.model.HealthProfessional;
 import in.docq.health.facility.model.HealthProfessionalType;
 import in.docq.keycloak.rest.client.model.GetAccessToken200Response;
@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.concurrent.CompletionException;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 import static in.docq.health.facility.model.HealthProfessionalType.DOCTOR;
@@ -29,7 +28,6 @@ public class HealthProfessionalService {
     private final AbhaRestClient abhaRestClient;
     private final BackendKeyCloakRestClient backendKeyCloakRestClient;
     private final DesktopKeycloakRestClient desktopKeyCloakRestClient;
-    private final HealthProfessionalDao healthProfessionalDao;
     private final FacilityManagerDao facilityManagerDao;
     private final DoctorDao doctorDao;
     private final Cache<String, String> healthProfessionalFacilityMappingCache;
@@ -39,11 +37,10 @@ public class HealthProfessionalService {
     public HealthProfessionalService(AbhaRestClient abhaRestClient,
                                      BackendKeyCloakRestClient backendKeyCloakRestClient,
                                      DesktopKeycloakRestClient desktopKeyCloakRestClient,
-                                     HealthProfessionalDao healthProfessionalDao, FacilityManagerDao facilityManagerDao, DoctorDao doctorDao, WsConnectionHandler wsConnectionHandler) {
+                                     FacilityManagerDao facilityManagerDao, DoctorDao doctorDao, WsConnectionHandler wsConnectionHandler) {
         this.abhaRestClient = abhaRestClient;
         this.backendKeyCloakRestClient = backendKeyCloakRestClient;
         this.desktopKeyCloakRestClient = desktopKeyCloakRestClient;
-        this.healthProfessionalDao = healthProfessionalDao;
         this.facilityManagerDao = facilityManagerDao;
         this.doctorDao = doctorDao;
         this.wsConnectionHandler = wsConnectionHandler;
@@ -76,32 +73,6 @@ public class HealthProfessionalService {
         return desktopKeyCloakRestClient.logoutUser(bearerToken, refreshToken);
     }
 
-    public CompletionStage<Void> onBoard(String healthFacilityID, HealthProfessionalController.OnBoardHealthProfessionalRequestBody onBoardHealthProfessionalRequestBody) {
-        HealthProfessional healthProfessional = HealthProfessional.builder()
-                .id(onBoardHealthProfessionalRequestBody.getHealthProfessionalID())
-                .healthProfessionalName(onBoardHealthProfessionalRequestBody.getHealthProfessionalName())
-                .healthFacilityID(healthFacilityID)
-                .healthFacilityName(onBoardHealthProfessionalRequestBody.getHealthFacilityName())
-                .type(onBoardHealthProfessionalRequestBody.getType())
-                .build();
-        return backendKeyCloakRestClient.createUserIfNotExists(healthProfessional.getKeyCloakUserName(), onBoardHealthProfessionalRequestBody.getPassword(), List.of(healthProfessional.getKeycloakRole()))
-                .thenCompose(ignore -> backendKeyCloakRestClient.mapRealmRole(healthProfessional.getKeyCloakUserName(), healthProfessional.getKeycloakRole()))
-                .thenCompose(ignore -> healthProfessionalDao.insert(
-                        healthFacilityID,
-                        onBoardHealthProfessionalRequestBody.getHealthFacilityName(),
-                        onBoardHealthProfessionalRequestBody.getHealthProfessionalID(),
-                        onBoardHealthProfessionalRequestBody.getHealthProfessionalName(),
-                        healthProfessional.getType(),
-                        onBoardHealthProfessionalRequestBody.getStateCode(),
-                        onBoardHealthProfessionalRequestBody.getDistrictCode(),
-                        onBoardHealthProfessionalRequestBody.getSpeciality(),
-                        onBoardHealthProfessionalRequestBody.getAddress(),
-                        onBoardHealthProfessionalRequestBody.getPincode(),
-                        onBoardHealthProfessionalRequestBody.getLatitude(),
-                        onBoardHealthProfessionalRequestBody.getLongitude()
-                ));
-    }
-
     public CompletionStage<Void> onBoardFacilityManager(String healthFacilityID, HealthProfessionalController.OnBoardFacilityManagerRequestBody onBoardFacilityManagerRequestBody) {
         HealthProfessional healthProfessional = HealthProfessional.builder()
                 .id(onBoardFacilityManagerRequestBody.getFacilityManagerID())
@@ -122,10 +93,10 @@ public class HealthProfessionalService {
                 .type(DOCTOR)
                 .build();
         return abhaRestClient.getHealthFacility(healthFacilityID)
-                .thenCompose(ignore -> abhaRestClient.getHealthProfessionalExists(onBoardDoctorRequestBody.getDoctorID()))
+                .thenCompose(searchFacilitiesData -> abhaRestClient.getHealthProfessional(onBoardDoctorRequestBody.getDoctorID())
+                        .thenCompose(hpr -> doctorDao.insert(Doctor.from(onBoardDoctorRequestBody, hpr, searchFacilitiesData))))
                 .thenCompose(ignore -> backendKeyCloakRestClient.createUserIfNotExists(healthProfessional.getKeyCloakUserName(), onBoardDoctorRequestBody.getPassword(), List.of(healthProfessional.getKeycloakRole())))
-                .thenCompose(ignore -> backendKeyCloakRestClient.mapRealmRole(healthProfessional.getKeyCloakUserName(), healthProfessional.getKeycloakRole()))
-                .thenCompose(ignore -> doctorDao.insert(healthFacilityID, onBoardDoctorRequestBody.getDoctorID(), onBoardDoctorRequestBody.getFacilityManagerID()));
+                .thenCompose(ignore -> backendKeyCloakRestClient.mapRealmRole(healthProfessional.getKeyCloakUserName(), healthProfessional.getKeycloakRole()));
     }
 
     public CompletionStage<HealthProfessional> get(String healthFacilityID, String healthProfessionalID) {
@@ -175,7 +146,11 @@ public class HealthProfessionalService {
                         .build());
     }
 
-    public CompletionStage<List<HealthProfessional>> listByStateDistrictAndSpeciality(int stateCode, int districtCode, Optional<String> speciality) {
-        return healthProfessionalDao.listByStateAndDistrict(stateCode, districtCode, speciality);
+    public CompletionStage<List<Doctor>> listDoctorsByStateDistrict(int stateCode, int districtCode) {
+        return doctorDao.listByStateAndDistrict(stateCode, districtCode);
+    }
+
+    public CompletionStage<List<Doctor>> listDoctorsByHealthFacility(String healthFacilityID, String facilityManagerID) {
+        return doctorDao.listByHealthFacility(healthFacilityID, facilityManagerID);
     }
 }

@@ -43,7 +43,7 @@ public class KeycloakSetup {
 
         try {
             // Create Health Facility Realm
-            //createHealthFacilityRealm(keycloak);
+            createHealthFacilityRealm(keycloak);
 
             // Create Health Facility Backend App Client
             createHealthFacilityBackendAppClient(keycloak);
@@ -126,41 +126,32 @@ public class KeycloakSetup {
 
     private static void createHealthFacilityRealm(Keycloak keycloak) {
         try {
-            if (keycloak.realms().findAll().stream()
-                    .anyMatch(realm -> HEALTH_FACILITY_REALM.equals(realm.getRealm()))) {
-                System.out.println("Realm " + HEALTH_FACILITY_REALM + " already exists.");
-                return;
-            }
-        } catch (Exception e) {
-            // Alternative approach if deserialization fails
-            try {
-                // Check for realm existence directly
-                keycloak.realms().realm(HEALTH_FACILITY_REALM).toRepresentation();
-                System.out.println("Realm " + HEALTH_FACILITY_REALM + " already exists.");
-                return;
-            } catch (jakarta.ws.rs.NotFoundException nfe) {
-                // Realm doesn't exist, continue with creation
-                System.out.println("Realm " + HEALTH_FACILITY_REALM + " not found, will create it.");
-                // Create new realm
-                RealmRepresentation realm = new RealmRepresentation();
-                realm.setRealm(HEALTH_FACILITY_REALM);
-                realm.setEnabled(true);
+            // Check for realm existence directly
+            keycloak.realms().realm(HEALTH_FACILITY_REALM).toRepresentation();
+            System.out.println("Realm " + HEALTH_FACILITY_REALM + " already exists.");
+            return;
+        } catch (jakarta.ws.rs.NotFoundException nfe) {
+            // Realm doesn't exist, continue with creation
+            System.out.println("Realm " + HEALTH_FACILITY_REALM + " not found, will create it.");
+            // Create new realm
+            RealmRepresentation realm = new RealmRepresentation();
+            realm.setRealm(HEALTH_FACILITY_REALM);
+            realm.setEnabled(true);
 
-                List<RequiredActionProviderRepresentation> requiredActions = new ArrayList<>();
+            List<RequiredActionProviderRepresentation> requiredActions = new ArrayList<>();
 
-                RequiredActionProviderRepresentation verifyProfile = new RequiredActionProviderRepresentation();
-                verifyProfile.setAlias("VERIFY_PROFILE");
-                verifyProfile.setName("Verify Profile");
-                verifyProfile.setEnabled(false);
-                verifyProfile.setDefaultAction(false); // Will be required for new users
-                verifyProfile.setPriority(10);
-                requiredActions.add(verifyProfile);
+            RequiredActionProviderRepresentation verifyProfile = new RequiredActionProviderRepresentation();
+            verifyProfile.setAlias("VERIFY_PROFILE");
+            verifyProfile.setName("Verify Profile");
+            verifyProfile.setEnabled(false);
+            verifyProfile.setDefaultAction(false); // Will be required for new users
+            verifyProfile.setPriority(10);
+            requiredActions.add(verifyProfile);
 
-                realm.setRequiredActions(requiredActions);
+            realm.setRequiredActions(requiredActions);
 
-                keycloak.realms().create(realm);
-                System.out.println("Realm for Health Facility Created");
-            }
+            keycloak.realms().create(realm);
+            System.out.println("Realm for Health Facility Created");
         }
     }
 
@@ -399,19 +390,19 @@ public class KeycloakSetup {
 
         try {
             // Check if user already exists
-            List<UserRepresentation> existingUsers = realmResource.users().search("patient-admin", 0, 1);
+            List<UserRepresentation> existingUsers = realmResource.users().search("patient-backend-app", 0, 1);
             if (!existingUsers.isEmpty()) {
-                System.out.println("User patient-admin already exists");
+                System.out.println("User patient-backend-app already exists");
                 return;
             }
 
             // Create user representation
             UserRepresentation user = new UserRepresentation();
             user.setEnabled(true);
-            user.setUsername("patient-admin");
+            user.setUsername("patient-backend-app");
             user.setFirstName("Patient");
             user.setLastName("Admin");
-            user.setEmail("patient-admin@docq.in");
+            user.setEmail("patient-backend-app@docq.in");
 
             // Set credentials with random password
             CredentialRepresentation credential = new CredentialRepresentation();
@@ -422,7 +413,7 @@ public class KeycloakSetup {
 
             // Create user
             Response response = realmResource.users().create(user);
-            System.out.println("Created patient-admin user");
+            System.out.println("Created patient-backend-app user");
 
             // Get created user ID
             String userId = CreatedResponseUtil.getCreatedId(response);
@@ -433,14 +424,14 @@ public class KeycloakSetup {
             RoleRepresentation patientBackendRole = realmResource.roles().get("patient-backend-service").toRepresentation();
             
             userResource.roles().realmLevel().add(Arrays.asList(patientBackendRole));
-            System.out.println("Assigned patient-backend-service role to patient-admin user");
+            System.out.println("Assigned patient-backend-service role to patient-backend-app user");
 
             System.out.println("Patient Admin User Credentials:");
-            System.out.println("Username: patient-admin");
+            System.out.println("Username: patient-backend-app");
             System.out.println("Password: Kx9#mP2$vL8@nQ5!");
 
         } catch (Exception e) {
-            System.err.println("Error creating patient-admin user: " + e.getMessage());
+            System.err.println("Error creating patient-backend-app user: " + e.getMessage());
             e.printStackTrace();
         }
     }

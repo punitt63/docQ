@@ -142,7 +142,7 @@ public class AbhaRestClient {
                         .clientId(clientId)
                         .clientSecret(clientSecret)
                         .grantType(accessTokenGrantType);
-        return gatewaySessionApi.apiHiecmGatewayV3SessionsPostAsync(Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), UUID.randomUUID().toString(), "sbx", apiHiecmGatewayV3SessionsPostRequest)
+        return gatewaySessionApi.apiHiecmGatewayV3SessionsPostAsync(Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), UUID.randomUUID().toString(), xCmId, apiHiecmGatewayV3SessionsPostRequest)
                 .thenAccept(response -> {
                     tokenCache.put(accessTokenCacheKey, response.getAccessToken());
                     tokenCache.put(refreshTokenCacheKey, response.getRefreshToken());
@@ -168,7 +168,7 @@ public class AbhaRestClient {
                         .clientSecret(clientSecret)
                         .grantType(refreshTokenGrantType)
                         .refreshToken(getCachedRefreshToken());
-        return gatewaySessionApi.apiHiecmGatewayV3SessionsPostAsync(Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), UUID.randomUUID().toString(), "sbx", apiHiecmGatewayV3SessionsPostRequest)
+        return gatewaySessionApi.apiHiecmGatewayV3SessionsPostAsync(Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(), UUID.randomUUID().toString(), xCmId, apiHiecmGatewayV3SessionsPostRequest)
                 .thenAccept(response -> {
                     tokenCache.put(accessTokenCacheKey, response.getAccessToken());
                     tokenCache.put(refreshTokenCacheKey, response.getRefreshToken());
@@ -193,6 +193,11 @@ public class AbhaRestClient {
                         throw new ApiException(404, "Health Professional ID " + healthProfessionalID + " Doesn't Exist");
                     }
                 });
+    }
+
+    public CompletionStage<UserEntityResponseDTO> getHealthProfessional(String healthProfessionalID) {
+        return getAccessToken()
+                .thenCompose(token -> healthProfessionalSearchApi.searchUserByHprIdAsync(healthProfessionalID, token));
     }
 
     public CompletionStage<AbhaApiV3EnrollmentRequestOtpPost200Response> abhaEnrollmentRequestOtp(String aadharNumber) {

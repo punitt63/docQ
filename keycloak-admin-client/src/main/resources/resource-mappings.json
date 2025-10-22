@@ -5,6 +5,10 @@
       "scopes" : ["onboarding"]
     },
     {
+      "name" : "health-professional",
+      "scopes" : ["read"]
+    },
+    {
       "name" : "opd",
       "scopes" : ["read", "create", "update"]
     },
@@ -69,6 +73,10 @@
         {
           "name" : "patient",
           "scopes" : ["read", "create", "update", "abha-login-request-otp", "abha-login-verify-otp", "abha-login-verify-otp-status"]
+        },
+        {
+          "name" : "health-professional",
+            "scopes" : ["read"]
         }
       ]
     },
@@ -118,6 +126,10 @@
         },
         {
           "name" : "opd",
+          "scopes" : ["read"]
+        },
+        {
+          "name" : "health-professional",
           "scopes" : ["read"]
         }
       ]

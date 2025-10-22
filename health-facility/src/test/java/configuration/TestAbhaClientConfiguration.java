@@ -95,7 +95,7 @@ public class TestAbhaClientConfiguration {
         @Override
         public CompletionStage<SearchFacilitiesData> getHealthFacility(String facilityID) {
             if(facilityID.equals(testHealthFacilityID) || facilityID.equals(testSecondHealthFacilityID) || facilityID.equals(testThirdHealthFacilityID)) {
-                return completedFuture(new SearchFacilitiesData().facilityId(facilityID));
+                return completedFuture(new SearchFacilitiesData().facilityId(facilityID).facilityName("DocQTestFacility").stateLGDCode("29").districtLGDCode("525").address("Varthur,").pincode("560066").latitude("12.9716").longitude("77.5946"));
             }
             return completedFuture(null);
         }
@@ -103,6 +103,11 @@ public class TestAbhaClientConfiguration {
         @Override
         public CompletionStage<Void> getHealthProfessionalExists(String healthProfessionalID) {
             return completedFuture(null);
+        }
+
+        @Override
+        public CompletionStage<UserEntityResponseDTO> getHealthProfessional(String healthProfessionalID) {
+            return completedFuture(new UserEntityResponseDTO().hprId(healthProfessionalID).name("Test Doctor"));
         }
 
         @Override

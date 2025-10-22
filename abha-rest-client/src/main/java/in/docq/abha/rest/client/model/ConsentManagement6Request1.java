@@ -19,7 +19,6 @@ import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import in.docq.abha.rest.client.JSON;
-import org.openapitools.jackson.nullable.JsonNullable;
 
 import java.io.IOException;
 import java.util.*;
@@ -144,21 +143,11 @@ public class ConsentManagement6Request1 {
         Objects.equals(this.resp, consentManagement6Request1.resp);
   }
 
-  private static <T> boolean equalsNullable(JsonNullable<T> a, JsonNullable<T> b) {
-    return a == b || (a != null && b != null && a.isPresent() && b.isPresent() && Objects.deepEquals(a.get(), b.get()));
-  }
-
   @Override
   public int hashCode() {
     return Objects.hash(consent, error, response, resp);
   }
 
-  private static <T> int hashCodeNullable(JsonNullable<T> a) {
-    if (a == null) {
-      return 1;
-    }
-    return a.isPresent() ? Arrays.deepHashCode(new Object[]{a.get()}) : 31;
-  }
 
   @Override
   public String toString() {

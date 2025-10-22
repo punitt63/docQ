@@ -15,10 +15,8 @@ package in.docq.abha.rest.client.api;
 
 import com.google.gson.reflect.TypeToken;
 import in.docq.abha.rest.client.*;
-import in.docq.abha.rest.client.model.SearchAccountHFRResponse;
-import in.docq.abha.rest.client.model.SearchAccountWebResponse;
-import in.docq.abha.rest.client.model.SearchByHpIdWebRequest;
-import in.docq.abha.rest.client.model.SearchByHprIdRequest;
+import in.docq.abha.rest.client.model.*;
+import okhttp3.Call;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -213,7 +211,7 @@ public class HealthProfessionalSearchApi {
         Object localVarPostBody = searchByHprIdRequest;
 
         // create path and map variables
-        String localVarPath = "/v2/search/searchByHprId";
+        String localVarPath = "/v1/search/searchByHprId";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -256,27 +254,6 @@ public class HealthProfessionalSearchApi {
      * Search a user by Healthcare Professional ID Number.
      * ## Search a user by Healthcare Professional ID Number.  - Healthcare Professional ID need to pass in the request  ## Request below is the Request Parameters description   | Attributes | Description |  | ------ | ------ |  | hprId &lt;sup style&#x3D;&#39;color:red&#39;&gt;* required&lt;/sup&gt; | Healthcare Professional ID Number/Healthcare Professional ID |
      * @param searchByHprIdRequest  (required)
-     * @return SearchAccountWebResponse
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table border="1">
-       <caption>Response Details</caption>
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 400 </td><td> Bad Request. Please provide valid request syntax </td><td>  -  </td></tr>
-        <tr><td> 422 </td><td> Unprocessable Entity </td><td>  -  </td></tr>
-        <tr><td> 200 </td><td> API will return the details of the accounts </td><td>  -  </td></tr>
-        <tr><td> 500 </td><td> Server encountered an unexpected condition that prevented it from fulfilling the request </td><td>  -  </td></tr>
-     </table>
-     */
-    public SearchAccountWebResponse searchUserByAccount(SearchByHprIdRequest searchByHprIdRequest) throws ApiException {
-        ApiResponse<SearchAccountWebResponse> localVarResp = searchUserByAccountWithHttpInfo(searchByHprIdRequest);
-        return localVarResp.getData();
-    }
-
-    /**
-     * Search a user by Healthcare Professional ID Number.
-     * ## Search a user by Healthcare Professional ID Number.  - Healthcare Professional ID need to pass in the request  ## Request below is the Request Parameters description   | Attributes | Description |  | ------ | ------ |  | hprId &lt;sup style&#x3D;&#39;color:red&#39;&gt;* required&lt;/sup&gt; | Healthcare Professional ID Number/Healthcare Professional ID |
-     * @param searchByHprIdRequest  (required)
      * @return ApiResponse&lt;SearchAccountWebResponse&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -289,10 +266,74 @@ public class HealthProfessionalSearchApi {
         <tr><td> 500 </td><td> Server encountered an unexpected condition that prevented it from fulfilling the request </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<SearchAccountWebResponse> searchUserByAccountWithHttpInfo(SearchByHprIdRequest searchByHprIdRequest) throws ApiException {
-        okhttp3.Call localVarCall = searchUserByAccountValidateBeforeCall(searchByHprIdRequest, null);
-        Type localVarReturnType = new TypeToken<SearchAccountWebResponse>(){}.getType();
-        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    public CompletionStage<SearchAccountWebResponse> searchUserByAccountAsync(SearchByHprIdRequest searchByHprIdRequest) {
+        try {
+            FutureApiCallBack<SearchAccountWebResponse> callBack = FutureApiCallBack.newCallback();
+            okhttp3.Call localVarCall = searchUserByAccountValidateBeforeCall(searchByHprIdRequest, callBack);
+            Type localVarReturnType = new TypeToken<SearchAccountWebResponse>(){}.getType();
+            localVarApiClient.executeAsync(localVarCall, localVarReturnType, callBack);
+            return callBack.getFuture();
+        } catch (Exception e) {
+            throw new CompletionException(e);
+        }
+    }
+
+    public Call searchUserByHprIdCall(String hprId, String token, ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        String[] localBasePaths = new String[0];
+        if (this.localCustomBaseUrl != null) {
+            basePath = this.localCustomBaseUrl;
+        } else if (localBasePaths.length > 0) {
+            basePath = localBasePaths[this.localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+        String localVarPath = "/v1/search/searchByHprId/{hprId}".replace("{hprId}", this.localVarApiClient.escapeString(hprId.toString()));
+        List<Pair> localVarQueryParams = new ArrayList();
+        List<Pair> localVarCollectionQueryParams = new ArrayList();
+        Map<String, String> localVarHeaderParams = new HashMap();
+        Map<String, String> localVarCookieParams = new HashMap();
+        Map<String, Object> localVarFormParams = new HashMap();
+        String[] localVarAccepts = new String[]{"*/*"};
+        String localVarAccept = this.localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        String[] localVarContentTypes = new String[0];
+        String localVarContentType = this.localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        if (token != null) {
+            localVarHeaderParams.put("Bearer ", token);
+        }
+
+        String[] localVarAuthNames = new String[]{"BearerAuth"};
+        return this.localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    private Call searchUserByHprIdValidateBeforeCall(String hprId, String token, ApiCallback _callback) throws ApiException {
+        if (hprId == null) {
+            throw new ApiException("Missing the required parameter 'hprId' when calling searchUserByHprId(Async)");
+        } else {
+            return this.searchUserByHprIdCall(hprId, token, _callback);
+        }
+    }
+
+    public CompletionStage<UserEntityResponseDTO> searchUserByHprIdAsync(String hprId, String authorization) {
+        try {
+            FutureApiCallBack<UserEntityResponseDTO> callBack = FutureApiCallBack.newCallback();
+            Call localVarCall = this.searchUserByHprIdValidateBeforeCall(hprId, authorization, callBack);
+            Type localVarReturnType = new TypeToken<UserEntityResponseDTO>(){}.getType();
+            localVarApiClient.executeAsync(localVarCall, localVarReturnType, callBack);
+            return callBack.getFuture();
+        } catch (Exception e) {
+            throw new CompletionException(e);
+        }
     }
 
     /**

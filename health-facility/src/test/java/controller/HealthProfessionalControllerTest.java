@@ -28,6 +28,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import java.util.concurrent.CompletableFuture;
 
 import static configuration.TestAbhaClientConfiguration.MockAbhaRestClient.*;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -158,25 +159,89 @@ public class HealthProfessionalControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)))
                 .andExpect(status().isOk());
 
-        HealthProfessionalController.OnBoardHealthProfessionalRequestBody requestBody = HealthProfessionalController.OnBoardHealthProfessionalRequestBody.builder()
-                .type(HealthProfessionalType.DOCTOR)
-                .healthProfessionalID(testDoctorID)
-                .healthProfessionalName("Doctor Test")
-                .stateCode(testStateCode)
-                .districtCode(testDistrictCode)
-                .healthFacilityName("Test Facility")
-                .address("123 Test Street")
-                .pincode("560001")
-                .latitude(12.9716)
-                .longitude(77.5946)
-                .speciality(testDoctorSpeciality)
+        HealthProfessionalController.OnBoardDoctorRequestBody requestBody = HealthProfessionalController.OnBoardDoctorRequestBody.builder()
+                .doctorID(testDoctorID)
                 .password("test-doc-pass")
+                .facilityManagerID(testHealthFacilityManagerID)
                 .build();
-        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/onboard")
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/doctor/onboard")
                 .header("Authorization", "Bearer " + facilityManagerAccessToken)
                 .content(gson.toJson(requestBody))
                 .contentType(MediaType.APPLICATION_JSON)))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void testListDoctorsForHealthFacility() throws Exception {
+        // Onboard facility manager
+        String adminUserToken = getAdminUserToken();
+        HealthProfessionalController.OnBoardFacilityManagerRequestBody fmRequest = HealthProfessionalController.OnBoardFacilityManagerRequestBody.builder()
+                .facilityManagerID(testHealthFacilityManagerID)
+                .password("test-pass")
+                .build();
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/facility-manager/onboard")
+                .header("Authorization", "Bearer " + adminUserToken)
+                .content(gson.toJson(fmRequest))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+
+        // Onboard doctor (using facility manager token)
+        String facilityManagerToken = getFacilityManagerLoginResponse().getAccessToken();
+        HealthProfessionalController.OnBoardDoctorRequestBody docRequest = HealthProfessionalController.OnBoardDoctorRequestBody.builder()
+                .doctorID(testDoctorID)
+                .password("test-doc-pass")
+                .facilityManagerID(testHealthFacilityManagerID)
+                .build();
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/doctor/onboard")
+                .header("Authorization", "Bearer " + facilityManagerToken)
+                .content(gson.toJson(docRequest))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+
+        // List doctors for the health facility using facility manager token
+        handleAsyncProcessing(mockMvc.perform(get("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/doctors")
+                .header("Authorization", "Bearer " + facilityManagerToken)
+                .param("facility-manager-id", testHealthFacilityManagerID)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(testDoctorID)));
+    }
+
+    @Test
+    public void testListDoctorsByStateAndDistrict() throws Exception {
+        // Onboard facility manager
+        String adminUserToken = getAdminUserToken();
+        HealthProfessionalController.OnBoardFacilityManagerRequestBody fmRequest = HealthProfessionalController.OnBoardFacilityManagerRequestBody.builder()
+                .facilityManagerID(testHealthFacilityManagerID)
+                .password("test-pass")
+                .build();
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/facility-manager/onboard")
+                .header("Authorization", "Bearer " + adminUserToken)
+                .content(gson.toJson(fmRequest))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+
+        // Onboard doctor
+        String facilityManagerToken = getFacilityManagerLoginResponse().getAccessToken();
+        HealthProfessionalController.OnBoardDoctorRequestBody docRequest = HealthProfessionalController.OnBoardDoctorRequestBody.builder()
+                .doctorID(testDoctorID)
+                .password("test-doc-pass")
+                .facilityManagerID(testHealthFacilityManagerID)
+                .build();
+        handleAsyncProcessing(mockMvc.perform(post("/health-facilities/" + testHealthFacilityID + "/health-facility-professionals/doctor/onboard")
+                .header("Authorization", "Bearer " + facilityManagerToken)
+                .content(gson.toJson(docRequest))
+                .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+
+        String patientBackendAppToken = getPatientBackendAppToken();
+        // Search doctors by state and district
+        handleAsyncProcessing(mockMvc.perform(get("/doctors")
+                .header("Authorization", "Bearer " + patientBackendAppToken)
+                .param("state-code", String.valueOf(testStateCode))
+                .param("district-code", String.valueOf(testDistrictCode)))
+        )
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(testDoctorID)));
     }
 
     private HealthProfessionalController.LoginResponse getFacilityManagerLoginResponse() throws Exception {
@@ -193,6 +258,12 @@ public class HealthProfessionalControllerTest {
 
     private String getAdminUserToken() {
         return desktopKeycloakRestClient.getUserAccessToken("docq-admin", "xf~8QgK^]gw@,")
+                .thenApply(GetAccessToken200Response::getAccessToken)
+                .toCompletableFuture().join();
+    }
+
+    private String getPatientBackendAppToken() {
+        return desktopKeycloakRestClient.getUserAccessToken("patient-backend-app", "Kx9#mP2$vL8@nQ5!")
                 .thenApply(GetAccessToken200Response::getAccessToken)
                 .toCompletableFuture().join();
     }

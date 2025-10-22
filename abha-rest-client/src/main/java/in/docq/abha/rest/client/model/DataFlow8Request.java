@@ -20,7 +20,6 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import in.docq.abha.rest.client.JSON;
 import in.docq.abha.rest.client.model.AbdmConsentManagement2RequestError;
-import org.openapitools.jackson.nullable.JsonNullable;
 
 import java.io.IOException;
 import java.util.*;
@@ -120,20 +119,9 @@ public class DataFlow8Request {
         Objects.equals(this.response, dataFlow8Request.response);
   }
 
-  private static <T> boolean equalsNullable(JsonNullable<T> a, JsonNullable<T> b) {
-    return a == b || (a != null && b != null && a.isPresent() && b.isPresent() && Objects.deepEquals(a.get(), b.get()));
-  }
-
   @Override
   public int hashCode() {
     return Objects.hash(hiRequest, error, response);
-  }
-
-  private static <T> int hashCodeNullable(JsonNullable<T> a) {
-    if (a == null) {
-      return 1;
-    }
-    return a.isPresent() ? Arrays.deepHashCode(new Object[]{a.get()}) : 31;
   }
 
   @Override
