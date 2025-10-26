@@ -4,7 +4,7 @@
     <parent>
         <groupId>in.docq</groupId>
         <artifactId>docq</artifactId>
-        <version>1.1-SNAPSHOT</version>
+        <version>1.1</version>
     </parent>
 
     <artifactId>health-facility</artifactId>
@@ -13,17 +13,17 @@
         <dependency>
             <groupId>in.docq</groupId>
             <artifactId>spring-boot-commons</artifactId>
-            <version>1.1-SNAPSHOT</version>
+            <version>1.1</version>
         </dependency>
         <dependency>
             <groupId>in.docq</groupId>
             <artifactId>abha-rest-client</artifactId>
-            <version>1.1-SNAPSHOT</version>
+            <version>1.1</version>
         </dependency>
         <dependency>
             <groupId>in.docq</groupId>
             <artifactId>keycloak-rest-client</artifactId>
-            <version>1.1-SNAPSHOT</version>
+            <version>1.1</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
