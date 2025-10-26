@@ -9,15 +9,7 @@ public class HealthProfessional {
     private final String id;
     private final String healthProfessionalName;
     private final HealthProfessionalType type;
-    private final String speciality;
     private final String healthFacilityID;
-    private final String healthFacilityName;
-    private final int stateCode;
-    private final int districtCode;
-    private final String address;
-    private final String pincode;
-    private final Double latitude;
-    private final Double longitude;
 
     public String getKeyCloakUserName() {
         return healthFacilityID.toLowerCase() + "_" + id.toLowerCase();

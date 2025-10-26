@@ -126,6 +126,9 @@ services:
       - KEYCLOAK_PATIENT_ADMIN_USERNAME=patient-backend-app
       - KEYCLOAK_PATIENT_ADMIN_PASSWORD=Kx9#mP2$vL8@nQ5!
       - HEALTH_FACILITY_BASE_URL=http://health-facility:9097
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/health_facility
+      - SPRING_DATASOURCE_USERNAME=docq
+      - SPRING_DATASOURCE_PASSWORD=docq
     links:
       - "keycloak:keycloak"
       - "health-facility:health-facility"

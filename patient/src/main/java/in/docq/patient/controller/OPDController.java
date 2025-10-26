@@ -1,6 +1,5 @@
 package in.docq.patient.controller;
 
-import in.docq.patient.auth.AbdmAuthorized;
 import in.docq.patient.model.OPD;
 import in.docq.patient.service.OPDService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +24,6 @@ public class OPDController {
     }
 
     @GetMapping("/health-facilities/{health-facility-id}/health-facility-professionals/{health-facility-professional-id}")
-    @AbdmAuthorized(resource = "opd", validatePatientId = false)
     public CompletionStage<ResponseEntity<List<OPD>>> listOPDs(@PathVariable("health-facility-id") String healthFacilityId,
                                                               @PathVariable("health-facility-professional-id") String healthFacilityProfessionalId,
                                                               @RequestParam("start-date") LocalDate startDate,

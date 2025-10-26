@@ -1,5 +1,6 @@
 package in.docq.patient.service;
 
+import com.google.common.cache.Cache;
 import in.docq.abha.rest.client.AbhaRestClient;
 import in.docq.patient.controller.PatientLoginController;
 import in.docq.abha.rest.client.model.SearchAuthMethodsAbhaaddress200Response;
@@ -17,6 +18,7 @@ import in.docq.abha.rest.client.model.SwitchProfile200Response;
 import in.docq.abha.rest.client.model.UpdateProfile200Response;
 import in.docq.abha.rest.client.model.OtpVerifyMobile200ResponseTokens;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

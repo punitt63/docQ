@@ -84,6 +84,7 @@ public class PatientSignupByAadharController {
     @Builder
     @Getter
     public static class EnrolByAadharResponseBody {
+        String patientId;
         String txnId;
         String message;
         Tokens tokens;

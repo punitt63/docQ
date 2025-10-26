@@ -116,7 +116,7 @@ public class AbhaRestClient {
 
     private CompletionStage<String> getAccessToken() {
         String currentCachedAccessToken = getCachedAccessToken();
-        if(currentCachedAccessToken == null) {
+        if(currentCachedAccessToken == null || shouldRefreshAccessToken(currentCachedAccessToken)) {
             return generateAndCacheAccessToken()
                     .thenApply(ignore -> this.getCachedAccessToken());
         }
@@ -492,8 +492,8 @@ public class AbhaRestClient {
         return getAccessToken()
                 .thenCompose(token -> enrollmentApiCollectionApi.otpRequestMobileAsyncCall(token, UUID.randomUUID().toString(), Instant.now().truncatedTo(ChronoUnit.MILLIS).toString(),
                         new OtpRequestMobileRequest()
-                                .scope(List.of("abha-login", "mobile-verify"))
-                                .loginHint("mobile-number")
+                                .scope(List.of("abha-login", "aadhaar-verify"))
+                                .loginHint("aadhaar-number")
                                 .loginId(RSAEncrypter.encrypt(aadharNumber))
                                 .otpSystem("abdm")));
     }

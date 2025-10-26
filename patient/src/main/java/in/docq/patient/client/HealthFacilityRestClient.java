@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.docq.patient.auth.BackendKeyCloakRestClient;
 import in.docq.patient.model.Appointment;
+import in.docq.patient.model.Doctor;
 import in.docq.patient.model.OPD;
-import in.docq.patient.model.HealthProfessional;
 import in.docq.patient.model.Prescription;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 
 @Component
 public class HealthFacilityRestClient {
@@ -26,6 +28,9 @@ public class HealthFacilityRestClient {
     private final OkHttpClient httpClient;
     private final BackendKeyCloakRestClient backendKeyCloakRestClient;
     private final ObjectMapper objectMapper;
+    private final ExecutorService executorService = new ThreadPoolExecutor(20, 50,
+            60L, java.util.concurrent.TimeUnit.SECONDS,
+            new java.util.concurrent.LinkedBlockingQueue<>());
 
     @Value("${health-facility.service.url}")
     private String healthFacilityServiceUrl;
@@ -75,7 +80,7 @@ public class HealthFacilityRestClient {
                     } catch (IOException e) {
                         throw new RuntimeException("Failed to create appointment", e);
                     }
-                }));
+                }, executorService));
     }
 
     public CompletionStage<List<Appointment>> getAppointments(LocalDate startOpdDate,
@@ -121,7 +126,7 @@ public class HealthFacilityRestClient {
                     } catch (IOException e) {
                         throw new RuntimeException("Failed to get appointments", e);
                     }
-                }));
+                }, executorService));
     }
 
     public CompletionStage<Appointment> cancelAppointment(String healthFacilityId, 
@@ -154,7 +159,7 @@ public class HealthFacilityRestClient {
                     } catch (IOException e) {
                         throw new RuntimeException("Failed to cancel appointment", e);
                     }
-                }));
+                }, executorService));
     }
 
     public CompletionStage<List<Appointment>> getAppointment(
@@ -195,7 +200,7 @@ public class HealthFacilityRestClient {
                     } catch (IOException e) {
                         throw new RuntimeException("Failed to get appointment details", e);
                     }
-                }));
+                }, executorService));
     }
 
     public CompletionStage<List<OPD>> listOPDs(String healthFacilityId,
@@ -229,7 +234,7 @@ public class HealthFacilityRestClient {
                     } catch (IOException e) {
                         throw new RuntimeException("Failed to list OPDs", e);
                     }
-                }));
+                }, executorService));
     }
 
     public CompletionStage<List<Prescription>> listPatientPrescriptions(String patientId,
@@ -263,7 +268,7 @@ public class HealthFacilityRestClient {
                     } catch (IOException e) {
                         throw new RuntimeException("Failed to list patient prescriptions", e);
                     }
-                }));
+                }, executorService));
     }
 
     public CompletionStage<Prescription> getOPDPrescription(LocalDate opdDate,
@@ -296,22 +301,17 @@ public class HealthFacilityRestClient {
                     } catch (IOException e) {
                         throw new RuntimeException("Failed to get OPD prescription", e);
                     }
-                }));
+                }, executorService));
     }
 
-    public CompletionStage<List<HealthProfessional>> listHealthProfessionals(int stateCode,
-                                                                             int districtCode,
-                                                                             String speciality) {
+    public CompletionStage<List<Doctor>> listDoctors(int stateCode,
+                                                     int districtCode) {
         return backendKeyCloakRestClient.getAccessToken()
                 .thenCompose(token -> CompletableFuture.supplyAsync(() -> {
                     try {
-                        HttpUrl.Builder urlBuilder = HttpUrl.parse(healthFacilityServiceUrl + "/health-facilities/_/health-facility-professionals/search").newBuilder()
+                        HttpUrl.Builder urlBuilder = HttpUrl.parse(healthFacilityServiceUrl + "/doctors").newBuilder()
                                 .addQueryParameter("state-code", String.valueOf(stateCode))
                                 .addQueryParameter("district-code", String.valueOf(districtCode));
-
-                        if (speciality != null && !speciality.isBlank()) {
-                            urlBuilder.addQueryParameter("speciality", speciality);
-                        }
 
                         Request request = new Request.Builder()
                                 .url(urlBuilder.build())
@@ -327,41 +327,12 @@ public class HealthFacilityRestClient {
                             if (responseBody == null || responseBody.trim().isEmpty()) {
                                 throw new RuntimeException("Empty response body from server");
                             }
-                            return objectMapper.readValue(responseBody, new TypeReference<List<HealthProfessional>>() {});
+                            return objectMapper.readValue(responseBody, new TypeReference<List<Doctor>>() {});
                         }
                     } catch (IOException e) {
                         throw new RuntimeException("Failed to list health professionals", e);
                     }
-                }));
-    }
-
-    public CompletionStage<Void> createPatientIfNotExists(String healthFacilityId,
-                                                          CreatePatientRequestBody requestBody) {
-        return backendKeyCloakRestClient.getAccessToken()
-                .thenCompose(token -> CompletableFuture.supplyAsync(() -> {
-                    try {
-                        String url = healthFacilityServiceUrl + "/health-facilities/" + healthFacilityId + "/patients/create-if-not-exists";
-                        
-                        String jsonBody = objectMapper.writeValueAsString(requestBody);
-                        RequestBody body = RequestBody.create(jsonBody, MediaType.get("application/json"));
-                        
-                        Request request = new Request.Builder()
-                                .url(url)
-                                .post(body)
-                                .addHeader("Authorization", "Bearer " + token)
-                                .addHeader("Content-Type", "application/json")
-                                .build();
-                        
-                        try (Response response = httpClient.newCall(request).execute()) {
-                            if (!response.isSuccessful()) {
-                                throw new RuntimeException("HTTP error: " + response.code() + " " + response.message());
-                            }
-                            return null; // Void return type
-                        }
-                    } catch (IOException e) {
-                        throw new RuntimeException("Failed to create patient if not exists", e);
-                    }
-                }));
+                }, executorService));
     }
 
     @Builder

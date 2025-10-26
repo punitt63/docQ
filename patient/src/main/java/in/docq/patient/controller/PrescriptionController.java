@@ -1,9 +1,7 @@
 package in.docq.patient.controller;
 
-import in.docq.patient.auth.AbdmAuthorized;
 import in.docq.patient.model.Prescription;
 import in.docq.patient.service.PrescriptionService;
-import in.docq.patient.model.Prescription;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +21,6 @@ public class PrescriptionController {
     }
 
     @GetMapping
-    @AbdmAuthorized(resource = "prescription", validatePatientId = false)
     public CompletionStage<ResponseEntity<List<Prescription>>> listPatientPrescriptions(@RequestParam("start-opd-date") LocalDate startOpdDate,
                                                                                               @RequestParam("end-opd-date") LocalDate endOpdDate,
                                                                                               @RequestParam(value = "limit", required = false, defaultValue = "100") Integer limit,
@@ -34,7 +31,6 @@ public class PrescriptionController {
     }
 
     @GetMapping("/opd-dates/{opd-date}/opds/{opd-id}/appointments/{appointment-id}")
-    @AbdmAuthorized(resource = "prescription", validatePatientId = false)
     public CompletionStage<ResponseEntity<Prescription>> getOPDPrescription(@PathVariable("opd-date") LocalDate opdDate,
                                                                             @PathVariable("opd-id") String opdId,
                                                                             @PathVariable("appointment-id") Integer appointmentId,

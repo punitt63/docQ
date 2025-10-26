@@ -1,6 +1,5 @@
 package in.docq.patient.controller;
 
-import in.docq.patient.auth.AbdmAuthorized;
 import in.docq.patient.model.Appointment;
 import in.docq.patient.service.AppointmentService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,7 +25,6 @@ public class AppointmentController {
     }
 
     @PostMapping("/health-facilities/{health-facility-id}/opd-dates/{opd-date}/opds/{opd-id}/appointments")
-    @AbdmAuthorized(resource = "appointment", validatePatientId = false)
     public CompletionStage<ResponseEntity<Appointment>> createAppointment(@PathVariable("health-facility-id") String healthFacilityId,
                                                                           @PathVariable("opd-date") LocalDate opdDate,
                                                                           @PathVariable("opd-id") String opdId,
@@ -37,7 +35,6 @@ public class AppointmentController {
     }
 
     @GetMapping
-    @AbdmAuthorized(resource = "appointment", validatePatientId = false)
     public CompletionStage<ResponseEntity<List<Appointment>>> getAppointments(@RequestParam(value = "start-opd-date") LocalDate startOpdDate,
                                                                              @RequestParam(value = "end-opd-date") LocalDate endOpdDate,
                                                                              @RequestParam(value = "opd-id", required = false) String opdId,
@@ -58,7 +55,6 @@ public class AppointmentController {
     }
 
     @PatchMapping("/health-facilities/{health-facility-id}/opd-dates/{opd-date}/opds/{opd-id}/appointments/{appointment-id}/cancel")
-    @AbdmAuthorized(resource = "appointment", validatePatientId = false)
     public CompletionStage<ResponseEntity<Appointment>> cancelAppointment(@PathVariable("health-facility-id") String healthFacilityId,
                                                                           @PathVariable("opd-date") LocalDate opdDate,
                                                                           @PathVariable("opd-id") String opdId,
@@ -70,7 +66,6 @@ public class AppointmentController {
 
     // Get upcoming appointments (WAITING state)
     @GetMapping("/upcoming")
-    @AbdmAuthorized(resource = "appointment", validatePatientId = false)
     public CompletionStage<ResponseEntity<List<Appointment>>> getUpcomingAppointments(
             @RequestParam(value = "start-date", required = false) LocalDate startDate,
             @RequestParam(value = "end-date", required = false) LocalDate endDate,
@@ -87,7 +82,6 @@ public class AppointmentController {
 
     // Get current appointments (IN_PROGRESS state)
     @GetMapping("/current")
-    @AbdmAuthorized(resource = "appointment", validatePatientId = false)
     public CompletionStage<ResponseEntity<List<Appointment>>> getCurrentAppointments(
             @RequestParam(value = "start-date", required = false) LocalDate startDate,
             @RequestParam(value = "end-date", required = false) LocalDate endDate,
@@ -104,7 +98,6 @@ public class AppointmentController {
 
     // Get completed appointments (COMPLETED state)
     @GetMapping("/completed")
-    @AbdmAuthorized(resource = "appointment", validatePatientId = false)
     public CompletionStage<ResponseEntity<List<Appointment>>> getCompletedAppointments(
             @RequestParam(value = "start-date", required = false) LocalDate startDate,
             @RequestParam(value = "end-date", required = false) LocalDate endDate,

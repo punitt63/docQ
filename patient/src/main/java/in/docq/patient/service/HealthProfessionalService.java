@@ -1,6 +1,7 @@
 package in.docq.patient.service;
 
 import in.docq.patient.client.HealthFacilityRestClient;
+import in.docq.patient.model.Doctor;
 import in.docq.patient.model.HealthProfessional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,8 +19,8 @@ public class HealthProfessionalService {
         this.healthFacilityRestClient = healthFacilityRestClient;
     }
 
-    public CompletionStage<List<HealthProfessional>> list(int stateCode, int districtCode, String speciality) {
-        return healthFacilityRestClient.listHealthProfessionals(stateCode, districtCode, speciality);
+    public CompletionStage<List<Doctor>> list(int stateCode, int districtCode) {
+        return healthFacilityRestClient.listDoctors(stateCode, districtCode);
     }
 }
 
