@@ -37,7 +37,7 @@ public class PatientDao {
         this.aesEncryptionKey = aesEncryptionKey;
         this.postgresDAO = postgresDAO;
         this.insertPatientQuery = "INSERT INTO " + table + "(" + Column.allColumNamesSeparatedByComma() + ")" +
-                " VALUES (" + Column.allColumnValuesSeparatedByComma() + ")";
+                " VALUES (" + Column.allColumnValuesSeparatedByComma() + ") ON CONFLICT DO NOTHING";
         this.updatePatientQuery = "UPDATE " + table + " SET " + Column.updateableColumnsSeparatedByComma() +
                 " WHERE " + Column.ID.getColumnName() + " = ?";
         this.listPatientsQuery = "SELECT " + Column.allColumNamesSeparatedByComma() + " FROM " + table;

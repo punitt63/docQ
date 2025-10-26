@@ -69,7 +69,7 @@ public class AuthorizedAspect {
     }
 
     private CompletionStage<Boolean> healthProfessionalBelongsToHealthFacility(String userName, String healthFacilityID) {
-        if(userName.equals("docq-admin")) {
+        if(userName.equals("docq-admin") || userName.equals("patient-backend-app")) {
             return completedFuture(true);
         }
         return healthProfessionalService.get(healthFacilityID, userName.split("_")[1])

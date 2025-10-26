@@ -24,6 +24,7 @@ public class AbhaProfile {
     private String districtName;
     private String abhaNumber;
     private String abhaStatus;
+    private String preferredAbhaAddress;
 
     public static AbhaProfile toAbhaProfile(AbhaApiV3EnrollmentEnrolByAadhaarPost200ResponseAnyOfABHAProfile abhaProfileResponse) {
         return AbhaProfile.builder()
@@ -41,6 +42,7 @@ public class AbhaProfile {
                 .districtName(abhaProfileResponse.getDistrictName())
                 .abhaNumber(abhaProfileResponse.getAbHANumber())
                 .abhaStatus(abhaProfileResponse.getAbhaStatus())
+                .preferredAbhaAddress(abhaProfileResponse.getPreferredAddress())
                 .build();
     }
 }

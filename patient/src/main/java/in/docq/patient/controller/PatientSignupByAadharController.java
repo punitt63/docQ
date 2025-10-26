@@ -34,9 +34,11 @@ public class PatientSignupByAadharController {
                 .thenApply(ResponseEntity::ok);
     }
 
-    @GetMapping("/abha-address-suggestions")
-    public CompletionStage<ResponseEntity<AbhaAddressSuggestionsResponseBody>> getAbhaAddressSuggestions(@RequestHeader("Transaction-Id") String txnId) {
-        return patientSignupByAadharService.getAbhaAddressSuggestions(txnId)
+    @PostMapping("/abha-address-suggestions")
+    public CompletionStage<ResponseEntity<AbhaAddressSuggestionsResponseBody>> getAbhaAddressSuggestions(@RequestBody AbhaAddressSuggestionsRequestBody abhaAddressSuggestionsRequestBody) {
+        return patientSignupByAadharService.getAbhaAddressSuggestions(abhaAddressSuggestionsRequestBody.dayOfBirth, abhaAddressSuggestionsRequestBody.firstName,
+                        abhaAddressSuggestionsRequestBody.lastName, abhaAddressSuggestionsRequestBody.monthOfBirth, abhaAddressSuggestionsRequestBody.yearOfBirth,
+                        abhaAddressSuggestionsRequestBody.txnId)
                 .thenApply(ResponseEntity::ok);
     }
 
@@ -57,6 +59,17 @@ public class PatientSignupByAadharController {
     public static class RequestOtpResponseBody {
         String txnId;
         String message;
+    }
+
+    @Builder
+    @Getter
+    public static class AbhaAddressSuggestionsRequestBody {
+        String dayOfBirth;
+        String firstName;
+        String lastName;
+        String monthOfBirth;
+        String yearOfBirth;
+        String txnId;
     }
 
     @Builder

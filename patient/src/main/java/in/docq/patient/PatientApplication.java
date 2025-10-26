@@ -9,7 +9,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 
 @SpringBootApplication
-@ComponentScan(basePackages = {"in.docq.patient", "in.docq.abha"},
+@ComponentScan(basePackages = {"in.docq.patient", "in.docq.abha", "in.docq.spring.boot.commons"},
         excludeFilters={
         @ComponentScan.Filter(type= FilterType.ASSIGNABLE_TYPE, value= DataSourceAutoConfiguration.class),
                 @ComponentScan.Filter(type= FilterType.ASSIGNABLE_TYPE, value= DataSourceTransactionManagerAutoConfiguration.class),

@@ -495,4 +495,104 @@ public class AuthenticationApi {
             throw new CompletionException(e);
         }
     }
+
+    /**
+     * Build call for obtaining a Requesting Party Token (UMA entitlement) using client credentials
+     * @param realm The realm for the token request (required)
+     * @param audienceClientId The audience/resource server clientId (e.g. health-facility-backend-app) (required)
+     * @param requestingClientId The client identifier requesting the RPT (e.g. patient-backend-app) (required)
+     * @param requestingClientSecret The requesting client secret (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     */
+    public okhttp3.Call getRequestingPartyTokenCall(String realm, String audienceClientId, String requestingClientId, String requestingClientSecret, final ApiCallback<GetAccessToken200Response> _callback) throws ApiException {
+        String basePath = null;
+        String[] localBasePaths = new String[] {  };
+
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        String localVarPath = "/realms/{realm}/protocol/openid-connect/token"
+                .replace("{" + "realm" + "}", localVarApiClient.escapeString(realm.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        localVarFormParams.put("grant_type", "urn:ietf:params:oauth:grant-type:uma-ticket");
+
+        if (audienceClientId != null) {
+            localVarFormParams.put("audience", audienceClientId);
+        }
+        if (requestingClientId != null) {
+            localVarFormParams.put("client_id", requestingClientId);
+        }
+        if (requestingClientSecret != null) {
+            localVarFormParams.put("client_secret", requestingClientSecret);
+        }
+
+        final String[] localVarAccepts = {
+                "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+                "application/x-www-form-urlencoded"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] {  };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    private okhttp3.Call getRequestingPartyTokenValidateBeforeCall(String realm, String audienceClientId, String requestingClientId, String requestingClientSecret, final ApiCallback<GetAccessToken200Response> _callback) throws ApiException {
+        if (audienceClientId == null) {
+            throw new ApiException("Missing the required parameter 'audienceClientId' when calling getRequestingPartyToken(Async)");
+        }
+        if (requestingClientId == null) {
+            throw new ApiException("Missing the required parameter 'requestingClientId' when calling getRequestingPartyToken(Async)");
+        }
+        if (requestingClientSecret == null) {
+            throw new ApiException("Missing the required parameter 'requestingClientSecret' when calling getRequestingPartyToken(Async)");
+        }
+        return getRequestingPartyTokenCall(realm, audienceClientId, requestingClientId, requestingClientSecret, _callback);
+    }
+
+    /**
+     * Obtain Requesting Party Token (asynchronously)
+     * Request an UMA entitlements token (Requesting Party Token) for a given audience using client credentials
+     * @param realm The realm for the token request (required)
+     * @param audienceClientId The audience/resource server clientId (e.g. health-facility-backend-app) (required)
+     * @param requestingClientId The client identifier requesting the RPT (e.g. patient-backend-app) (required)
+     * @param requestingClientSecret The requesting client secret (required)
+     */
+    public CompletionStage<GetAccessToken200Response> getRequestingPartyTokenAsync(String realm, String audienceClientId, String requestingClientId, String requestingClientSecret) {
+
+        try {
+            FutureApiCallBack<GetAccessToken200Response> futureAPICallback = FutureApiCallBack.newCallback();
+            okhttp3.Call localVarCall = getRequestingPartyTokenValidateBeforeCall(realm, audienceClientId, requestingClientId, requestingClientSecret, futureAPICallback);
+            Type localVarReturnType = new TypeToken<GetAccessToken200Response>() {
+            }.getType();
+            localVarApiClient.executeAsync(localVarCall, localVarReturnType, futureAPICallback);
+            return futureAPICallback.getFuture();
+        } catch (Exception e) {
+            throw new CompletionException(e);
+        }
+    }
 }

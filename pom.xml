@@ -9,7 +9,7 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <modules>
-<!--        <module>rest-client-generator</module>-->
+        <!--<module>rest-client-generator</module>-->
         <module>abha-rest-client</module>
         <module>health-facility</module>
         <module>patient</module>

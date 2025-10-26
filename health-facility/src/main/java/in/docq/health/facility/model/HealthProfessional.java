@@ -7,8 +7,9 @@ import lombok.Getter;
 @Getter
 public class HealthProfessional {
     private final String id;
-    private final String healthFacilityID;
+    private final String healthProfessionalName;
     private final HealthProfessionalType type;
+    private final String healthFacilityID;
 
     public String getKeyCloakUserName() {
         return healthFacilityID.toLowerCase() + "_" + id.toLowerCase();

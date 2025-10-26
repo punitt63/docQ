@@ -30,7 +30,7 @@ import java.util.Set;
  * SearchForFacilitiesRequest
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-01-25T14:50:59.077868+05:30[Asia/Kolkata]", comments = "Generator version: 7.11.0")
-public class SearchForFacilitiesRequest {
+public class  SearchForFacilitiesRequest {
   public static final String SERIALIZED_NAME_OWNERSHIP_CODE = "ownershipCode";
   @SerializedName(SERIALIZED_NAME_OWNERSHIP_CODE)
   @javax.annotation.Nullable

@@ -33,7 +33,21 @@ spring:
       preferred-json-mapper: gson
   autoconfigure:
     exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
-
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    url: jdbc:postgresql://localhost:5432/health_facility
+    username: docq
+    password: docq
+    driver: 'org.postgresql.Driver'
+    poolSize: 20
+    timeout: 2000
+    hikari:
+      pool-name: Hikari
+      connection-timeout: 2000
+      maximum-pool-size: 20
+      auto-commit: false
+      connection-test-query: select 1
+      idle-timeout: 90000
   output:
     ansi:
       enabled: ALWAYS
@@ -51,19 +65,23 @@ abha:
     url: https://dev.abdm.gov.in
 
 keycloak:
-  realm: patient
+  realm: health-facility
   jwks:
-    cert: /realms/patient/protocol/openid-connect/certs
+    cert: /realms/health-facility/protocol/openid-connect/certs
   base:
     url: http://localhost:8080
   backend:
     client:
       id: patient-backend-app
-      secret: bUKD3e6IZDFsAITkiR5ihIoYnIgSEfxU
+      secret: FA97NLVzhO5X0Fm8VombgWSGcjaSDqkt
   desktop:
     client:
       id: patient-mobile-app
-      secret: 8pF6j0OppwY532hE5hIe3PwNfqCSO3VE
+      secret: 1OadpENrgZprruUrOOy014AoiNfu3jom
+  patient:
+    admin:
+      username: patient-backend-app
+      password: Kx9#mP2$vL8@nQ5!
   http:
     max:
       idle:
@@ -76,3 +94,14 @@ keycloak:
       seconds: 20
 server:
   port: 9098
+
+health-facility:
+  service:
+    url: http://localhost:9097
+
+x:
+  cm:
+    id: sbx
+
+phr:
+    publicKey: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7Zq7YKcjmccSBnR9CDHd6IX96V7D/a2XSMs+yCgejSe956mqjA/0Q9h+Xnx7ZZdwe2Tf2Jq/mWXa+gYdnta58otreXg/5oGnNV3Edlixz1Oc8tJg5bG4sIUCGZcbEQGSbm1iC+Fp1kS+YLVG4Su8KoRxcCvRJI2QkfqAruX3JoFjggOkv0TgWCo9z6NV6PPmPN3UsXyH3OPDi3Ewnvd64ngCUKPSBiIDwhLj2yYSShcxH8aWbrz00SJodBJzqgjvCfZuljBXXIN4Ngi/nzqEJ7woKQ1kNgWoHFZy7YL74PihW//4OlniSRoITX+7ChILIv2ezSmAdIjpNJ9Dg9XKcQIDAQAB

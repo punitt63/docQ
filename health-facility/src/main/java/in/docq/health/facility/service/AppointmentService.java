@@ -13,12 +13,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
-import static com.google.common.base.Preconditions.checkState;
 
 @Service
 public class AppointmentService {
@@ -40,8 +38,9 @@ public class AppointmentService {
     }
 
     public CompletionStage<List<Appointment>> list(LocalDate startOpdDate, LocalDate endOpdDate, String opdId, String patientId, List<Appointment.State> states, int limit) {
-        return appointmentDao.list(startOpdDate, endOpdDate, List.of(opdId), patientId, states, limit);
+        return appointmentDao.list(startOpdDate, endOpdDate, opdId != null ? List.of(opdId) : null, patientId, states, limit);
     }
+
 
     public CompletionStage<List<Appointment>> list(String healthFacilityID, String healthFacilityProfessionalID, LocalDate startOpdDate, LocalDate endOpdDate, String opdId, String patientId, List<Appointment.State> states, int limit) {
         return opdService.list(healthFacilityID, healthFacilityProfessionalID, startOpdDate, endOpdDate)
