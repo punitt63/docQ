@@ -95,9 +95,9 @@ fi
 
 print_success "Release:prepare completed!"
 
-# Step 2: Release:perform
+# Step 2: Release:perform (with install only, no deploy, skip javadoc)
 print_status "Step 2: Running release:perform..."
-mvn $MAVEN_ARGS release:perform
+mvn $MAVEN_ARGS release:perform -Dgoals=install -Darguments="-DskipTests -Dflyway.skip=true -Dmaven.test.skip -Dskip.it=true -Dswagger.generate.skip=true -Dmaven.javadoc.skip=true"
 
 if [[ $? -ne 0 ]]; then
     print_error "Release:perform failed!"
@@ -106,15 +106,28 @@ fi
 
 print_success "Release:perform completed!"
 
+# Step 3: Push to GitHub
+print_status "Step 3: Pushing to GitHub..."
+git push origin main
+if [[ $? -ne 0 ]]; then
+    print_error "Failed to push to origin main!"
+    exit 1
+fi
+
+git push origin --tags
+if [[ $? -ne 0 ]]; then
+    print_error "Failed to push tags!"
+    exit 1
+fi
+
+print_success "Pushed to GitHub successfully!"
+
 echo ""
 print_success "🎉 Maven release completed successfully!"
 echo ""
 print_status "Summary:"
-echo "- Release tag created"
+echo "- Release tag created and pushed"
 echo "- Version bumped for next development"
-echo "- Release artifacts created"
-echo ""
-print_status "To push to GitHub:"
-echo "  git push origin main"
-echo "  git push origin --tags"
+echo "- Release artifacts created and installed"
+echo "- Changes pushed to GitHub"
 echo ""

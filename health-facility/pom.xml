@@ -88,7 +88,7 @@
     </properties>
 
     <build>
-        <finalName>health-facility</finalName>
+        <finalName>${project.artifactId}-${project.version}</finalName>
         <resources>
             <resource>
                 <directory>${project.basedir}/src/main/resources</directory>

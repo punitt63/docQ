@@ -79,7 +79,7 @@
     </properties>
 
     <build>
-        <finalName>patient-service</finalName>
+        <finalName>${project.artifactId}-${project.version}</finalName>
         <resources>
             <resource>
                 <directory>${project.basedir}/src/main/resources</directory>
