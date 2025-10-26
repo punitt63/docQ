@@ -89,14 +89,16 @@ services:
       - KEYCLOAK_BASE_URL=http://keycloak:8080
       - KEYCLOAK_REALM=health-facility
       - KEYCLOAK_BACKEND_CLIENT_ID=health-facility-backend-app
-      - KEYCLOAK_BACKEND_CLIENT_SECRET=3G1Pp9ZmEGabFBchTTyXfuwZKLto8a4G
+      - KEYCLOAK_BACKEND_CLIENT_SECRET=hdIkmSiYvIR5RcGZTYkeLLaOhkD2toTT
       - KEYCLOAK_DESKTOP_CLIENT_ID=health-facility-desktop-app
-      - KEYCLOAK_DESKTOP_CLIENT_SECRET=1OadpENrgZprruUrOOy014AoiNfu3jom
+      - KEYCLOAK_DESKTOP_CLIENT_SECRET=wKHKhLY1IZ6mTLsi2XPWEx7kh8oau7Ni
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/health_facility
       - SPRING_DATASOURCE_USERNAME=docq
       - SPRING_DATASOURCE_PASSWORD=docq
+      - DATA_SETUP_ENABLED=true
     links:
       - "keycloak:keycloak"
+      - "postgres:postgres"
     depends_on:
       flyway:
         condition: service_completed_successfully
@@ -140,6 +142,23 @@ services:
       interval: 5s
       timeout: 10s
       retries: 5
+    networks:
+      - default
+
+  data-setup:
+    image: curlimages/curl:latest
+    container_name: data-setup
+    depends_on:
+      health-facility:
+        condition: service_healthy
+    command: >
+      sh -c "
+      echo 'Waiting for health-facility service to be ready...' &&
+      sleep 10 &&
+      echo 'Executing data setup...' &&
+      curl -X POST http://health-facility:9097/admin/data-setup &&
+      echo 'Data setup completed successfully!'
+      "
     networks:
       - default
 

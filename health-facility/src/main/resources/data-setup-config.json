@@ -1,0 +1,115 @@
+{
+  "healthFacility": {
+    "facilityId": "IN2910001851",
+    "facilityName": "DocQTestFacility",
+    "stateCode": 29,
+    "districtCode": 525,
+    "address": "123 Varthur Main Road, Bangalore",
+    "pincode": "560066",
+    "latitude": 28.6139,
+    "longitude": 77.2090
+  },
+  "facilityManagers": [
+    {
+      "facilityManagerID": "anm92.07@hpr.abdm",
+      "password": "test-pass",
+      "name": "Anmol Singh",
+      "email": "anm92.07@docq.com",
+      "phone": "+91-9876543210"
+    }
+  ],
+  "doctors": [
+    {
+      "doctorID": "punitt63",
+      "password": "test-doc-pass!",
+      "facilityManagerID": "anm92.07@hpr.abdm",
+      "name": "Dr. Punit Pichholia",
+      "speciality": "General Physician",
+      "email": "punit.pichholia@docq.com",
+      "phone": "+91-7667469568",
+      "qualification": "MD Medicine"
+    }
+  ],
+  "patients": [
+    {
+      "abhaAddress": "patient001@abdm",
+      "name": "John Doe",
+      "phone": "+91-9876543220",
+      "email": "john.doe@email.com",
+      "dateOfBirth": "1990-01-15",
+      "gender": "Male"
+    },
+    {
+      "abhaAddress": "patient002@abdm",
+      "name": "Jane Smith", 
+      "phone": "+91-9876543221",
+      "email": "jane.smith@email.com",
+      "dateOfBirth": "1985-05-20",
+      "gender": "Female"
+    },
+    {
+      "abhaAddress": "patient003@abdm",
+      "name": "Mike Johnson",
+      "phone": "+91-9876543222", 
+      "email": "mike.johnson@email.com",
+      "dateOfBirth": "1992-08-10",
+      "gender": "Male"
+    },
+    {
+      "abhaAddress": "patient004@abdm",
+      "name": "Sarah Davis",
+      "phone": "+91-9876543223",
+      "email": "sarah.davis@email.com", 
+      "dateOfBirth": "1988-12-03",
+      "gender": "Female"
+    },
+    {
+      "abhaAddress": "patient005@abdm",
+      "name": "David Brown",
+      "phone": "+91-9876543224",
+      "email": "david.brown@email.com",
+      "dateOfBirth": "1995-03-25",
+      "gender": "Male"
+    },
+    {
+      "abhaAddress": "patient006@abdm",
+      "name": "Lisa Wilson",
+      "phone": "+91-9876543225",
+      "email": "lisa.wilson@email.com",
+      "dateOfBirth": "1991-07-18",
+      "gender": "Female"
+    },
+    {
+      "abhaAddress": "patient007@abdm",
+      "name": "Tom Anderson",
+      "phone": "+91-9876543226",
+      "email": "tom.anderson@email.com",
+      "dateOfBirth": "1987-11-12",
+      "gender": "Male"
+    },
+    {
+      "abhaAddress": "patient008@abdm",
+      "name": "Emma Taylor",
+      "phone": "+91-9876543227",
+      "email": "emma.taylor@email.com",
+      "dateOfBirth": "1993-04-30",
+      "gender": "Female"
+    },
+    {
+      "abhaAddress": "patient009@abdm",
+      "name": "Chris Miller",
+      "phone": "+91-9876543228",
+      "email": "chris.miller@email.com",
+      "dateOfBirth": "1989-09-08",
+      "gender": "Male"
+    },
+    {
+      "abhaAddress": "patient010@abdm",
+      "name": "Anna Garcia",
+      "phone": "+91-9876543229",
+      "email": "anna.garcia@email.com",
+      "dateOfBirth": "1994-06-14",
+      "gender": "Female"
+    }
+  ]
+}
