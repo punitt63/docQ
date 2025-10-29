@@ -290,7 +290,7 @@ public class HealthProfessionalSearchApi {
         }
 
         Object localVarPostBody = null;
-        String localVarPath = "/v1/search/searchByHprId/{hprId}".replace("{hprId}", this.localVarApiClient.escapeString(hprId.toString()));
+        String localVarPath = "/v4/int/v1/search/searchByHprId/{hprId}".replace("{hprId}", this.localVarApiClient.escapeString(hprId.toString()));
         List<Pair> localVarQueryParams = new ArrayList();
         List<Pair> localVarCollectionQueryParams = new ArrayList();
         Map<String, String> localVarHeaderParams = new HashMap();
@@ -309,10 +309,10 @@ public class HealthProfessionalSearchApi {
         }
 
         if (token != null) {
-            localVarHeaderParams.put("Bearer ", token);
+            localVarHeaderParams.put("Authorization", "Bearer " + localVarApiClient.parameterToString(token));
         }
 
-        String[] localVarAuthNames = new String[]{"BearerAuth"};
+        String[] localVarAuthNames = new String[]{};
         return this.localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -467,7 +467,7 @@ public class HealthProfessionalSearchApi {
         <tr><td> 500 </td><td> Server encountered an unexpected condition that prevented it from fulfilling the request </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call searchUserByUseridCall(SearchByHprIdRequest searchByHprIdRequest, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call searchUserByUseridCall(String hprId, String authorization, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -481,10 +481,11 @@ public class HealthProfessionalSearchApi {
             basePath = null;
         }
 
-        Object localVarPostBody = searchByHprIdRequest;
+        Object localVarPostBody = null;
 
         // create path and map variables
-        String localVarPath = "/v2/search/existsByHprId";
+        String localVarPath = "/v4/int/v1/search/existsByHprId/{hprId}"
+            .replace("{" + "hprId" + "}", localVarApiClient.escapeString(hprId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -501,32 +502,36 @@ public class HealthProfessionalSearchApi {
         }
 
         final String[] localVarContentTypes = {
-            "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
         if (localVarContentType != null) {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "Authorization", "X-HIP-ID" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        if (authorization != null) {
+            localVarHeaderParams.put("Authorization", "Bearer " + localVarApiClient.parameterToString(authorization));
+        }
+
+        String[] localVarAuthNames = new String[] {};
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call searchUserByUseridValidateBeforeCall(SearchByHprIdRequest searchByHprIdRequest, final ApiCallback _callback) throws ApiException {
-        // verify the required parameter 'searchByHprIdRequest' is set
-        if (searchByHprIdRequest == null) {
-            throw new ApiException("Missing the required parameter 'searchByHprIdRequest' when calling searchUserByUserid(Async)");
+    private okhttp3.Call searchUserByUseridValidateBeforeCall(String hprId, String authorization, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'hprId' is set
+        if (hprId == null) {
+            throw new ApiException("Missing the required parameter 'hprId' when calling searchUserByUserid(Async)");
         }
 
-        return searchUserByUseridCall(searchByHprIdRequest, _callback);
+        return searchUserByUseridCall(hprId, authorization, _callback);
 
     }
 
     /**
      * Search a user exists by Healthcare Professional ID Number.
      * ## Search a user exists by Healthcare Professional ID Number.  - Healthcare Professional ID need to pass in the request  ## Request below is the Request Parameters description   | Attributes | Description |  | ------ | ------ |  | hprId &lt;sup style&#x3D;&#39;color:red&#39;&gt;* required&lt;/sup&gt; | Healthcare Professional ID Number/Healthcare Professional ID |
-     * @param searchByHprIdRequest  (required)
+     * @param hprId Healthcare Professional ID (required)
+     * @param authorization Bearer token (optional)
      * @return String
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -539,15 +544,16 @@ public class HealthProfessionalSearchApi {
         <tr><td> 500 </td><td> Server encountered an unexpected condition that prevented it from fulfilling the request </td><td>  -  </td></tr>
      </table>
      */
-    public String searchUserByUserid(SearchByHprIdRequest searchByHprIdRequest) throws ApiException {
-        ApiResponse<String> localVarResp = searchUserByUseridWithHttpInfo(searchByHprIdRequest);
+    public String searchUserByUserid(String hprId, String authorization) throws ApiException {
+        ApiResponse<String> localVarResp = searchUserByUseridWithHttpInfo(hprId, authorization);
         return localVarResp.getData();
     }
 
     /**
      * Search a user exists by Healthcare Professional ID Number.
      * ## Search a user exists by Healthcare Professional ID Number.  - Healthcare Professional ID need to pass in the request  ## Request below is the Request Parameters description   | Attributes | Description |  | ------ | ------ |  | hprId &lt;sup style&#x3D;&#39;color:red&#39;&gt;* required&lt;/sup&gt; | Healthcare Professional ID Number/Healthcare Professional ID |
-     * @param searchByHprIdRequest  (required)
+     * @param hprId Healthcare Professional ID (required)
+     * @param authorization Bearer token (optional)
      * @return ApiResponse&lt;String&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -560,8 +566,8 @@ public class HealthProfessionalSearchApi {
         <tr><td> 500 </td><td> Server encountered an unexpected condition that prevented it from fulfilling the request </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<String> searchUserByUseridWithHttpInfo(SearchByHprIdRequest searchByHprIdRequest) throws ApiException {
-        okhttp3.Call localVarCall = searchUserByUseridValidateBeforeCall(searchByHprIdRequest, null);
+    public ApiResponse<String> searchUserByUseridWithHttpInfo(String hprId, String authorization) throws ApiException {
+        okhttp3.Call localVarCall = searchUserByUseridValidateBeforeCall(hprId, authorization, null);
         Type localVarReturnType = new TypeToken<String>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -569,7 +575,8 @@ public class HealthProfessionalSearchApi {
     /**
      * Search a user exists by Healthcare Professional ID Number. (asynchronously)
      * ## Search a user exists by Healthcare Professional ID Number.  - Healthcare Professional ID need to pass in the request  ## Request below is the Request Parameters description   | Attributes | Description |  | ------ | ------ |  | hprId &lt;sup style&#x3D;&#39;color:red&#39;&gt;* required&lt;/sup&gt; | Healthcare Professional ID Number/Healthcare Professional ID |
-     * @param searchByHprIdRequest  (required)
+     * @param hprId Healthcare Professional ID (required)
+     * @param authorization Bearer token (optional)
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
      * @http.response.details
@@ -582,10 +589,10 @@ public class HealthProfessionalSearchApi {
         <tr><td> 500 </td><td> Server encountered an unexpected condition that prevented it from fulfilling the request </td><td>  -  </td></tr>
      </table>
      */
-    public CompletionStage<Boolean> searchUserByUseridAsync(SearchByHprIdRequest searchByHprIdRequest) {
+    public CompletionStage<Boolean> searchUserByUseridAsync(String hprId, String authorization) {
         try {
             FutureApiCallBack<String> callBack = FutureApiCallBack.newCallback();
-            okhttp3.Call localVarCall = searchUserByUseridValidateBeforeCall(searchByHprIdRequest, null);
+            okhttp3.Call localVarCall = searchUserByUseridValidateBeforeCall(hprId, authorization, null);
             Type localVarReturnType = new TypeToken<String>(){}.getType();
             localVarApiClient.executeAsync(localVarCall, localVarReturnType, callBack);
             return callBack.getFuture()

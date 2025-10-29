@@ -80,6 +80,7 @@ public class AbhaRestClient {
         this.healthFacilitySearchApi = new HealthFacilitySearchApi(apiClient);
         this.healthFacilitySearchApi.setCustomBaseUrl("https://apihspsbx.abdm.gov.in/v4/int/FacilityManagement");
         this.healthProfessionalSearchApi = new HealthProfessionalSearchApi(apiClient);
+        this.healthProfessionalSearchApi.setCustomBaseUrl("https://apihspsbx.abdm.gov.in");
         this.enrollmentApiCollectionApi = new EnrollmentApiCollectionApi(apiClient);
         this.enrollmentApiCollectionApi.setCustomBaseUrl("https://abhasbx.abdm.gov.in");
         this.loginApiCollectionApi = new in.docq.abha.rest.client.api.phr.LoginApiCollectionApi(apiClient);
@@ -187,7 +188,10 @@ public class AbhaRestClient {
     }
 
     public CompletionStage<Void> getHealthProfessionalExists(String healthProfessionalID) {
-        return healthProfessionalSearchApi.searchUserByUseridAsync(new SearchByHprIdRequest().idType("hpr_id").domainName("@hpr.abdm").hprId(healthProfessionalID))
+        return getAccessToken()
+                .thenCompose(token -> healthProfessionalSearchApi.searchUserByUseridAsync(
+                        healthProfessionalID,
+                        token))
                 .thenAccept(verdict -> {
                     if(verdict.equals(Boolean.FALSE)) {
                         throw new ApiException(404, "Health Professional ID " + healthProfessionalID + " Doesn't Exist");
