@@ -88,7 +88,8 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
-        return path.startsWith("/actuator/") ||
+        return path.endsWith("/health") ||
+                path.startsWith("/actuator/") ||
                path.startsWith("/patients/login/") ||
                path.startsWith("/patients/sign-up/") ||
                path.equals("/") ||

@@ -26,6 +26,11 @@
             <version>1.2-SNAPSHOT</version>
         </dependency>
         <dependency>
+            <groupId>in.docq</groupId>
+            <artifactId>data-setup</artifactId>
+            <version>1.2-SNAPSHOT</version>
+        </dependency>
+        <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15on</artifactId>
             <version>1.66</version>
@@ -118,7 +123,7 @@
         </plugins>
         <pluginManagement>
             <plugins>
-                <plugin>
+                <!--<plugin>
                     <groupId>org.flywaydb</groupId>
                     <artifactId>flyway-maven-plugin</artifactId>
                     <version>6.5.3</version>
@@ -143,7 +148,7 @@
                             </configuration>
                         </execution>
                     </executions>
-                </plugin>
+                </plugin>-->
             </plugins>
         </pluginManagement>
     </build>

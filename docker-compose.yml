@@ -3,15 +3,15 @@ services:
     image: postgres:14
     container_name: postgres
     environment:
-      POSTGRES_DB: health_facility
       POSTGRES_USER: docq
       POSTGRES_PASSWORD: docq
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U docq -d health_facility"]
+      test: ["CMD-SHELL", "pg_isready -U docq"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -25,7 +25,7 @@ services:
       KC_DB_URL_PORT: 5432
       KC_DB_USERNAME: docq
       KC_DB_PASSWORD: docq
-      KC_DB_URL_DATABASE: health_facility
+      KC_DB_URL_DATABASE: keycloak
       KC_ADMIN: admin
       KC_ADMIN_PASSWORD: admin
       KEYCLOAK_ADMIN: admin
@@ -89,9 +89,9 @@ services:
       - KEYCLOAK_BASE_URL=http://keycloak:8080
       - KEYCLOAK_REALM=health-facility
       - KEYCLOAK_BACKEND_CLIENT_ID=health-facility-backend-app
-      - KEYCLOAK_BACKEND_CLIENT_SECRET=hdIkmSiYvIR5RcGZTYkeLLaOhkD2toTT
+      - KEYCLOAK_BACKEND_CLIENT_SECRET=nMGkpna4AP8a10F6ZwoXsNwGxJUtegGU
       - KEYCLOAK_DESKTOP_CLIENT_ID=health-facility-desktop-app
-      - KEYCLOAK_DESKTOP_CLIENT_SECRET=wKHKhLY1IZ6mTLsi2XPWEx7kh8oau7Ni
+      - KEYCLOAK_DESKTOP_CLIENT_SECRET=FL33GDTiSQEHnIGbYZRdewjJ9J5trySJ
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/health_facility
       - SPRING_DATASOURCE_USERNAME=docq
       - SPRING_DATASOURCE_PASSWORD=docq
@@ -149,15 +149,33 @@ services:
     image: curlimages/curl:latest
     container_name: data-setup
     depends_on:
-      health-facility:
+      patient:
         condition: service_healthy
     command: >
       sh -c "
-      echo 'Waiting for health-facility service to be ready...' &&
+      echo 'Waiting for all services to be ready...' &&
       sleep 10 &&
-      echo 'Executing data setup...' &&
-      curl -X POST http://health-facility:9097/admin/data-setup &&
-      echo 'Data setup completed successfully!'
+      echo 'Checking if data-setup endpoint is available...' &&
+      max_attempts=30 &&
+      attempt=0 &&
+      while [ $$attempt -lt $$max_attempts ]; do
+        if curl -s -f http://health-facility:9097/health > /dev/null 2>&1; then
+          echo 'Health-facility is responding. Executing data setup...' &&
+          curl -X POST http://health-facility:9097/admin/data-setup -w '\n' &&
+          if [ $$? -eq 0 ]; then
+            echo '✅ Data setup completed successfully!' &&
+            exit 0
+          else
+            echo '❌ Data setup failed!' &&
+            exit 1
+          fi
+        fi
+        attempt=$$((attempt+1)) &&
+        echo 'Waiting for services to be fully ready (attempt '$$attempt'/'$$max_attempts')...' &&
+        sleep 2
+      done &&
+      echo '❌ Timeout: health-facility service did not respond in time' &&
+      exit 1
       "
     networks:
       - default
