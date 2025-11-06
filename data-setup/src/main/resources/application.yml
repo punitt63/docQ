@@ -1,0 +1,15 @@
+keycloak:
+  base:
+    url: http://localhost:8080
+  realm: health-facility
+  desktop:
+    client:
+      id: health-facility-desktop-app
+      secret: FL33GDTiSQEHnIGbYZRdewjJ9J5trySJ
+
+health:
+  facility:
+    base:
+      url: http://localhost:9097
+
+

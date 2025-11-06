@@ -18,6 +18,14 @@ public class KeycloakSetupOrchestrator {
             System.out.println("Step 2: Configuring resources, scopes, and permissions...");
             RolesToResourcesMapper.configureResources();
             
+            // Step 3: Export secrets to shared file
+            System.out.println("Step 3: Exporting client secrets...");
+            String secretsPath = System.getenv("SECRETS_OUTPUT_PATH");
+            if (secretsPath == null || secretsPath.isEmpty()) {
+                secretsPath = "/secrets/keycloak-secrets.properties";
+            }
+            KeycloakSetup.exportSecretsToFile(secretsPath);
+            
             System.out.println("Keycloak setup orchestration completed successfully!");
             
         } catch (Exception e) {

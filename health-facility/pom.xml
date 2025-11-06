@@ -26,11 +26,6 @@
             <version>1.2-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>in.docq</groupId>
-            <artifactId>data-setup</artifactId>
-            <version>1.2-SNAPSHOT</version>
-        </dependency>
-        <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15on</artifactId>
             <version>1.66</version>

@@ -8,10 +8,13 @@ import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.representations.idm.*;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 
 public class KeycloakSetup {
 
@@ -432,6 +435,65 @@ public class KeycloakSetup {
 
         } catch (Exception e) {
             System.err.println("Error creating patient-backend-app user: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Exports all Keycloak client secrets to a properties file
+     * This file can be mounted and read by other services
+     */
+    public static void exportSecretsToFile(String outputPath) {
+        try {
+            // Connect to Keycloak
+            Keycloak keycloak = KeycloakBuilder.builder()
+                    .serverUrl(KEYCLOAK_URL)
+                    .realm(MASTER_REALM)
+                    .username(ADMIN_USERNAME)
+                    .password(ADMIN_PASSWORD)
+                    .clientId(ADMIN_CLIENT)
+                    .build();
+
+            RealmResource realmResource = keycloak.realm(HEALTH_FACILITY_REALM);
+
+            // Retrieve secrets
+            String healthFacilityBackendSecret = realmResource.clients()
+                    .get(HEALTH_FACILITY_BACKEND_APP_ID)
+                    .getSecret().getValue();
+
+            String healthFacilityDesktopSecret = realmResource.clients()
+                    .get(HEALTH_FACILITY_DESKTOP_APP_ID)
+                    .getSecret().getValue();
+
+            String patientBackendSecret = realmResource.clients()
+                    .get(PATIENT_BACKEND_APP_ID)
+                    .getSecret().getValue();
+
+            // Create properties
+            Properties props = new Properties();
+            props.setProperty("keycloak.backend.client.id", HEALTH_FACILITY_BACKEND_APP);
+            props.setProperty("keycloak.backend.client.secret", healthFacilityBackendSecret);
+            props.setProperty("keycloak.desktop.client.id", HEALTH_FACILITY_DESKTOP_APP);
+            props.setProperty("keycloak.desktop.client.secret", healthFacilityDesktopSecret);
+            props.setProperty("keycloak.patient.backend.client.id", PATIENT_BACKEND_APP);
+            props.setProperty("keycloak.patient.backend.client.secret", patientBackendSecret);
+            props.setProperty("keycloak.realm", HEALTH_FACILITY_REALM);
+            props.setProperty("keycloak.base.url", KEYCLOAK_URL);
+
+            // Write to file
+            try (FileOutputStream out = new FileOutputStream(outputPath)) {
+                props.store(out, "Keycloak Client Secrets - Auto-generated");
+                System.out.println("Successfully exported secrets to: " + outputPath);
+                System.out.println("Health Facility Backend Secret: " + healthFacilityBackendSecret);
+                System.out.println("Health Facility Desktop Secret: " + healthFacilityDesktopSecret);
+                System.out.println("Patient Backend Secret: " + patientBackendSecret);
+            }
+
+        } catch (IOException e) {
+            System.err.println("Error writing secrets file: " + e.getMessage());
+            e.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("Error retrieving secrets from Keycloak: " + e.getMessage());
             e.printStackTrace();
         }
     }

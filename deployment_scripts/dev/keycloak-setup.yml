@@ -1,0 +1,23 @@
+services:
+
+  keycloak-setup:
+    image: maven:3.9-eclipse-temurin-17
+    container_name: keycloak-setup
+    network_mode: "service:keycloak"
+    working_dir: /usr/src/app
+    environment:
+      - SECRETS_OUTPUT_PATH=/secrets/keycloak-secrets.properties
+    volumes:
+      - ./:/usr/src/app
+      - keycloak-secrets:/secrets
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    command: >
+      bash -lc "
+      echo 'Waiting for Keycloak to be ready...' &&
+      until curl -fsS http://localhost:8080/realms/master >/dev/null 2>&1; do sleep 2; done &&
+      echo 'Keycloak is up. Running setup...' &&
+      mvn -q -pl keycloak-admin-client -am -DskipTests package &&
+      java -cp 'keycloak-admin-client/target/classes:keycloak-admin-client/target/dependency/*' in.docq.KeycloakSetupOrchestrator
+      "
