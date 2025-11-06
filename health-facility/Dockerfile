@@ -10,7 +10,9 @@ RUN mvn -q -pl health-facility -am -DskipTests -Dflyway.skip=true package
 FROM eclipse-temurin:17-jre
 WORKDIR /app
 COPY --from=build /app/health-facility/target/health-facility-1.2-SNAPSHOT.jar /app/health-facility.jar
+COPY health-facility/entrypoint-with-secrets.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 EXPOSE 9097
-ENTRYPOINT ["java","-jar","/app/health-facility.jar"]
+ENTRYPOINT ["/app/entrypoint.sh"]
 
 

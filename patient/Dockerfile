@@ -8,7 +8,9 @@ RUN mvn -q -pl patient -am -DskipTests package
 FROM eclipse-temurin:17-jre
 WORKDIR /app
 COPY --from=build /app/patient/target/patient-1.2-SNAPSHOT.jar /app/patient-service.jar
+COPY patient/entrypoint-with-secrets.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 EXPOSE 9098
-ENTRYPOINT ["java","-jar","/app/patient-service.jar"]
+ENTRYPOINT ["/app/entrypoint.sh"]
 
 

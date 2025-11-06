@@ -49,8 +49,11 @@ services:
     container_name: keycloak-setup
     network_mode: "service:keycloak"
     working_dir: /usr/src/app
+    environment:
+      - SECRETS_OUTPUT_PATH=/secrets/keycloak-secrets.properties
     volumes:
       - ./:/usr/src/app
+      - keycloak-secrets:/secrets
     depends_on:
       keycloak:
         condition: service_healthy
@@ -79,23 +82,20 @@ services:
 
   health-facility:
     build:
-      context: .
-      dockerfile: health-facility/Dockerfile
+      context: ../..
+      dockerfile: ../../health-facility/Dockerfile
     container_name: health-facility
     ports:
       - "9097:9097"
     environment:
       - SPRING_PROFILES_ACTIVE:local
       - KEYCLOAK_BASE_URL=http://keycloak:8080
-      - KEYCLOAK_REALM=health-facility
-      - KEYCLOAK_BACKEND_CLIENT_ID=health-facility-backend-app
-      - KEYCLOAK_BACKEND_CLIENT_SECRET=nMGkpna4AP8a10F6ZwoXsNwGxJUtegGU
-      - KEYCLOAK_DESKTOP_CLIENT_ID=health-facility-desktop-app
-      - KEYCLOAK_DESKTOP_CLIENT_SECRET=FL33GDTiSQEHnIGbYZRdewjJ9J5trySJ
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/health_facility
       - SPRING_DATASOURCE_USERNAME=docq
       - SPRING_DATASOURCE_PASSWORD=docq
-      - DATA_SETUP_ENABLED=true
+      # Keycloak secrets are loaded from /secrets/keycloak-secrets.properties by entrypoint script
+    volumes:
+      - keycloak-secrets:/secrets:ro
     links:
       - "keycloak:keycloak"
       - "postgres:postgres"
@@ -114,23 +114,23 @@ services:
 
   patient:
     build:
-      context: .
-      dockerfile: patient/Dockerfile
+      context: ../..
+      dockerfile: ../../patient/Dockerfile
     container_name: patient
     ports:
       - "9098:9098"
     environment:
       - SPRING_PROFILES_ACTIVE:local
       - KEYCLOAK_BASE_URL=http://keycloak:8080
-      - KEYCLOAK_REALM=health-facility
-      - KEYCLOAK_BACKEND_CLIENT_ID=patient-backend-app
-      - KEYCLOAK_BACKEND_CLIENT_SECRET=3G1Pp9ZmEGabFBchTTyXfuwZKLto8a4G
       - KEYCLOAK_PATIENT_ADMIN_USERNAME=patient-backend-app
       - KEYCLOAK_PATIENT_ADMIN_PASSWORD=Kx9#mP2$vL8@nQ5!
       - HEALTH_FACILITY_BASE_URL=http://health-facility:9097
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/health_facility
       - SPRING_DATASOURCE_USERNAME=docq
       - SPRING_DATASOURCE_PASSWORD=docq
+      # Keycloak secrets are loaded from /secrets/keycloak-secrets.properties by entrypoint script
+    volumes:
+      - keycloak-secrets:/secrets:ro
     links:
       - "keycloak:keycloak"
       - "health-facility:health-facility"
@@ -146,39 +146,37 @@ services:
       - default
 
   data-setup:
-    image: curlimages/curl:latest
+    image: maven:3.9-eclipse-temurin-17
     container_name: data-setup
+    network_mode: "service:health-facility"
+    working_dir: /usr/src/app
+    environment:
+      - KEYCLOAK_BASE_URL=http://keycloak:8080
+      - KEYCLOAK_REALM=health-facility
+      - HEALTH_FACILITY_BASE_URL=http://health-facility:9097
+    volumes:
+      - ./:/usr/src/app
+      - keycloak-secrets:/secrets:ro
     depends_on:
       patient:
         condition: service_healthy
     command: >
-      sh -c "
-      echo 'Waiting for all services to be ready...' &&
-      sleep 10 &&
-      echo 'Checking if data-setup endpoint is available...' &&
-      max_attempts=30 &&
-      attempt=0 &&
-      while [ $$attempt -lt $$max_attempts ]; do
-        if curl -s -f http://health-facility:9097/health > /dev/null 2>&1; then
-          echo 'Health-facility is responding. Executing data setup...' &&
-          curl -X POST http://health-facility:9097/admin/data-setup -w '\n' &&
-          if [ $$? -eq 0 ]; then
-            echo '✅ Data setup completed successfully!' &&
-            exit 0
-          else
-            echo '❌ Data setup failed!' &&
-            exit 1
-          fi
-        fi
-        attempt=$$((attempt+1)) &&
-        echo 'Waiting for services to be fully ready (attempt '$$attempt'/'$$max_attempts')...' &&
-        sleep 2
-      done &&
-      echo '❌ Timeout: health-facility service did not respond in time' &&
-      exit 1
+      bash -lc "
+      echo 'Waiting for health-facility to be ready...' &&
+      until curl -fsS http://health-facility:9097/health >/dev/null 2>&1; do sleep 2; done &&
+      echo 'Health-facility is up. Running data setup...' &&
+      
+      if [ -f /secrets/keycloak-secrets.properties ]; then
+        export KEYCLOAK_DESKTOP_CLIENT_ID=\$(grep 'keycloak.desktop.client.id' /secrets/keycloak-secrets.properties | cut -d'=' -f2);
+        export KEYCLOAK_DESKTOP_CLIENT_SECRET=\$(grep 'keycloak.desktop.client.secret' /secrets/keycloak-secrets.properties | cut -d'=' -f2);
+        echo 'Loaded Keycloak secrets from volume';
+      fi &&
+      
+      mvn -q -pl data-setup -am -DskipTests package &&
+      java -cp 'data-setup/target/classes:data-setup/target/dependency/*' in.docq.DataSetupMain &&
+      echo '✅ Data setup completed successfully!'
       "
-    networks:
-      - default
 
 volumes:
   pgdata:
+  keycloak-secrets:
