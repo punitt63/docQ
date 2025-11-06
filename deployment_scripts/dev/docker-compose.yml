@@ -1,0 +1,159 @@
+services:
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0.6
+    container_name: keycloak
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: postgres
+      KC_DB_URL_PORT: 5432
+      KC_DB_USERNAME: docq_admin
+      KC_DB_PASSWORD: hH<{bP6I[f37
+      KC_DB_URL_DATABASE: keycloak
+      KC_ADMIN: admin
+      KC_ADMIN_PASSWORD: admin
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    command: start-dev
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 5 sh -c 'echo > /dev/tcp/localhost/8080' || exit 1"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+  keycloak-setup:
+    image: maven:3.9-eclipse-temurin-17
+    container_name: keycloak-setup
+    network_mode: "service:keycloak"
+    working_dir: /usr/src/app
+    environment:
+      - SECRETS_OUTPUT_PATH=/secrets/keycloak-secrets.properties
+    volumes:
+      - ./:/usr/src/app
+      - keycloak-secrets:/secrets
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    command: >
+      bash -lc "
+      echo 'Waiting for Keycloak to be ready...' &&
+      until curl -fsS http://localhost:8080/realms/master >/dev/null 2>&1; do sleep 2; done &&
+      echo 'Keycloak is up. Running setup...' &&
+      mvn -q -pl keycloak-admin-client -am -DskipTests package &&
+      java -cp 'keycloak-admin-client/target/classes:keycloak-admin-client/target/dependency/*' in.docq.KeycloakSetupOrchestrator
+      "
+
+#  flyway:
+#    image: flyway/flyway:8.5.13
+#    container_name: flyway
+#    command: -url=jdbc:postgresql://postgres:5432/health_facility -user=docq -password=docq -connectRetries=60 -baselineOnMigrate=true migrate
+#    environment:
+#      - FLYWAY_USER=docq
+#      - FLYWAY_PASSWORD=docq
+#      - FLYWAY_MIXED=true
+#    volumes:
+#      - ./health-facility/src/main/resources/db/migrations:/flyway/sql
+#    depends_on:
+#     postgres:
+#       condition: service_healthy
+#
+#  health-facility:
+#    build:
+#      context: ../..
+#      dockerfile: ../../health-facility/Dockerfile
+#    container_name: health-facility
+#    ports:
+#      - "9097:9097"
+#    environment:
+#      - SPRING_PROFILES_ACTIVE:local
+#      - KEYCLOAK_BASE_URL=http://keycloak:8080
+#      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/health_facility
+#      - SPRING_DATASOURCE_USERNAME=docq
+#      - SPRING_DATASOURCE_PASSWORD=docq
+#      # Keycloak secrets are loaded from /secrets/keycloak-secrets.properties by entrypoint script
+#    volumes:
+#      - keycloak-secrets:/secrets:ro
+#    links:
+#      - "keycloak:keycloak"
+#      - "postgres:postgres"
+#    depends_on:
+#      flyway:
+#        condition: service_completed_successfully
+#      keycloak-setup:
+#        condition: service_completed_successfully
+#    healthcheck:
+#      test: "curl --fail --silent localhost:9097/health | grep UP || exit 1"
+#      interval: 5s
+#      timeout: 10s
+#      retries: 5
+#    networks:
+#      - default
+#
+#  patient:
+#    build:
+#      context: ../..
+#      dockerfile: ../../patient/Dockerfile
+#    container_name: patient
+#    ports:
+#      - "9098:9098"
+#    environment:
+#      - SPRING_PROFILES_ACTIVE:local
+#      - KEYCLOAK_BASE_URL=http://keycloak:8080
+#      - KEYCLOAK_PATIENT_ADMIN_USERNAME=patient-backend-app
+#      - KEYCLOAK_PATIENT_ADMIN_PASSWORD=Kx9#mP2$vL8@nQ5!
+#      - HEALTH_FACILITY_BASE_URL=http://health-facility:9097
+#      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/health_facility
+#      - SPRING_DATASOURCE_USERNAME=docq
+#      - SPRING_DATASOURCE_PASSWORD=docq
+#      # Keycloak secrets are loaded from /secrets/keycloak-secrets.properties by entrypoint script
+#    volumes:
+#      - keycloak-secrets:/secrets:ro
+#    links:
+#      - "keycloak:keycloak"
+#      - "health-facility:health-facility"
+#    depends_on:
+#        health-facility:
+#            condition: service_healthy
+#    healthcheck:
+#      test: "curl --fail --silent localhost:9098/health | grep UP || exit 1"
+#      interval: 5s
+#      timeout: 10s
+#      retries: 5
+#    networks:
+#      - default
+#
+#  data-setup:
+#    image: maven:3.9-eclipse-temurin-17
+#    container_name: data-setup
+#    network_mode: "service:health-facility"
+#    working_dir: /usr/src/app
+#    environment:
+#      - KEYCLOAK_BASE_URL=http://keycloak:8080
+#      - KEYCLOAK_REALM=health-facility
+#      - HEALTH_FACILITY_BASE_URL=http://health-facility:9097
+#    volumes:
+#      - ./:/usr/src/app
+#      - keycloak-secrets:/secrets:ro
+#    depends_on:
+#      patient:
+#        condition: service_healthy
+#    command: >
+#      bash -lc "
+#      echo 'Waiting for health-facility to be ready...' &&
+#      until curl -fsS http://health-facility:9097/health >/dev/null 2>&1; do sleep 2; done &&
+#      echo 'Health-facility is up. Running data setup...' &&
+#
+#      if [ -f /secrets/keycloak-secrets.properties ]; then
+#        export KEYCLOAK_DESKTOP_CLIENT_ID=\$(grep 'keycloak.desktop.client.id' /secrets/keycloak-secrets.properties | cut -d'=' -f2);
+#        export KEYCLOAK_DESKTOP_CLIENT_SECRET=\$(grep 'keycloak.desktop.client.secret' /secrets/keycloak-secrets.properties | cut -d'=' -f2);
+#        echo 'Loaded Keycloak secrets from volume';
+#      fi &&
+#
+#      mvn -q -pl data-setup -am -DskipTests package &&
+#      java -cp 'data-setup/target/classes:data-setup/target/dependency/*' in.docq.DataSetupMain &&
+#      echo '✅ Data setup completed successfully!'
+#      "
