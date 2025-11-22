@@ -100,6 +100,9 @@ public class AuthenticationFilter extends OncePerRequestFilter {
                 path.endsWith("/hiu/consent/request/on-init") ||
                 path.endsWith("/hiu/consent/request/notify") ||
                 path.endsWith("/hiu/consent/on-fetch") ||
-                path.endsWith("/hiu/health-information/on-request");
+                path.endsWith("/hiu/health-information/on-request") ||
+                path.startsWith("/swagger-ui") ||
+                path.endsWith("/swagger-config") ||
+                path.endsWith("/v3/api-docs");
     }
 }
