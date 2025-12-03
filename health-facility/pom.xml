@@ -88,7 +88,7 @@
     </properties>
 
     <build>
-        <finalName>${project.artifactId}-${project.version}</finalName>
+        <finalName>${project.artifactId}</finalName>
         <resources>
             <resource>
                 <directory>${project.basedir}/src/main/resources</directory>
