@@ -22,7 +22,7 @@
     },
     {
       "name" : "patient",
-      "scopes" : ["read", "create", "update", "abha-login-request-otp", "abha-login-verify-otp", "abha-login-verify-otp-status"]
+      "scopes" : ["read", "create", "update", "abha-login-request-otp", "abha-login-verify-otp", "abha-login-verify-otp-status", "abha-signup-request-otp", "abha-signup-verify-otp"]
     },
     {
       "name" : "consent",
@@ -72,7 +72,7 @@
         },
         {
           "name" : "patient",
-          "scopes" : ["read", "create", "update", "abha-login-request-otp", "abha-login-verify-otp", "abha-login-verify-otp-status"]
+          "scopes" : ["read", "create", "update", "abha-login-request-otp", "abha-login-verify-otp", "abha-login-verify-otp-status", "abha-signup-request-otp", "abha-signup-verify-otp"]
         },
         {
           "name" : "health-professional",
